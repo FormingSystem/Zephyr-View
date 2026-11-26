@@ -5,30 +5,18 @@
   const MAX_BYTES = 4 * 1024 * 1024;
   const MAX_ROWS = 20000;
   const token = '[A-Za-z][A-Za-z0-9_-]{0,63}';
-  const format = new RegExp('^ZVTRACE\\s+1\\s+([0-9a-f]{16})\\s+(\\$main|'+token+')\\s+('+token+')\\s+(-|'+token+')\\s+('+token+')\\s+(\\d{1,10})\\s*$');
+  const format = new RegExp('^ZVTRACE\\s+([12])\\s+([0-9a-f]{16})\\s+(\\$main|'+token+')\\s+('+token+')\\s+(-|'+token+')\\s+('+token+')\\s+(\\d{1,10})\\s*$');
   const lossMarker = /(?:^|\s)---\s+(\d{1,10})\s+messages?\s+dropped\s+---\s*$/i;
   const objectOperations = new Set(Object.values(model.operations).flat());
 
-  // A function can be shared. Only accept an event in a context with a path to that step.
-  function executionContexts(graph) {
-    const result = new Map();
-    const functions = new Map((graph.functions || []).map(fn => [fn.id, fn]));
-    function index(context, steps) {
-      const known = new Map();
-      result.set(context,known);
-      const pending = [...steps];
-      while (pending.length) {
-        const step = pending.pop();
-        if (known.has(step.id)) continue;
-        known.set(step.id,step);
-        if (step.op === 'call') pending.push(...functions.get(step.function).steps);
-        if (step.op === 'if' || step.op === 'repeat') pending.push(...step.steps);
-        if (step.op === 'if') pending.push(...step.elseSteps);
-      }
-    }
-    index('$main',graph.mainSteps || []);
-    for (const thread of graph.threads) index(thread.id,thread.steps);
-    return result;
+  const branchTests = {
+    eq:(a,b)=>a===b, ne:(a,b)=>a!==b, lt:(a,b)=>a<b, le:(a,b)=>a<=b, gt:(a,b)=>a>b, ge:(a,b)=>a>=b
+  };
+
+  function callBoundary(protocol, op) {
+    if (protocol === 1) return ['call','external'].includes(op) ? {operation:op, phase:'return'} : null;
+    const match = /^(call|external)-(enter|return)$/.exec(op);
+    return match ? {operation:match[1], phase:match[2]} : null;
   }
 
   function recordedLine(text, line, fingerprint, contexts) {
@@ -38,15 +26,22 @@
     const start = /(?:^|\s)(ZVTRACE\b)/.exec(cleaned);
     if (!start) return;
     const record = format.exec(cleaned.slice(start.index).trimStart());
-    if (!record || Number(record[6]) > 0xffffffff) return {kind:'malformed',line};
-    const [,captureId,contextId,stepId,object,op,value] = record;
+    if (!record || Number(record[7]) > 0xffffffff) return {kind:'malformed',line};
+    const [,version,captureId,contextId,stepId,object,op,value] = record;
+    const protocol = Number(version);
     if (captureId !== fingerprint) return {kind:'foreign',line,fingerprint:captureId};
     const step = contexts.get(contextId)?.get(stepId);
-    const expectedOp = op === 'if-then' || op === 'if-else' ? 'if' : op;
-    if (!step || expectedOp !== step.op || op === 'if' || object !== (objectOperations.has(op) ? step.object : '-')) {
-      return {kind:'unmapped',line};
+    const branch = op === 'if-then' || op === 'if-else';
+    const call = callBoundary(protocol, op);
+    const expectedOp = branch ? 'if' : call?.operation ?? op;
+    if (!step || expectedOp !== step.op || op === 'if' || (!call && ['call','external'].includes(step.op)) ||
+        object !== (objectOperations.has(op) ? step.object : '-')) return {kind:'unmapped',line};
+    if (branch && branchTests[step.test](Number(value),step.value) !== (op==='if-then')) {
+      return {kind:'inconsistent',line,stepId,op,value:Number(value)};
     }
-    return {kind:'event',line,fingerprint,contextId,stepId,objectId:object === '-' ? null : object,op,value:Number(value)};
+    const row = {kind:'event',line,protocol,fingerprint,contextId,stepId,objectId:object==='-' ? null : object,op,value:Number(value)};
+    if (call) Object.assign(row,{op:call.operation,phase:call.phase,callee:call.operation==='call' ? step.function : step.symbol});
+    return row;
   }
 
   /** Parse one bounded UTF-8 console capture in file order. Ordinary console output is ignored.
@@ -57,7 +52,7 @@
     if (typeof text !== 'string' || text.length > MAX_BYTES || new TextEncoder().encode(text).length > MAX_BYTES) {
       throw new RangeError('file-size');
     }
-    const contexts = executionContexts(graph);
+    const contexts = model.execution_contexts(graph);
     const rows = [];
     const counts = counters();
     let start = 0, line = 1, truncated = false;
@@ -79,7 +74,7 @@
   const LIVE_ROWS = 2048, MAX_LINE = 4096;
 
   function counters() {
-    return {event:0,foreign:0,malformed:0,loss:0,unmapped:0,gap:0};
+    return {event:0,foreign:0,malformed:0,loss:0,unmapped:0,inconsistent:0,gap:0};
   }
 
   // A chunk may split a UTF-8-decoded line anywhere. Never emit a partial printk record.
@@ -87,7 +82,7 @@
     constructor(graph) {
       this.fingerprint=model.fingerprint(graph);
       if (!this.fingerprint) throw new RangeError('invalid-model');
-      this.contexts=executionContexts(graph);
+      this.contexts=model.execution_contexts(graph);
       this.rows=[];
       this.counts=counters();
       this.line=1;

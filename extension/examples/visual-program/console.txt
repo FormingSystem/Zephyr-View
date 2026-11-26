@@ -1,21 +1,22 @@
 *** Booting Zephyr OS build 25c8f4a23988 ***
-ZVTRACE 1 d6617b87ac27451a $main startup - set 1
+ZVTRACE 2 d6617b87ac27451a $main startup - set 1
 $main value=1
-ZVTRACE 1 d6617b87ac27451a $main boot_output - print 1
-ZVTRACE 1 d6617b87ac27451a sensor publish samples send 42
-ZVTRACE 1 d6617b87ac27451a relay read samples receive 42
-ZVTRACE 1 d6617b87ac27451a relay threshold - if-then 42
-ZVTRACE 1 d6617b87ac27451a relay double - multiply 84
-ZVTRACE 1 d6617b87ac27451a relay process - call 84
+ZVTRACE 2 d6617b87ac27451a $main boot_output - print 1
+ZVTRACE 2 d6617b87ac27451a sensor publish samples send 42
+ZVTRACE 2 d6617b87ac27451a relay read samples receive 42
+ZVTRACE 2 d6617b87ac27451a relay process - call-enter 42
+ZVTRACE 2 d6617b87ac27451a relay threshold - if-then 42
+ZVTRACE 2 d6617b87ac27451a relay double - multiply 84
+ZVTRACE 2 d6617b87ac27451a relay process - call-return 84
 relay value=84
-ZVTRACE 1 d6617b87ac27451a relay result - print 84
-ZVTRACE 1 d6617b87ac27451a relay notify ready give 84
-ZVTRACE 1 d6617b87ac27451a relay count counter increment 1
-ZVTRACE 1 d6617b87ac27451a logger await_ready ready take 42
-ZVTRACE 1 d6617b87ac27451a $main pause - delay 1
-ZVTRACE 1 d6617b87ac27451a $main each - add 4
-ZVTRACE 1 d6617b87ac27451a $main pause - delay 4
-ZVTRACE 1 d6617b87ac27451a $main each - add 7
-ZVTRACE 1 d6617b87ac27451a $main twice - repeat 7
+ZVTRACE 2 d6617b87ac27451a relay result - print 84
+ZVTRACE 2 d6617b87ac27451a relay notify ready give 84
+ZVTRACE 2 d6617b87ac27451a relay count counter increment 1
+ZVTRACE 2 d6617b87ac27451a logger await_ready ready take 42
+ZVTRACE 2 d6617b87ac27451a $main pause - delay 1
+ZVTRACE 2 d6617b87ac27451a $main each - add 4
+ZVTRACE 2 d6617b87ac27451a $main pause - delay 4
+ZVTRACE 2 d6617b87ac27451a $main each - add 7
+ZVTRACE 2 d6617b87ac27451a $main twice - repeat 7
 $main value=7
-ZVTRACE 1 d6617b87ac27451a $main boot_result - print 7
+ZVTRACE 2 d6617b87ac27451a $main boot_result - print 7

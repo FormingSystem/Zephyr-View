@@ -17,7 +17,7 @@ graph.threads[0].initialValue = Number(process.argv[2]);
 graph.threads[0].steps.unshift({id:'read_driver',op:'external',symbol:'read_sensor'});
 graph.objects.push({id:'counter',name:'counter',kind:'mutex'});
 graph.threads[1].steps.push({id:'count',op:'increment',object:'counter'}, {id:'print_count',op:'print'});
-graph.threads[2].steps.push({id:'print_ready',op:'print'});
+graph.threads[2].steps.push({id:'print_ready',op:'print'}, {id:'log_process',op:'call',function:'scale'});
 graph.mainSteps.push({id:'twice',op:'repeat',count:2,steps:[
   {id:'wait_tick',op:'delay',value:1}, {id:'add_tick',op:'add',value:3}
 ]}, {id:'print_main',op:'print'});
@@ -42,16 +42,17 @@ def generate(app, creation, initial):
     return project['graph']
 
 
-def expected_steps(value):
+def expected_steps(value, initial):
     result = value * 2 if value >= 40 else value + 1
     path = 'then' if value >= 40 else 'else'
     return {
-        'sensor': [('read_driver', 'external', value), ('publish', 'send', value)],
-        'relay': [('read', 'receive', value), ('threshold', 'if-' + path, value),
+        'sensor': [('read_driver', 'external-enter', initial), ('read_driver', 'external-return', value), ('publish', 'send', value)],
+        'relay': [('read', 'receive', value), ('process', 'call-enter', value), ('threshold', 'if-' + path, value),
                   ('double', 'multiply', result) if path == 'then' else ('offset', 'add', result),
-                  ('process', 'call', result), ('result', 'print', result),
+                  ('process', 'call-return', result), ('result', 'print', result),
                   ('notify', 'give', result), ('count', 'increment', 1), ('print_count', 'print', 1)],
-        'logger': [('await_ready', 'take', 42), ('print_ready', 'print', 42)],
+        'logger': [('await_ready', 'take', 42), ('print_ready', 'print', 42), ('log_process', 'call-enter', 42),
+                   ('threshold', 'if-then', 42), ('double', 'multiply', 84), ('log_process', 'call-return', 84)],
         '$main': [('startup', 'set', 1), ('boot_output', 'print', 1), ('wait_tick', 'delay', 1),
                   ('add_tick', 'add', 4), ('wait_tick', 'delay', 4), ('add_tick', 'add', 7),
                   ('twice', 'repeat', 7), ('print_main', 'print', 7)]
@@ -65,7 +66,10 @@ def check_capture(lines, graph, expected):
         raise AssertionError(f"Incomplete or unrecognized capture: {result['counts']}")
     actual = {}
     for event in result['rows']:
-        actual.setdefault(event['contextId'], []).append((event['stepId'], event['op'], event['value']))
+        if event['protocol'] != 2:
+            raise AssertionError(f"Expected trace protocol 2: {event}")
+        operation = event['op'] + ('-' + event['phase'] if 'phase' in event else '')
+        actual.setdefault(event['contextId'], []).append((event['stepId'], operation, event['value']))
     if actual != expected:
         raise AssertionError(f'Expected {expected}\nReceived {actual}')
     return result['counts']['event']
@@ -73,7 +77,7 @@ def check_capture(lines, graph, expected):
 
 def build_and_observe(build, elf, graph, trace, value, options):
     subprocess.run(['cmake', '--build', build], check=True)
-    expected = expected_steps(value) if trace else {}
+    expected = expected_steps(value, graph['threads'][0]['initialValue']) if trace else {}
     transformed = value * 2 if value >= 40 else value + 1
     outputs = {f'relay value={transformed}', 'relay value=1', 'logger value=42', '$main value=7'}
     minimum = sum(len(steps) for steps in expected.values())

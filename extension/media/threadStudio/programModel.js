@@ -159,6 +159,28 @@
 
   function validate(graph) { return new GraphValidator().validate(graph); }
 
+  // A function can be shared. Only accept an event in a context with a path to that step.
+  function execution_contexts(graph) {
+    const result = new Map();
+    const functions = new Map((graph.functions || []).map(fn => [fn.id, fn]));
+    function index(context, steps) {
+      const known = new Map();
+      result.set(context,known);
+      const pending = [...steps];
+      while (pending.length) {
+        const step = pending.pop();
+        if (known.has(step.id)) continue;
+        known.set(step.id,step);
+        if (step.op === 'call') pending.push(...functions.get(step.function).steps);
+        if (step.op === 'if' || step.op === 'repeat') pending.push(...step.steps);
+        if (step.op === 'if') pending.push(...step.elseSteps);
+      }
+    }
+    index('$main',graph.mainSteps || []);
+    for (const thread of graph.threads) index(thread.id,thread.steps);
+    return result;
+  }
+
   // FNV-1a 64 identifies otherwise independent captures; it is not an authenticity check.
   // Only generation inputs enter the fingerprint. Moving a card on the canvas preserves trace compatibility.
   function fingerprint(graph) {
@@ -181,7 +203,8 @@
   }
 
   class ProgramSource {
-    constructor(graph,key) {
+    constructor(graph,key,protocol) {
+      this.protocol = protocol;
       this.graph = graph;
       this.objects = new Map(graph.objects.map(o => [o.id,o]));
       this.functions = new Map((graph.functions || []).map(f => [f.id,f]));
@@ -189,7 +212,7 @@
         '#include <zephyr/kernel.h>','#include <zephyr/sys/printk.h>','',
         '#if defined(ZV_TRACE) && ZV_TRACE',
         '#define ZV_EVENT(step, object, op) \\',
-        `\tprintk("ZVTRACE 1 ${key} %s %s %s %s %u\\n", context, step, object, op, (unsigned int)value)`,
+        `\tprintk("ZVTRACE ${protocol} ${key} %s %s %s %s %u\\n", context, step, object, op, (unsigned int)value)`,
         '#else','#define ZV_EVENT(step, object, op) do { } while (0)','#endif',''];
       this.lines = Object.create(null);
       this.edges = [];
@@ -264,6 +287,11 @@
       for (const step of list) {
         this.lines[step.id] = this.code.length+1;
         if (step.op === 'if') {this.branch(step); continue;}
+        const callBoundary = this.protocol === 2 && (step.op === 'call' || step.op === 'external');
+        if (callBoundary) {
+          this.event(step,step.op+'-enter');
+          this.lines[step.id] = this.code.length+1;
+        }
         if (signals.has(step.op)) this.signal(step);
         else if (arithmetic.has(step.op)) this.emit(`value ${arithmetic.get(step.op)} ${step.value}U;`);
         else if (step.op === 'print') this.emit('printk("%s value=%u\\n", context, (unsigned int)value);');
@@ -276,7 +304,7 @@
           const fn = this.functions.get(step.function);
           this.checked(`!zv_fn_${fn.name}(&value, context)`);
         }
-        this.event(step);
+        this.event(step, callBoundary ? step.op+'-return' : step.op);
       }
     }
 
@@ -363,14 +391,14 @@
     }
   }
 
-  function describe(graph) {
+  function describe(graph,protocol=2) {
     const diagnostics = validate(graph);
     if (diagnostics.length) return {diagnostics,lines:{},edges:[]};
-    const {lines,edges} = new ProgramSource(graph,'').render();
+    const {lines,edges} = new ProgramSource(graph,'',protocol).render();
     return {diagnostics,lines,edges};
   }
 
-  function generate(graph) {
+  function generate(graph,protocol=2) {
     const key = fingerprint(graph);
     if (!key) throw new RangeError('Invalid thread graph: '+validate(graph).map(d => d.field+' '+d.code).join(', '));
     return {
@@ -384,11 +412,11 @@
         ' * For an external step named read_sensor, define:',
         ' * uint32_t zv_hook_read_sensor(uint32_t value) { return value + 1U; }',
         ' * Without an override the weak hook returns its input unchanged.',' */',''].join('\n'),
-      'src/main.c':new ProgramSource(graph,key).render().code.join('\n')
+      'src/main.c':new ProgramSource(graph,key,protocol).render().code.join('\n')
     };
   }
 
-  const api = {operations,starter,example,validate,describe,generate,fingerprint};
+  const api = {operations,starter,example,validate,describe,generate,fingerprint,execution_contexts};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else globalThis.ZephyrProgramModel = api;
 }());

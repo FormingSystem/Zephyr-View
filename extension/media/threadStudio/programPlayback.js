@@ -171,7 +171,7 @@ globalThis.ZephyrProgramPlayback = (() => {
       const {counts,truncated}=this.data;
       const pieces=[t('匹配事件 ','Matched events ')+counts.event];
       for (const [key,zh,en] of [['foreign','其他构建','Other builds'],['malformed','格式异常','Malformed'],
-        ['unmapped','步骤不匹配','Unmapped'],['loss','日志报告丢失','Logger loss markers'],['gap','读取缺口','Capture gaps']]) {
+        ['unmapped','步骤不匹配','Unmapped'],['inconsistent','条件与记录值矛盾','Contradictory branch values'],['loss','日志报告丢失','Logger loss markers'],['gap','读取缺口','Capture gaps']]) {
         if (counts[key]) pieces.push(t(zh,en)+' '+counts[key]);
       }
       if (truncated) pieces.push(t('仅导入前 20000 条记录','First 20000 records imported'));
@@ -184,11 +184,13 @@ globalThis.ZephyrProgramPlayback = (() => {
       const t=this.t;
       if (row.kind==='foreign') return t('其他构建','Different build')+' '+row.fingerprint;
       if (row.kind==='malformed') return t('无法解析此事件','Malformed event');
+      if (row.kind==='inconsistent') return t('分支与该步骤的比较结果矛盾','Branch contradicts the recorded operand')+' · '+row.stepId+' · '+row.op+' · '+row.value;
       if (row.kind==='unmapped') return t('事件与图中的上下文、步骤或对象不符','Context, operation or object differs from the graph');
       if (row.kind==='loss') return t('日志报告丢失消息 ','Logger reports dropped messages ')+row.count;
       if (row.kind==='gap') return t('读取中断或记录不完整','Read gap or incomplete record');
       const {contextId,objectId,stepId,op,value}=row;
       let route=contextId;
+      if (row.phase) return [contextId,stepId,row.callee,row.phase==='enter' ? t('调用输入','Call input') : t('返回值','Return value'),value].join(' · ');
       if (objectId) route=(op==='take' || op==='receive') ? objectId+' → '+contextId : contextId+' → '+objectId;
       const unit=op==='give' || op==='take' ? t('线程当前值','thread-local value') : t('值','value');
       return [route,stepId,op,unit+' '+value].join(' · ');

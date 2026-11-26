@@ -13,18 +13,45 @@ const capture = fs.readFileSync(path.join(sampleDir,'console.txt'),'utf8');
 const workbench = path.join(__dirname,'../extension/media/threadStudio');
 const record = (fields,key=model.fingerprint(sample)) => 'ZVTRACE 1 '+key+' '+fields;
 
-test('the offline example replays the original 17 QEMU records from the matching saved program', () => {
+test('the offline example replays 18 v2 QEMU records from the matching saved program', () => {
   const scope={};
   vm.runInNewContext(fs.readFileSync(path.join(sampleDir,'sample.js'),'utf8'),scope);
   assert.deepEqual(JSON.parse(JSON.stringify(scope.ZephyrProgramRecording.graph)),sample);
   assert.equal(scope.ZephyrProgramRecording.log,capture.replaceAll('\r\n','\n'));
   assert.equal(model.fingerprint(sample),'d6617b87ac27451a');
   const {counts,rows}=parse(capture,sample);
-  assert.deepEqual(counts,{event:17,foreign:0,malformed:0,loss:0,unmapped:0,gap:0});
-  assert.deepEqual(rows.slice(2,6).map(({contextId,objectId,op,value})=>[contextId,objectId,op,value]),[
-    ['sensor','samples','send',42],['relay','samples','receive',42],['relay',null,'if-then',42],['relay',null,'multiply',84]
+  assert.deepEqual(counts,{event:18,foreign:0,malformed:0,loss:0,unmapped:0,inconsistent:0,gap:0});
+  assert.deepEqual(rows.slice(2,8).map(({contextId,objectId,op,value,phase})=>[contextId,objectId,phase || op,value]),[
+    ['sensor','samples','send',42],['relay','samples','receive',42],['relay',null,'enter',42],
+    ['relay',null,'if-then',42],['relay',null,'multiply',84],['relay',null,'return',84]
   ]);
   assert.deepEqual(rows.slice(-3).map(row=>row.stepId),['each','twice','boot_result']);
+});
+
+test('original QEMU recording retains the v1 call return, source and line map', () => {
+  const text=fs.readFileSync(path.join(__dirname,'fixtures','visual-program','v1-console.txt'),'utf8');
+  const {rows,counts}=parse(text,sample);
+  assert.equal(counts.event,17);
+  assert.deepEqual(rows.filter(row=>row.op==='call').map(row=>[row.protocol,row.phase,row.callee,row.value]),[[1,'return','scale',84]]);
+  const hash=require('node:crypto').createHash('sha256').update(model.generate(sample,1)['src/main.c']).digest('hex');
+  assert.equal(hash,'fd291203859253f17d99df718477ce130b7b512c1c223155e07f4f05c0103fc2');
+  assert.equal(model.describe(sample,1).lines.process,68);
+  assert.equal(model.describe(sample,2).lines.process,69);
+});
+
+test('call evidence is local to each context, protocol and recorded phase', () => {
+  const graph=structuredClone(sample), key=()=>model.fingerprint(graph);
+  graph.threads[0].steps.push({id:'sense_call',op:'call',function:'scale'});
+  const records = [
+    '2 sensor sense_call - call-enter 2', '2 relay process - call-enter 9',
+    '2 relay process - call-return 10','2 sensor sense_call - call-return 3',
+    '2 relay process - call 10','1 relay process - call-enter 2',
+    '2 logger sense_call - call-enter 42','2 relay threshold - if-then 2'
+  ].map(r=>'ZVTRACE '+r[0]+' '+key()+r.slice(1)).join('\n');
+  const {rows}=parse(records,graph);
+  assert.deepEqual(rows.slice(0,4).map(r=>[r.contextId,r.phase,r.value]),[
+    ['sensor','enter',2],['relay','enter',9],['relay','return',10],['sensor','return',3]]);
+  assert.deepEqual(rows.slice(4).map(r=>r.kind),['unmapped','unmapped','unmapped','inconsistent']);
 });
 
 test('ordinary log lines disappear, while loss, incompatible builds and damaged records retain their positions', () => {
@@ -34,7 +61,7 @@ test('ordinary log lines disappear, while loss, incompatible builds and damaged 
     record('relay threshold - if 42'),record('$main double - multiply 84'),record('sensor publish ready send 42'),
     record('relay threshold - if-else 4294967295')];
   const {rows}=parse(lines.join('\r\n'),sample);
-  assert.deepEqual(rows.map(row=>row.kind),['event','loss','foreign','malformed','malformed','unmapped','unmapped','unmapped','event']);
+  assert.deepEqual(rows.map(row=>row.kind),['event','loss','foreign','malformed','malformed','unmapped','unmapped','unmapped','inconsistent']);
   assert.deepEqual(rows.map(row=>row.line),[2,3,4,5,6,7,8,9,10]);
   assert.equal(rows[1].count,23);
   assert.equal(rows.at(-1).value,0xffffffff);

@@ -98,17 +98,30 @@ globalThis.ZephyrProgramCanvas = (() => {
       if(previous || previousEdge) (this.cards.get(previous)||this.wires.get(previousEdge)?.g||this.cards.get(stepId)||this.cards.get(selected)||this.view).focus({preventScroll:true});
     }
     markObserved() {
+      if(this.returnWire) {
+        this.returnWire.setAttribute('marker-end',this.returnWire.getAttribute('marker-start'));
+        this.returnWire.removeAttribute('marker-start');
+        this.returnWire=null;
+      }
       for(const item of this.marked||[])item.classList.remove('observed');
       this.marked=[];
       this.pulse?.remove();this.pulse=null;
       const event=this.observed;
       if(!event || !this.cards)return;
-      for(const id of new Set([event.contextId,event.ownerId,event.stepId,event.objectId])){
+      const callee=event.op==='call' ? event.callee : null;
+      for(const id of new Set([event.contextId,event.ownerId,event.stepId,event.objectId,callee])){
         const card=this.cards.get(id);
         if(card)this.marked.push(card);
       }
       const operation=this.wires.get(event.stepId);
-      if(operation)this.marked.push(operation.g);
+      if(operation){
+        this.marked.push(operation.g);
+        if(event.phase==='return' && operation.edge.kind==='call'){
+          this.returnWire=operation.g.querySelector('.vp-wire');
+          this.returnWire.setAttribute('marker-start',this.returnWire.getAttribute('marker-end'));
+          this.returnWire.removeAttribute('marker-end');
+        }
+      }
       for(const branch of this.branches.get(event.stepId)||[])if(branch.edge.branch===event.op)this.marked.push(branch.g);
       for(const item of this.marked)item.classList.add('observed');
     }
@@ -117,6 +130,9 @@ globalThis.ZephyrProgramCanvas = (() => {
       if(!wire || matchMedia('(prefers-reduced-motion: reduce)').matches)return;
       const dot=svg('circle',{class:'vp-pulse',r:4.3,'pointer-events':'none'});
       const motion=svg('animateMotion',{path:wire.querySelector('.vp-wire').getAttribute('d'),dur:'.4s',begin:'indefinite',fill:'remove'});
+      if(this.returnWire){
+        motion.setAttribute('calcMode','linear');motion.setAttribute('keyTimes','0;1');motion.setAttribute('keyPoints','1;0');
+      }
       dot.append(motion);wire.append(dot);this.pulse=dot;
       motion.addEventListener('endEvent',()=>dot.remove(),{once:true});
       motion.beginElement();
