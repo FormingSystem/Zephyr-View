@@ -74,6 +74,23 @@ function exercisePicker() {
     field.dispatchEvent(new Event('input',{bubbles:true}));
     click(buttonWith(cn?'使用此 BOARD':'Use this BOARD'));
     check(messages.at(-1).action==='targetBoard' && messages.at(-1).id.value===field.value,'manual target lost');
+
+    window.live={folder:'C:/workspace/zephyr'};
+    const current=cn?'当前目录':'Current directory';
+    for(const [kind,value] of [['app','.'],['build',live.folder]]) {
+      get('main').innerHTML=targetFields(targetField(kind,kind,value,value));
+      check(get('main').textContent.includes(current),'current directory not labeled in target field');
+      click(get('[data-act="target:search:'+kind+'"]'));
+      receive(messages.at(-1).id.request,[value,'samples/demo']);
+      const search=get('.picker-bar input');
+      search.value=current;
+      search.dispatchEvent(new Event('input',{bubbles:true}));
+      const result=get('.picker-results button');
+      check(result && result.firstChild.textContent===current,'current directory not searchable by its label');
+      if(value==='.')check(!result.querySelector('small'),'stray dot in directory result');
+      click(result);
+      check(messages.at(-1).action==='targetSelect' && messages.at(-1).id.value===value,'directory value changed during selection');
+    }
     parent.postMessage({lang:document.documentElement.lang,width:innerWidth,ok:true},'*');
   } catch(error) {
     parent.postMessage({lang:document.documentElement.lang,width:innerWidth,error:error.message},'*');
@@ -81,7 +98,7 @@ function exercisePicker() {
 }
 
 const chrome=process.env.ZEPHYR_TEST_CHROME;
-test('board discovery and recovery work in English and Chinese at narrow and desktop widths',
+test('board recovery and directory selection work in English and Chinese at narrow and desktop widths',
   {skip:!chrome && 'Set ZEPHYR_TEST_CHROME to a Chromium executable to verify browser layout'},async t=>{
     const temp=await fs.mkdtemp(path.join(os.tmpdir(),'zephyr-picker-browser-'));
     t.after(()=>fs.rm(temp,{recursive:true,force:true,maxRetries:6,retryDelay:100}));

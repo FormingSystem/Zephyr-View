@@ -32,6 +32,21 @@ test('POSIX filename characters and remote repository addresses retain their mea
   }
 });
 
+test('current-directory captions localize only directory labels and preserve literal paths',()=>{
+  for(const current of ['Current directory','当前目录']){
+    assert.equal(display.directory('.',undefined,current),current);
+    assert.equal(display.directory('./',undefined,current),current);
+    assert.equal(display.directory('/workspace/app','/workspace/app',current),current);
+    assert.equal(display.directory('C:/APP/','c:/app',current),current);
+    for(const value of ['..','./samples','prj.conf','.west/config','/different/app']){
+      assert.equal(display.directory(value,'/workspace/app',current),value);
+    }
+  }
+  assert.equal(display.path('.'),'.');
+  assert.equal(display.relative('/example','/example'),'.');
+  assert.equal(display.variable('BOARD_ROOT','.'),'.');
+});
+
 test('path-bearing Zephyr and typed CMake values keep list separators and escaped semicolons', () => {
   const list = 'C:\\Apps One\\prj.conf;..\\extras\\a\\;b.conf';
   assert.equal(display.variable('CONF_FILE', list, 'STRING', 'win32'), 'C:/Apps One/prj.conf;../extras/a\\;b.conf');

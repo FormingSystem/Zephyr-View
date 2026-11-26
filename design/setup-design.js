@@ -183,7 +183,7 @@ function discoveredWorkspace(){
   const active=model.activeDiscovery;
   const rows=discoveryExample.map(([key,title,evidence,paths])=>
     '<div class="environment-field"><label>'+esc(title)+' <small>'+esc(evidence)+'</small><select data-discovery="'+key+'">'+
-    paths.map(path=>'<option value="'+esc(path)+'" '+(active?.[key]===path?'selected':'')+'>'+esc(ZephyrPathDisplay.path(path))+'</option>').join('')+'</select></label></div>').join('');
+    paths.map(path=>'<option value="'+esc(path)+'" '+(active?.[key]===path?'selected':'')+'>'+esc(ZephyrPathDisplay.directory(path))+'</option>').join('')+'</select></label></div>').join('');
   const saved=active&&JSON.stringify(active)===JSON.stringify(model.savedDiscovery);
   const status=saved?'已保存至演示工作区':active?'临时使用':'待选择';
   return '<details class="panel"><summary>初始工作区识别 · 示例数据 · '+status+'</summary>'+rows+

@@ -167,15 +167,16 @@ function createTargetPicker(adapter){
     }
     if(!items){status.textContent=error||tr('正在发现候选项…','Discovering choices…');return;}
     const display=value=>kind==='board'?value:ZephyrPathDisplay.path(value);
+    const caption=value=>kind==='board'?value:ZephyrPathDisplay.directory(value,open.root);
     const q=display(term.value.trim()).toLowerCase();
-    const matches=items.filter(v=>fuzzy(display(v).toLowerCase(),q));
+    const matches=items.filter(v=>fuzzy(display(v).toLowerCase(),q) || fuzzy(caption(v).toLowerCase(),q));
     status.textContent=matches.length?tr('匹配 ','Matches · ')+matches.length:tr('没有匹配项','No matches');
     const displayed=matches.slice(0,open.limit);
     list.replaceChildren(...displayed.map(v=>{
-      const path=display(v);
+      const path=display(v),label=caption(v);
       const b=document.createElement('button');b.type='button';b.title=path;
-      b.textContent=kind==='board'?v:path.split('/').pop()||path;
-      if(kind!=='board'){const small=document.createElement('small');small.textContent=path;b.append(small);}
+      b.textContent=kind==='board'||label!==path?label:path.split('/').pop()||path;
+      if(kind!=='board' && path!=='.' && path!=='./'){const small=document.createElement('small');small.textContent=path;b.append(small);}
       b.onclick=()=>{close(true);adapter.select(kind,v);};return b;
     }));
     open.more.hidden=matches.length<=displayed.length;
@@ -197,7 +198,7 @@ function createTargetPicker(adapter){
     box.innerHTML='<div class="picker-bar"><input class="input" type="search" placeholder="'+esc(title)+'" aria-label="'+esc(title)+'"><button type="button" class="picker-close" aria-label="'+tr('关闭','Close')+'">×</button></div><small role="status"></small><div class="picker-results"></div>';
     const anchor=button.closest('.target-field,.studio-target,.row')||button;
     anchor.after(box);button.setAttribute('aria-expanded','true');
-    open={request,box,button,kind,term:box.querySelector('input'),status:box.querySelector('[role=status]'),list:box.querySelector('.picker-results')};
+    open={request,box,button,kind,root:kind!=='board' && adapter.directoryRoot?.(),term:box.querySelector('input'),status:box.querySelector('[role=status]'),list:box.querySelector('.picker-results')};
     open.limit=100;open.more=document.createElement('button');open.more.type='button';open.more.hidden=true;
     open.more.textContent=tr('显示更多','Show more');
     open.more.onclick=()=>{

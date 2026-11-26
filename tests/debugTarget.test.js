@@ -98,6 +98,7 @@ async function setup(t) {
 
 test('an editor, explicit root selection, and scoped debug sessions own the target across focus changes',async t=>{
   const {a,b,row,edit,debug,directory}=await setup(t);
+  assert.equal((await row('Application')).description,'Current directory');
   assert.equal((await row('Refresh debug target')).command.command,'zephyrWorkbench.refresh');
   edit(b);
   edit(undefined);

@@ -4,7 +4,8 @@
 function configurationTreeModel(state, translate=tr) {
   const leaf=(id,label,detail='',action)=>({id,label,detail,action,children:[]});
   const branch=(id,label,detail,children,action)=>({...leaf(id,label,detail,action),children});
-  const displayPath=(globalThis.ZephyrPathDisplay ?? require('./pathDisplay')).path;
+  const pathDisplay=globalThis.ZephyrPathDisplay ?? require('./pathDisplay');
+  const displayPath=pathDisplay.path;
   const fileName=file=>file && displayPath(file).split('/').pop() || '—';
   const source=(path,role)=>leaf('source:'+path,fileName(path),role,{kind:'source',path});
   const t=translate,tree=state.devicetree||{};
@@ -59,7 +60,7 @@ function configurationTreeModel(state, translate=tr) {
     return branch('device',t('设备树','Devicetree'),records.length?t('硬件节点 ','Hardware nodes · ')+records.length:
       catalogStatus(tree.catalog?.source),content,{kind:'device'});
   }
-  const target=(kind,title,value)=>leaf('target:'+kind,title,displayPath(value)||'—',{kind:'target',target:kind});
+  const target=(kind,title,value)=>leaf('target:'+kind,title,pathDisplay.directory(value,state.folder,t('当前目录','Current directory'))||'—',{kind:'target',target:kind});
   const [identifier,...qualifiers]=(state.board||'').split('/');
   const [boardName,revision]=identifier.split('@'),selectBoard={kind:'target',target:'board'};
   const boardParts=[leaf('board:name',t('板名','Board name'),boardName||'—',selectBoard)];

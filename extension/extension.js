@@ -3,7 +3,7 @@
 const vscode = require('vscode');
 const {registerWorkbench} = require('./workbench');
 const {pickDirectory} = require('./fileDialogs');
-const {path: displayPath} = require('./media/pathDisplay');
+const {path: displayPath, directory: directoryLabel} = require('./media/pathDisplay');
 const path = require('node:path');
 const {debugRunner, hasCurrentBuild, hasFile, lastBuildFailure, looksLikeZephyr, readTarget, readText} = require('./target');
 const {imageDomains} = require('./sysbuild');
@@ -141,14 +141,16 @@ class DebugTarget {
     const current = hasCurrentBuild(s), runner = debugRunner(s);
     const boardFile = selection ? selection.boardFile : current && target.devicetree.base?.fsPath;
     const app = Uri.file(s.setup.app);
+    const directoryFor = uri => directoryLabel(path.relative(folder.uri.fsPath,uri.fsPath)
+      ? vscode.workspace.asRelativePath(uri) : '.',undefined,l10n.t('Current directory'));
     const session = sessionFor(folder);
     const choose = {command: 'zephyrWorkbench.chooseBuild', title: l10n.t('Select build directory')};
     const launch = {command: 'zephyrWorkbench.launch', title: l10n.t('Select launch configuration')};
     const config = Uri.joinPath(folder.uri, '.vscode', 'launch.json');
     const rows = [
-      item(l10n.t('Application'), displayPath(vscode.workspace.asRelativePath(app)), 'project'),
+      item(l10n.t('Application'), directoryFor(app), 'project'),
       item(l10n.t('Board / CPU'), s.setup.board || l10n.t('Awaiting CMake configuration'), 'circuit-board'),
-      item(l10n.t('Build directory'), displayPath(vscode.workspace.asRelativePath(build)), 'folder-opened', choose),
+      item(l10n.t('Build directory'), directoryFor(build), 'folder-opened', choose),
       item(l10n.t('Debug runner'), runner.name || runner.message, 'debug-alt',
         runner.file ? link('runners.yaml', target.runnersFile).command : undefined),
       item(l10n.t('Debug session'), session?.name || l10n.t('Idle'), 'debug', launch)

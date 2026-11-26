@@ -151,7 +151,7 @@ function renderDebugSide(){
   const paused=debugSide.phase==='paused',running=debugSide.phase==='running';
   const stack=paused?'<small>主线程 · 已暂停</small>'+b('main　main.c:'+String(4+debugSide.step),'side:mainframe','stack-frame')+b('bg_thread_main　init.c:2','side:caller','stack-frame'):'<small>'+(running?'暂停后可查看栈帧。':'启动后显示线程和栈帧。')+'</small>';
   el.innerHTML='<div class="side-title">运行和调试</div><div class="side-controls">'+debuggerControls()+'</div>'+
-    sideGroup('target','Zephyr 调试目标',sideLine('应用',ZephyrPathDisplay.path(t.app))+sideLine('开发板',t.board)+sideLine('构建目录',ZephyrPathDisplay.path(t.build))+sideLine('调试运行器',t.runner)+
+    sideGroup('target','Zephyr 调试目标',sideLine('应用',ZephyrPathDisplay.directory(t.app))+sideLine('开发板',t.board)+sideLine('构建目录',ZephyrPathDisplay.directory(t.build))+sideLine('调试运行器',t.runner)+
       '<div class="side-links">'+b('工程配置','side:config','plain')+b('启动配置','side:launch','plain')+'</div>')+
     sideGroup('variables','变量',paused?(debugSide.frame===0?sideLine('counter',debugSide.step===2?'1':debugSide.step===1?'0':'尚未初始化'):'<small>当前栈帧无示例局部变量。</small>'):'<small>暂停时显示局部变量。</small>')+
     sideGroup('watch','监视',paused&&debugSide.frame===0?sideLine('counter',debugSide.step===2?'1':debugSide.step===1?'0':'尚未初始化'):'<small>暂停后可查看表达式。</small>')+sideGroup('stack','调用堆栈',stack)+sideGroup('break','断点','<small>示例 · src/main.c:4</small>')+

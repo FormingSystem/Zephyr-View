@@ -31,7 +31,7 @@ test('the invocation preserves the actual task directory, executable and argumen
     configure:['-S', app, '-B', app+'\\build', '-DBOARD=qemu_cortex_m3', '-DMSG=a "b" c', ''],
     build:['--build', app+'\\build']};
   const invocation = build_invocation({folder:app, plan});
-  assert.equal(build_path_label(app, app), '.');
+  assert.equal(build_path_label(app, app), 'Current directory');
   assert.equal(invocation.cwd, app);
   assert.equal(invocation.executable, plan.executable);
   assert.deepEqual(invocation.configure, plan.configure);

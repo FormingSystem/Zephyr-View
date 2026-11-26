@@ -34,6 +34,14 @@
     return key(label).startsWith(key(base) + '/') ? label.slice(base.length + 1) : label;
   }
 
+  /** A directory caption only. Keep the original value for commands, input fields and selections. */
+  function directoryLabel(value, root, current) {
+    const label = displayPath(value);
+    const relative = relativeLabel(label, root);
+    if (relative !== '.' && relative !== './') return label;
+    return current ?? (globalThis.document?.documentElement?.lang?.startsWith('zh') ? '当前目录' : 'Current directory');
+  }
+
   function displayVariable(name, value, type, host = platform) {
     const isPath = pathVariables.has(name) || type === 'PATH' || type === 'FILEPATH';
     if (typeof value !== 'string' || !isPath) return value;
@@ -41,7 +49,7 @@
     return value.split(/(\\;|;)/).map((part, index) => index % 2 ? part : displayPath(part, host)).join('');
   }
 
-  const api = {path: displayPath, relative: relativeLabel, variable: displayVariable};
+  const api = {path: displayPath, relative: relativeLabel, directory: directoryLabel, variable: displayVariable};
   if (typeof module !== 'undefined') module.exports = api;
   else globalThis.ZephyrPathDisplay = api;
 })();

@@ -2,7 +2,7 @@
 
 const buildPathDisplay = globalThis.ZephyrPathDisplay ?? require('./pathDisplay');
 
-const build_path_label = buildPathDisplay.relative;
+const build_path_label = (value,root) => buildPathDisplay.directory(buildPathDisplay.relative(value,root));
 
 function build_method_field(state) {
   const options = ['west', 'CMake'].map(method => {
@@ -86,7 +86,7 @@ function build_target_row(kind, label, value, display, routes, disabled = false)
   const browse = button(routes.browse, tr('浏览…', 'Browse…'), app ? tr('浏览应用目录', 'Browse application directories') : tr('浏览构建目录', 'Browse build directories'));
   const search = button(routes.search, tr('搜索…', 'Search…'), app ? tr('搜索应用目录', 'Search application directories') : tr('搜索构建目录', 'Search build directories'));
   const path = button(routes.path, tr('输入路径…', 'Enter path…'), app ? tr('输入应用目录路径', 'Enter path to application directory') : tr('输入构建目录路径', 'Enter path to build directory'));
-  return targetFieldRow(label, value, display, browse+search+path);
+  return targetFieldRow(label, value, buildPathDisplay.directory(display), browse+search+path);
 }
 
 function build_disclosure(id, title, content, note = '') {
