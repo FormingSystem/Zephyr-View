@@ -23,6 +23,8 @@ Zephyr message queues copy fixed-size data. Semaphores exchange permits. Analysi
 | Function input and output shared a record and the return arrow pointed toward the callee. | The bundled QEMU capture contains 18 events. The entry to `scale` records `42` and the return to the caller records `84`. Firmware exercises also covered two threads sharing a function, driver return values and tracing disabled. The older 17-event capture retains its original evidence and source mapping. |
 | It was difficult to check proposed C against existing project source before updating. | In the installed extension a native VS Code diff showed the initial sample changing from `42` to `91`. Returning to the graph left the source byte-for-byte intact. Approving the change generated `91`. Changing the graph to `77` during review invalidated the approval and allowed an immediate new review. A hand-edited source can be compared before exporting a separate copy. |
 
+The same design was built with offline CMake and run under QEMU on Arm `mps2/an386` and RISC-V `qemu_riscv32` using Zephyr `25c8f4a23988` and SDK 1.0.1. The two independent captures matched on all 18 events by thread and step, including queue send and receive at `42` and function return at `84`. To reproduce, select either target and build the design with `ZV_TRACE=ON`. [Sample design](../../extension/examples/visual-program/graph.json) · [Expected console capture](../../extension/examples/visual-program/console.txt)
+
 [Interactive exercise and mouse walkthrough](../../extension/guides/visual-program.en.md)
 
 [简体中文](program-designer-details.md) | **English**

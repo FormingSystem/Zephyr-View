@@ -23,6 +23,8 @@
 | 函数的输入和结果共用同一个事件，回程箭头也指向被调用方。 | 内置 QEMU 记录有 18 个事件，`scale` 入口为 `42`，返回调用线程为 `84`。另外验证了两线程共用函数、驱动返回值及跟踪关闭时的行为。旧版 17 事件的记录按原有信息与源码行号回放。 |
 | 更新前难以核对生成代码和实际工程文件。 | 安装版在 VS Code 差异视图中比较将采样初值从 `42` 改为 `91` 的修改。返回设计后源码逐字节相同；确认后才生成 `91`。复核期间若图被改为 `77`，原确认即失效，关闭本次差异后可立即重新审查。含手工修改的源码可查看差异并导出副本。 |
 
+同一份设计还在 Arm `mps2/an386` 和 RISC-V `qemu_riscv32` 上使用离线 CMake 构建并在 QEMU 执行。Zephyr 源码为 `25c8f4a23988`，SDK 为 1.0.1。分别采集的 18 条事件按线程和步骤核对一致，包括队列发送与接收的 `42` 和函数返回的 `84`。可将工程切换到对应目标，启用 `ZV_TRACE=ON` 后复验。[示例设计](../../extension/examples/visual-program/graph.json) · [预期串口记录](../../extension/examples/visual-program/console.txt)
+
 [交互练习与鼠标演示](../../extension/guides/visual-program.md)
 
 **简体中文** | [English](program-designer-details.en.md)
