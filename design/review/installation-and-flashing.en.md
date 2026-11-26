@@ -55,4 +55,10 @@ The screenshots show the installed VS Code extension at 1920 × 1080. [Host tool
 
 To repeat the installation workflow for version 0.5.16, see the [user guide](../../extension/README.en.md).
 
+## Probe and driver list in 0.5.22
+
+Opening the group shows each probe’s executable path and device status. Opening it from Flashing focuses the row for the selected runner. Choose an installation folder, deploy the tool or open vendor guidance in that row. USB enumeration and tool discovery run independently. If a selected executable disappears, the row keeps the selection and offers a way to repair it.
+
+Windows checks covered opening and refreshing the installed view, distinguishing the SEGGER commander from Java’s linker, and downloading dfu-util and running its version command. The VSIX includes Linux USB access rules. Installing system drivers on Windows, installing system rules on Linux and programming physical hardware still require hardware acceptance. [Installed probe list at 1920 × 1080](installed/probes-0.5.22.png)
+
 [简体中文](installation-and-flashing.md) | **English**

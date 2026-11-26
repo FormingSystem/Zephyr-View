@@ -31,6 +31,10 @@
 
 **构建页**　先选 west 或 CMake，再确认应用、开发板与构建目录。点击「配置」或「构建」会列出这一步缺少的条件；点对应操作即可继续。需要核对版本、输入或命令时展开目标下方的相应分区。「命令预览」列出任务实际使用的工作目录、可执行文件和各个参数。含空格的路径仍是一个参数。
 
+**探针与驱动**　在「工作区 → 环境搭建 → 探针与驱动」查看 CMSIS-DAP、ST-LINK、J-Link、USB DFU 和串口。打开列表会识别本机工具和已连接的设备。先看工具名和路径，再看设备名及驱动或访问状态；插拔设备后点击「重新识别」。选择某一行的「选择目录…」可指定已安装的工具或其 `bin` 目录。展开该行可以输入绝对路径或工程相对路径、选择可执行文件或恢复自动识别。烧写页的探针入口会定位到相应行。
+
+支持自动部署的工具在该行提供「下载并部署」。已有厂商安装包可在支持的平台就地运行。Windows 的 ST-LINK 行可从解压的 STSW-LINK009 目录安装驱动；Linux 的 CMSIS-DAP 和 ST-LINK 行可部署 USB 访问规则，完成后重新插拔。标准串口行显示系统端口和访问状态。[ST-LINK 官方驱动](https://www.st.com/en/development-tools/stsw-link009.html) · [pyOCD 探针说明](https://pyocd.io/docs/debug_probes.html)
+
 **固件烧写**　在「构建 → 固件烧写」选择本板支持的烧写工具。默认项来自当前构建的 `zephyr/runners.yaml`。多镜像工程按 `domains.yaml` 的烧写顺序显示，也可选择其中一个镜像。展开产物，核对镜像、设备和命令，再点击「烧写固件」。设备 ID 留空时由运行器选用默认设备。pyOCD 支持扫描探针，支持设备 ID 的其他运行器可输入探针序列号。在纯 CMake 工程中，「使用工程任务」可运行当前文件夹在 `.vscode/tasks.json` 定义的厂商烧写命令。「探针与驱动」用于检查对应工具。[Zephyr 烧写说明](https://docs.zephyrproject.org/latest/develop/west/build-flash-debug.html#flashing-west-flash)
 
 | 入口 | 从哪里开始 | 如何核对结果 |

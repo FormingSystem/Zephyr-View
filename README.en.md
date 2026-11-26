@@ -10,6 +10,8 @@ Download the `.vsix` file from the release. In the VS Code Extensions view, choo
 
 Open **Zephyr Extension** in the Activity Bar. The workbench opens on **Workspace**. Its tabs are **Build**, **Workspace**, **Project configuration** and **Modules**. Workspace shows the environment available to the build process. Build shows the inputs for the next configure alongside the last values recorded by CMake. Select a board to see the detected board DTS. In Project configuration, expand the application's graph and double-click a Kconfig symbol or hardware node to edit it in place. Drag the canvas to pan, use Ctrl + wheel to zoom, then save a copy or write the reviewed changes to the application configuration.
 
+Open **Workspace → Environment setup → Probes and drivers** to see local tool paths and connected devices. Select an existing tool folder or deploy the tool and its supported drivers from the same row.
+
 After selecting a board and CPU on **Build**, use the recommended SDK compiler or choose another local toolchain for this application and board. After configuring, check `CMAKE_C_COMPILER` in the same view.
 
 - [Configuration graph walkthrough in VS Code · 1920×1080](extension/media/guide/configuration-map.gif)
