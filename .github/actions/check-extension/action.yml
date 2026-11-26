@@ -34,6 +34,10 @@ runs:
       shell: bash
       run: |
         args=()
+        if [[ "$RUNNER_OS" == Linux ]]; then
+          ZEPHYR_TEST_CHROME=$(command -v google-chrome)
+          export ZEPHYR_TEST_CHROME
+        fi
         if [[ -n "$WINDOWS_DESKTOP" ]]; then args+=(--windows-desktop "$WINDOWS_DESKTOP"); fi
         "$TEST_PYTHON" tests/native/check_host.py "${args[@]}"
     - name: Build the VSIX from this checkout
