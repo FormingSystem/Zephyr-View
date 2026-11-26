@@ -1,0 +1,6 @@
+board:
+  name: view_lab
+  full_name: View Lab Cortex-M3 teaching board
+  vendor: vnd
+  socs:
+    - name: view_m3

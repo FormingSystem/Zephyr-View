@@ -1,0 +1,14 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/dts-v1/;
+#include <vnd/view-m3.dtsi>
+
+/ {
+	model = "View Lab teaching board";
+	compatible = "vnd,view-lab";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+	};
+};

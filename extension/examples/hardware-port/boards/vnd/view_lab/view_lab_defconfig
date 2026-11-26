@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# The teaching board has no console peripheral.
+CONFIG_CONSOLE=n

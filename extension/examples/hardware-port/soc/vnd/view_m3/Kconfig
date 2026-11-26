@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_VIEW_M3
+	select ARM
+	select CPU_CORTEX_M3

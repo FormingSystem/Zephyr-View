@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_VIEW_LAB
+	select SOC_VIEW_M3

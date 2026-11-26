@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+config ONBOARDING_GREETING
+	bool "Greeting from the local onboarding module"
+	help
+	  Build the example greeting library and print its message at startup.

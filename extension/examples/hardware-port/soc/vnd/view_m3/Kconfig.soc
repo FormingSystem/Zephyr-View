@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config SOC_VIEW_M3
+	bool
+
+config SOC
+	default "view_m3" if SOC_VIEW_M3
