@@ -1,7 +1,7 @@
 'use strict';
 
 const fs = require('node:fs/promises');
-const path = require('node:path');
+const {writeNewProject} = require('./newProject');
 const vscode = require('vscode');
 const {pickDirectory} = require('./fileDialogs');
 const {path:displayPath} = require('./media/pathDisplay');
@@ -11,28 +11,8 @@ const {ThreadDebug} = require('./threadDebug');
 
 const say = (zh,en) => vscode.env.language.startsWith('zh') ? zh : en;
 
-/** Create a fresh child of the selected folder. A concurrent export cannot overwrite an existing project. */
-async function exportDraft(parent, draft) {
-  const files = generate(draft);
-  const project = path.join(parent,'zephyr-threads-'+draft.kind);
-  await fs.mkdir(project);
-  const written = [];
-  try {
-    await fs.mkdir(path.join(project,'src'));
-    for (const [name,content] of Object.entries(files)) {
-      const file = path.join(project,name);
-      await fs.writeFile(file,content,{flag:'wx'});
-      written.push([file,content]);
-    }
-    return project;
-  } catch (error) {
-    for (const [file,content] of written) {
-      if (await fs.readFile(file,'utf8').catch(()=>null) === content) await fs.unlink(file).catch(()=>{});
-    }
-    await fs.rmdir(path.join(project,'src')).catch(()=>{});
-    await fs.rmdir(project).catch(()=>{});
-    throw error;
-  }
+function exportDraft(parent, draft) {
+  return writeNewProject(parent, 'zephyr-threads-'+draft.kind, generate(draft));
 }
 
 class ThreadStudioHost {
