@@ -2,7 +2,7 @@
 
 [简体中文](platform-support.md) | **English**
 
-Open Zephyr Extension from the VS Code Activity Bar, then choose **Workspace → Environment setup → Set up missing components**. To move to another computer, copy the same VSIX and install it from any directory. Choose a compiler, SDK and Python environment compatible with the new host. [Latest release](https://github.com/FormingSystem/zephyr-extension/releases/latest) · [User guide](../../extension/README.en.md)
+Open Zephyr View from the VS Code Activity Bar, then choose **Workspace → Environment setup → Set up missing components**. To move to another computer, copy the same VSIX and install it from any directory. Choose a compiler, SDK and Python environment compatible with the new host. [Latest release](https://github.com/FormingSystem/zephyr-extension/releases/latest) · [User guide](../../extension/README.en.md)
 
 ## First use
 

@@ -27,6 +27,7 @@ async function verify_cmake(tools, directory) {
 exports.run = async function run() {
   const extension = vscode.extensions.getExtension('zephyr-workbench-preview.zephyr-workbench-preview');
   assert.ok(extension, 'The VSIX must be discovered in the isolated profile');
+  assert.equal(extension.packageJSON.displayName, 'Zephyr View');
   const installed = await fs.realpath(extension.extensionPath);
   assert.equal(installed, await fs.realpath(process.env.ZEPHYR_TEST_INSTALLED));
   assert.equal(extension.packageJSON.version, process.env.ZEPHYR_TEST_VERSION);
@@ -45,7 +46,7 @@ exports.run = async function run() {
   await vscode.commands.executeCommand('zephyrWorkbench.probeSupport', 'jlink');
   const tabs = () => vscode.window.tabGroups.all.flatMap(group => group.tabs);
   for (let attempt = 0; attempt < 100; attempt++) {
-    const workbenchTabs = tabs().filter(tab => tab.input instanceof vscode.TabInputWebview && tab.label === 'Zephyr Extension');
+    const workbenchTabs = tabs().filter(tab => tab.input instanceof vscode.TabInputWebview && tab.label === extension.packageJSON.displayName);
     assert.ok(workbenchTabs.length <= 1, 'Probe support should open inside the same workbench');
     if (workbenchTabs.length === 1) {
       const result = {extension: extension.packageJSON.version, vscode: vscode.version,

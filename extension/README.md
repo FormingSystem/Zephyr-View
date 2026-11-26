@@ -1,8 +1,8 @@
-# Zephyr Extension
+# Zephyr View
 
 **简体中文** | [English](README.en.md)
 
-在 VS Code 中使用 west 或 CMake 构建固件，查看开发板、管理模块，编辑 Kconfig 与设备树。在 VS Code 的活动栏打开 **Zephyr Extension** 即可开始配置工程。支持本地工具、离线 SDK 和已有的 west 工作区。
+在 VS Code 中使用 west 或 CMake 构建固件，查看开发板、管理模块，编辑 Kconfig 与设备树。在 VS Code 的活动栏打开 **Zephyr View** 即可开始配置工程。支持本地工具、离线 SDK 和已有的 west 工作区。
 
 工作台和调试侧栏中的本地路径统一使用 `/`，例如 `samples/hello_world`。Windows 的「输入路径」也接受从资源管理器复制的 `\` 写法。
 

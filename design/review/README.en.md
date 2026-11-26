@@ -1,4 +1,4 @@
-# Zephyr Extension design and feature reviews
+# Zephyr View design and feature reviews
 
 [简体中文](README.md) | **English**
 

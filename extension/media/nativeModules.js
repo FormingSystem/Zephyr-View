@@ -83,7 +83,7 @@ function displayModuleState(data){
   model={method:data.method,env:{offline:stored().offline!==false},activeWs:root,localModules:{[appKey()]:mods}};
   render();
   if(!data.folder){
-    $('#main').innerHTML=heading('Zephyr Extension','模块','打开工程后即可读取该工程的模块。','')+panel('工程',wrap(b('打开文件夹…','nativefolder')));
+    $('#main').innerHTML=heading(document.title,'模块','打开工程后即可读取该工程的模块。','')+panel('工程',wrap(b('打开文件夹…','nativefolder')));
   }
 }
 async function moduleAction(action){

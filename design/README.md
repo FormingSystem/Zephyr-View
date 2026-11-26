@@ -1,4 +1,4 @@
-# Zephyr Extension 交互原型
+# Zephyr View 交互原型
 
 **简体中文** | [English](README.en.md)
 

@@ -1,4 +1,4 @@
-# Zephyr Extension 逐项设计与评审
+# Zephyr View 逐项设计与评审
 
 **简体中文** | [English](README.en.md)
 

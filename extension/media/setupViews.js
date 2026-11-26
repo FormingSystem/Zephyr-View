@@ -143,7 +143,7 @@ const setupViews=(()=>{
   function workspace(s){
     if(s.openProbes)group=3;
     const jump=b(tr('定位 west 工作区','Go to west workspace'),'setup:west');
-    return heading(ZephyrPathDisplay.path(s.folder)||'Zephyr Extension',tr('工作区','Workspace'),'',jump)+
+    return heading(ZephyrPathDisplay.path(s.folder)||document.title,tr('工作区','Workspace'),'',jump)+
       discovery_diagnostics(s.discoveryIssues)+discoveryPanel(s.detected,s.folder)+environment(s)+west(s);
   }
   document.addEventListener('click',e=>{

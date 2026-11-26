@@ -1,4 +1,4 @@
-# Zephyr Extension interactive prototype
+# Zephyr View interactive prototype
 
 [简体中文](README.md) | **English**
 

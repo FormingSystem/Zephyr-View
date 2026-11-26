@@ -56,7 +56,8 @@ function documentHtml(view, base, title) {
     .replace('href="configuration-workspace.css"',`href="${asset(shared+'configuration-workspace.css')}"`)
     
     .replace('<body>',`<link rel="stylesheet" href="${asset('workbench.css')}"><body>`)
-    .replace('交互设计稿 · 示例数据','Zephyr Extension')
+    .replace(/<title>[^<]*<\/title>/,'<title>'+title+'</title>')
+    .replace('交互设计稿 · 示例数据',title)
     .replace(/<script src=[\s\S]+?<\/body>/,scripts.map(name=>`<script nonce="${nonce}" src="${asset(name)}"></script>`).join('')+'</body>');
 }
 

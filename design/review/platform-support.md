@@ -2,7 +2,7 @@
 
 **简体中文** | [English](platform-support.en.md)
 
-从 VS Code 活动栏打开 Zephyr Extension，在「工作区 → 环境搭建」点击「补齐缺失组件」。换一台电脑时，可以把同一个 VSIX 复制过去并从任意目录安装。编译器、SDK 和 Python 环境应适配新的宿主系统。[当前发行包](https://github.com/FormingSystem/zephyr-extension/releases/latest) · [中英文使用手册](../../extension/README.md)
+从 VS Code 活动栏打开 Zephyr View，在「工作区 → 环境搭建」点击「补齐缺失组件」。换一台电脑时，可以把同一个 VSIX 复制过去并从任意目录安装。编译器、SDK 和 Python 环境应适配新的宿主系统。[当前发行包](https://github.com/FormingSystem/zephyr-extension/releases/latest) · [中英文使用手册](../../extension/README.md)
 
 ## 首次使用
 

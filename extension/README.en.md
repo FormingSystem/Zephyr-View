@@ -1,8 +1,8 @@
-# Zephyr Extension
+# Zephyr View
 
 [简体中文](README.md) | **English**
 
-Build Zephyr firmware with west or CMake, inspect board targets, manage modules, and edit Kconfig and devicetree in VS Code. Open **Zephyr Extension** in the Activity Bar to set up a workspace.
+Build Zephyr firmware with west or CMake, inspect board targets, manage modules, and edit Kconfig and devicetree in VS Code. Open **Zephyr View** in the Activity Bar to set up a workspace.
 
 Local paths in the workbench and debug sidebar use `/`, as in `samples/hello_world`. On Windows, the path entry fields also accept `\` when pasting from File Explorer.
 

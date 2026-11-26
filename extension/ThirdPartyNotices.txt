@@ -1,9 +1,9 @@
-Zephyr Extension
+Zephyr View
 Copyright 2026 Zephyr Extension contributors
 
 The original code, documentation and design assets of this independent
 extension are licensed under the Apache License, Version 2.0 (LICENSE).
-Zephyr Extension is an independent integration for the Zephyr RTOS and
+Zephyr View is an independent integration for the Zephyr RTOS and
 Visual Studio Code. References to those projects and to Zephyr IDE
 identify the respective products. Their names and marks belong to their
 respective owners.

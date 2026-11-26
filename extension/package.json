@@ -1,6 +1,6 @@
 {
   "name": "zephyr-workbench-preview",
-  "displayName": "Zephyr Extension",
+  "displayName": "Zephyr View",
   "publisher": "zephyr-workbench-preview",
   "description": "Configure Zephyr workspaces, build with west or CMake, and edit Kconfig and devicetree in VS Code.",
   "license": "Apache-2.0",
@@ -28,39 +28,39 @@
   ],
   "contributes": {
     "commands": [
-      {"command": "zephyrWorkbench.probeSupport", "title": "%probeSupport%", "category": "Zephyr"},
+      {"command": "zephyrWorkbench.probeSupport", "title": "%probeSupport%", "category": "Zephyr View"},
       {
         "command": "zephyrWorkbench.open",
         "title": "%open%",
-        "category": "Zephyr"
+        "category": "Zephyr View"
       },
       {
         "command": "zephyrWorkbench.chooseBuild",
         "title": "%chooseBuild%",
-        "category": "Zephyr",
+        "category": "Zephyr View",
         "icon": "$(folder-opened)"
       },
       {
         "command": "zephyrWorkbench.launch",
         "title": "%launch%",
-        "category": "Zephyr",
+        "category": "Zephyr View",
         "icon": "$(debug-start)"
       },
       {
         "command": "zephyrWorkbench.refresh",
         "title": "%refresh%",
-        "category": "Zephyr",
+        "category": "Zephyr View",
         "icon": "$(refresh)"
       },
       {
         "command": "zephyrWorkbench.kconfig",
         "title": "%kconfig%",
-        "category": "Zephyr"
+        "category": "Zephyr View"
       },
       {
         "command": "zephyrWorkbench.show",
         "title": "%show%",
-        "category": "Zephyr"
+        "category": "Zephyr View"
       }
     ],
     "views": {
@@ -107,13 +107,13 @@
       "activitybar": [
         {
           "id": "zephyr-workbench",
-          "title": "Zephyr Extension",
+          "title": "Zephyr View",
           "icon": "media/zephyr-workbench.svg"
         }
       ]
     },
     "configuration": {
-      "title": "Zephyr Extension",
+      "title": "Zephyr View",
       "properties": {
         "zephyrWorkbench.appearance.theme": {
           "type": "string",

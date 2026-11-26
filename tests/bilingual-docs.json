@@ -1,10 +1,10 @@
 {
-  "README.md": "7bb76d4964497292fbe811fc23d3083ea84c81c1a047c0fa5c411f1b617abea1",
-  "design/README.md": "04aba7f85c5adc0b8c8c7032f70b2354ed928f29077df0d8aaa46343a2f7d8f2",
+  "README.md": "efe53b70f882d951d73030471c66323ba78bdb3dec30bfacedd5615003b00d3a",
+  "design/README.md": "de72bfca10b95d7ef811fd051a78e899975010cd7d4afaf18ae580016455f44b",
   "design/acceptance-0.2.0.md": "751a07079270856c708ce1709ef38a32d458697ea7dfbb437e0fac33e906b1cb",
   "design/interaction.md": "3b53f4d1bd9d1f06d0be6766c1207f59a1e8f51375768434a0c87dc0c9562cc3",
   "design/review-0.5/README.md": "6877ae6871d393f77d3bb8203abd906e58e4267a5a14ceddaabbb1f81c2ab43f",
-  "design/review/README.md": "9f550e25c983a584e0e694b0aa54bdd8d0cda15795ee86dbcbf7f87382b8675f",
+  "design/review/README.md": "f93fa2a3e97ad2e025c074a795d5341d51490102627f382e9ffdd4907ca65f54",
   "design/review/adaptive-builds.md": "0b4f3278c51ffdecbfc5a1dbd6bf792626d88f88bbd1dbb52f3234fbf42f7c04",
   "design/review/catalog-coverage.md": "4ec4072f0ef7ed95c2f78d4e57a21142ffefaed008e17952e08302faa624a107",
   "design/review/configuration-modules.md": "b58014da1bc70bc23fc262b564e30dec331b3e70a15d0dfdb9ecd58e97f2e469",
@@ -13,10 +13,10 @@
   "design/review/local-selection.md": "14a8535fe25467716180f435f2cf5e739b47d6c65dc6658c385204913af4847a",
   "design/review/module-refinement.md": "ac9239ec4f9fca713f7dbec0ad570d77ec13d152bb1fab04e39da19b8a0d7610",
   "design/review/multi-board-build.md": "ef5921ef7153999ceace47d682dd7aecd04ca2da5827a02f4b5cfd13dfc6f5c5",
-  "design/review/platform-support.md": "d858fe899a2cef51aec1b465d8b4af929889484a103bc36aa4790000bab1f5c3",
+  "design/review/platform-support.md": "4c29905a1a36c759926899721a511f4f812fbb5c48a71151ac70b68f400901e9",
   "design/review/prototype-layout.md": "91cc57d1fde074cb97d30a693f5d2b2bf3aefa3e06e6ce4543cb434d26bf2577",
   "design/review/standard-adaptation.md": "6f47e67f4bd54d9208e7b2e602a54238005d18c30f0288621769cf512cf55351",
   "design/review/thread-analysis.md": "b8a4c7ace6336893534873a0b9cfdd1a6bb8da8ffb05a1c806b6ae1b5940d446",
   "design/review/workbench-debug.md": "66ad90696ea4dcf2a8cd5021f1ecea4d0298187de4010ba3d857c243d72e4fe9",
-  "extension/README.md": "09ee3bfae989d2dd93451992aab9e7f76940b2a958d3b2b51daeb037ec6abc45"
+  "extension/README.md": "0cda926e00d0ac1379a863e7a1d4b77df86084daf26c4427b7fed5218c6cb2f6"
 }
