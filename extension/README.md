@@ -19,6 +19,8 @@
 
 **换电脑或换目录**　在 VS Code 的扩展视图选择「从 VSIX 安装…」，从任意目录选安装包。工具在自定义目录时，打开「主机工具 → 工具搜索目录…」，选择存放可执行文件的文件夹。选在工程内的目录会作为相对路径写入工作区设置，工程外的选择仅在当前环境保存。进入「源码与工具链 → 获取源码…」可以选择解压到任意位置的 Zephyr，或选择官方版本，按当前构建方式下载源码或初始化 west 工作区。跨系统搬迁时，为目标系统准备适用的 SDK，重新创建 Python 虚拟环境和构建目录。[Zephyr 官方安装说明](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) · [Python 虚拟环境](https://docs.python.org/3/library/venv.html#how-venvs-work)
 
+从外部安装 SDK、添加开发板或移动模块目录后，可在「工作区 → 环境搭建」点击「重新检测」，立即更新识别结果。重复打开页面会复用近期的查询结果，同步模块时仍会重新核对本地提交。
+
 **离线识别模块**　在「构建」选择 CMake，打开「工作区」查看扫描到的本地模块。扩展识别 `zephyr/module.yml` 或 `zephyr/module.yaml`，也识别同时含有 `zephyr/CMakeLists.txt` 和 `zephyr/Kconfig` 的模块。模块放在自定义位置时，可在「模块」页选择其目录。勾选工程需要的模块，再配置构建。配置成功后，「模块」页会标明哪些本地模块已纳入当前构建，包括工程自行引入的模块。可用构建目录中的 `zephyr_modules.txt` 核对实际路径。[Zephyr 官方模块规则](https://docs.zephyrproject.org/latest/develop/modules.html#without-west)
 
 **使用 west 清单**　构建、工程配置图和模块列表共用当前工作区的有效清单。导入项无法解析时，界面会标出范围。批量同步保留每个模块的结果，修复访问或版本问题后可重试剩余项。
