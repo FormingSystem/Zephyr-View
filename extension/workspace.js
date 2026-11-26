@@ -6,7 +6,7 @@ const {findProgram} = require('./hostExecutables');
 const {overrides, programs} = require('./environment');
 const {searchDirectories} = require('./toolDirectories');
 const yaml = require('js-yaml');
-const {importsProjects} = require('./effectiveManifest');
+const {importsProjects, manifestInputs} = require('./effectiveManifest');
 const {containingCheckout, manifestCheckout, sameCheckout} = require('./checkout');
 const {hasCurrentBuild, hasFile, readText, readTarget, resolvePath} = require('./target');
 
@@ -39,7 +39,8 @@ async function parseManifest(folder, root) {
   const config = root && vscode.Uri.joinPath(root, '.west', 'config');
   let uri,repository;
   try {
-    if (config) ({uri,repository} = manifestLocation(root, await readText(config)) || {});
+    const configText = config ? await readText(config) : '';
+    if (config) ({uri,repository} = manifestLocation(root, configText) || {});
     else {repository = folder; uri = vscode.Uri.joinPath(folder, 'west.yml');}
     if (!uri) throw Error(vscode.l10n.t('The [manifest] section must specify path.'));
     const source = await readText(uri);
@@ -67,7 +68,8 @@ async function parseManifest(folder, root) {
           url:project.url||(remote?remote.replace(/\/$/,'')+'/'+(project['repo-path']||project.name):''),
           revision:String(project.revision??manifest.defaults?.revision??'master')};
       });
-    return {root, config, uri, repository, projects, diagnostics, invalid:diagnostics.length>0, hasImports:importsProjects(manifest)};
+    return {root, config, uri, repository, projects, diagnostics, invalid:diagnostics.length>0,
+      hasImports:importsProjects(manifest), inputs:root && manifestInputs(manifest,source,configText)};
   } catch (error) {
     const diagnostics = [{kind:uri ? 'manifestFile' : 'westConfig',path:(uri || config).fsPath,message:error.message}];
     return {root, config, uri, repository, projects:[], invalid:true,diagnostics};
