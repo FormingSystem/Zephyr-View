@@ -1,5 +1,5 @@
 {
-  "README.md": "43588037c4d43bff0489512f1b5eb23f9a31401f107453bcbcfa43336f329230",
+  "README.md": "921e5df373ccbfbcaa844b74ffadb3d583f25bf9dbcf6bc1f1bff07fb78f7e7b",
   "design/README.md": "de72bfca10b95d7ef811fd051a78e899975010cd7d4afaf18ae580016455f44b",
   "design/acceptance-0.2.0.md": "751a07079270856c708ce1709ef38a32d458697ea7dfbb437e0fac33e906b1cb",
   "design/interaction.md": "3b53f4d1bd9d1f06d0be6766c1207f59a1e8f51375768434a0c87dc0c9562cc3",
@@ -17,6 +17,6 @@
   "design/review/prototype-layout.md": "91cc57d1fde074cb97d30a693f5d2b2bf3aefa3e06e6ce4543cb434d26bf2577",
   "design/review/standard-adaptation.md": "6f47e67f4bd54d9208e7b2e602a54238005d18c30f0288621769cf512cf55351",
   "design/review/thread-analysis.md": "b8a4c7ace6336893534873a0b9cfdd1a6bb8da8ffb05a1c806b6ae1b5940d446",
-  "design/review/workbench-debug.md": "66ad90696ea4dcf2a8cd5021f1ecea4d0298187de4010ba3d857c243d72e4fe9",
-  "extension/README.md": "a64cbb56e4ff1e4fe5cd761bfdce2cb01e8feba498f579393c8bd625380ad0ad"
+  "design/review/workbench-debug.md": "71e87a7c88715b012751ad8c534a480a03fbc9b2808f038e8f0d6953ce81c5dd",
+  "extension/README.md": "f5a88663d979dce89153f7791a4ff12e40873672ba1ed940fe319910ae12e0b7"
 }
