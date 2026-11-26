@@ -48,7 +48,7 @@ function documentHtml(view, base, title) {
   const scripts=['fuzzy.js','pathDisplay.js','vendor/js-yaml/js-yaml.min.js','appearance.js','build-context.js','configuration-inputs.js','build-panel.js','toolchain-controls.js','configuration-tree.js','configuration-workspace.js','module-identification.js','module-pagination.js','module-lists.js','module-sources.js','probe-list.js']
     .map(name=>shared+name).concat(['nativeModules.js','kconfigFields.js','fragmentFields.js','deviceTreeDraft.js','studioMap.js','studioView.js','discoveryDiagnostics.js','probeControls.js','setupViews.js','targetPicker.js','buildControls.js','flashPlan.js','flashPanel.js','build_page.js','workbench.js']);
   return template.replace('lang="zh-CN"', `lang="${vscode.env.language.startsWith('zh')?'zh-CN':'en'}" data-path-platform="${process.platform}"`).replace('<title>',`<meta http-equiv="Content-Security-Policy" content="${policy}"><title>`)
-    .replace('href="zephyr-view-mark.svg"',`href="${asset(shared+'zephyr-view-mark.svg')}"`)
+    .replace('href="marketplace-icon.png"',`href="${asset('marketplace-icon.png')}"`)
     .replace('href="appearance.css"',`href="${asset(shared+'appearance.css')}"`)
     .replace('href="workbench.css"',`href="${asset(shared+'workbench.css')}"`)
     .replace('href="module-lists.css"',`href="${asset(shared+'module-lists.css')}"`)

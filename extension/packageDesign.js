@@ -9,3 +9,4 @@ for(const name of ['index.html','zephyr-view-mark.svg','fuzzy.js','pathDisplay.j
 }
 for (const name of ['flashPanel.js','flashPlan.js'])
   fs.copyFileSync(path.join(source,name),path.join(__dirname,'media',name));
+fs.copyFileSync(path.join(source,'marketplace-icon.png'),path.join(__dirname,'media','marketplace-icon.png'));

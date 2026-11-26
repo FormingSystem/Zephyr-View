@@ -14,7 +14,7 @@
     "baseContentUrl": "https://github.com/FormingSystem/zephyr-extension/blob/main/extension",
     "baseImagesUrl": "https://raw.githubusercontent.com/FormingSystem/zephyr-extension/main/extension"
   },
-  "version": "0.5.23",
+  "version": "0.5.24",
   "engines": {
     "vscode": "^1.85.0"
   },
