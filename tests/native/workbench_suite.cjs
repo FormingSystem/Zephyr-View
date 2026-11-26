@@ -27,11 +27,12 @@ async function verify_cmake(tools, directory) {
 exports.run = async function run() {
   const extension = vscode.extensions.getExtension('zephyr-workbench-preview.zephyr-workbench-preview');
   assert.ok(extension, 'The VSIX must be discovered in the isolated profile');
-  assert.equal(await fs.realpath(extension.extensionPath), await fs.realpath(process.env.ZEPHYR_TEST_INSTALLED));
+  const installed = await fs.realpath(extension.extensionPath);
+  assert.equal(installed, await fs.realpath(process.env.ZEPHYR_TEST_INSTALLED));
   assert.equal(extension.packageJSON.version, process.env.ZEPHYR_TEST_VERSION);
   for (const name of Object.keys(extension.packageJSON.dependencies || {})) {
     const resolved = require.resolve(name, {paths: [extension.extensionPath]});
-    assert.ok(path.relative(extension.extensionPath, resolved).startsWith('node_modules' + path.sep),
+    assert.ok(path.relative(installed, resolved).startsWith('node_modules' + path.sep),
       name + ' must resolve inside the installed VSIX');
   }
   const {target} = await extension.activate();
