@@ -7,7 +7,7 @@
   const root = document.getElementById('designer');
   const status = document.getElementById('feedback');
   let editor, playback, graph, version, submitted, pending, queuedAction;
-  let trusted = false, attached = false;
+  let trusted = false, attached = false, text_invalid = false;
 
   function action(name,fields={}) {
     if (submitted || pending) queuedAction = {name,fields};
@@ -16,7 +16,7 @@
   const toolbar = document.getElementById('commands');
   const labels = {new:t('新建设计','New design'),demo:t('播放固件示例','Play firmware example'),save:t('保存','Save'),copy:t('另存为…','Save as…'),open:t('打开设计…','Open design…'),
     export:t('导出新应用…','Export application…'),apply:t('审查源码更新…','Review source changes…'),
-    window:t('移至新窗口','Move to new window'),text:t('打开 JSON','Open JSON')};
+    liveSource:t('实时 C 源码图','Live C source diagram'),window:t('移至新窗口','Move to new window'),text:t('并排编辑 JSON','Edit JSON beside')};
   for (const [key,label] of Object.entries(labels)) {
     const button = document.createElement('button');
     button.type = 'button'; button.textContent = label; button.dataset.command = key;
@@ -25,7 +25,7 @@
   }
   function disabled(key, value) {toolbar.querySelector('[data-command="'+key+'"]').disabled=Boolean(value);}
   function update_actions() {
-    const invalid = !editor || editor.diagnostics.length > 0;
+    const invalid = text_invalid || !editor || editor.diagnostics.length > 0;
     disabled('export',!trusted || invalid);
     disabled('apply',!trusted || !attached || invalid);
     const reason = invalid ? t('先修复上方的设计错误。','Correct the design errors above first.') :
@@ -35,7 +35,7 @@
       t('打开已导出的 design.zephyr-program.json 后可审查更新。','Open an exported design.zephyr-program.json to review updates.') : '');
   }
   function flush() {
-    if (submitted) return;
+    if (submitted || text_invalid) return;
     if (pending) {
       submitted = pending; pending = undefined;
       host.postMessage({action:'edit', graph:submitted, version});
@@ -44,6 +44,7 @@
     }
   }
   function change(next) {
+    if (text_invalid) return;
     graph = next;
     update_actions();
     playback?.sync();
@@ -54,14 +55,27 @@
     editor = ZephyrProgramView.mount(root,{language:zh?'zh-CN':'en',graph:next,onChange:change,
       openSource:trusted && attached ? (file,step,protocol)=>action('source',{file,step,protocol}) : undefined});
     playback = ZephyrProgramPlayback.mount(editor.traceRoot,{language:zh?'zh-CN':'en',
-      model:()=>graph,onEvent:event=>editor.showTrace(event),requestFile:()=>action('trace'),
+      model:()=>graph,onEvent:event=>editor.showTrace(event),
+      onRecords:(data,position,seekTo)=>editor.showRecords(data,position,seekTo),requestFile:()=>action('trace'),
       requestFollow:()=>action('follow'), requestStop:()=>action('stopFollow')});
   }
+  function incomplete(version_number, message) {
+    version=version_number; submitted=pending=queuedAction=undefined;
+    text_invalid=true; root.inert=true; playback?.pause();
+    update_actions();
+    status.textContent=(editor ? t('暂时显示上次有效的图。','Showing the last valid diagram. ') : '')+message;
+  }
+
   function receive(data) {
+    text_invalid=false; root.inert=false;
     version = data.version;
     trusted=data.trusted; attached=data.attached;
     if (submitted && !data.force && JSON.stringify(submitted)===JSON.stringify(data.graph)) {
       submitted=undefined; flush(); return;
+    }
+    if (editor && !editor.diagnostics.length && !submitted) {
+      const issue = ZephyrProgramView.bounded(data.graph) ? ZephyrProgramModel.validate(data.graph)[0] : {field:'JSON',code:'size'};
+      if (issue) return incomplete(data.version,issue.field+' · '+issue.code);
     }
     const interrupted = Boolean(submitted || pending);
     submitted=pending=queuedAction=undefined;
@@ -75,11 +89,7 @@
   }
   window.addEventListener('message',({data})=>{
     if (data?.type==='document') receive(data);
-    if (data?.type==='invalid') {
-      version=data.version; submitted=pending=queuedAction=undefined; graph=undefined;
-      playback?.dispose();editor?.dispose();playback=editor=undefined;
-      root.replaceChildren(); update_actions(); status.textContent=data.message;
-    }
+    if (data?.type==='invalid') incomplete(data.version,data.message);
     if (data?.type==='follow' && playback) playback.follow(data.text,data.options);
     if (data?.type==='stopped' && playback) playback.stopFollowing();
     if (data?.type==='trace' && playback) {

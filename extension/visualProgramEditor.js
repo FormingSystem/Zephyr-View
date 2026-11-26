@@ -55,8 +55,8 @@ function replaceDocument(document, text) {
 function editorHtml(view, root) {
   const nonce = randomBytes(20).toString('hex');
   const asset = name => view.asWebviewUri(Uri.joinPath(root,'threadStudio',name));
-  const scripts = ['model','programModel','ui','programFlow','programAuthoring','programReview','programCanvas','programInspector','programView','programTrace','programPlayback','programEditor'];
-  const styles = ['programView','programPlayback','programEditor'];
+  const scripts = ['model','programModel','ui','programFlow','programAuthoring','programReview','programDiagrams','programCanvas','programTypeEditor','programInspector','programView','programTrace','programPlayback','programEditor'];
+  const styles = ['programView','programTypeEditor','programPlayback','programEditor'];
   return `<!doctype html><html lang="${zh()?'zh-CN':'en'}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${view.cspSource} data:; style-src ${view.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'">
@@ -88,10 +88,18 @@ class VisualProgramEditor {
     return this.create(model.starter());
   }
 
-  async demo() {
+  async recorded_example(design, capture) {
     const read = async name => Buffer.from(await workspace.fs.readFile(Uri.joinPath(this.recording,name))).toString('utf8');
-    const [graph,log] = await Promise.all([read('graph.json'),read('console.txt')]);
+    const [graph,log] = await Promise.all([read(design),read(capture)]);
     return this.create(decode(graph), log);
+  }
+
+  async new_design() {
+    const starter = {label:say('空白程序','Blank program'),description:'main'};
+    const flags = {label:say('枚举与位标志','Enums and bit flags'),description:'Status.ready · Status.alarm'};
+    const choice = await window.showQuickPick([starter,flags],{title:say('新建设计','New design')});
+    if (choice === starter) return this.create(model.starter());
+    if (choice === flags) return this.recorded_example('flags.zephyr-program.json','flags.console.txt');
   }
 
   async create(graph, log) {
@@ -109,6 +117,14 @@ class VisualProgramEditor {
   }
 
   show(uri) { return commands.executeCommand('vscode.openWith',uri,viewType,{preview:false}); }
+
+  edit_text_beside(uri) {
+    const existing = window.tabGroups.all.find(group => group.tabs.some(tab =>
+      tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === uri.toString()));
+    return commands.executeCommand('vscode.openWith',uri,'default',{
+      viewColumn:existing?.viewColumn ?? vscode.ViewColumn.Beside, preview:false
+    });
+  }
 
   async pick() {
     const uri = await pickFile({title:say('打开可视化程序设计','Open a visual program'),defaultUri:this.target.folder()?.uri,
@@ -142,18 +158,21 @@ class VisualProgramEditor {
       if (m.action === 'stopFollow') {follower.stop();return send({type:'stopped'});}
       if (m.action === 'edit') {
         if (m.version !== document.version) return update(true);
+        // Reject queued canvas edits while the text editor holds an incomplete document.
+        try { decode(document.getText()); } catch { return update(true); }
         const text = graphText(m.graph);
         decode(text);
         if (text === document.getText() || !await replaceDocument(document,text)) return update(true);
         return;
       }
       if (!panel.active) return;
-      if (m.action === 'text') return commands.executeCommand('vscode.openWith',document.uri,'default');
+      if (m.action === 'text') return this.edit_text_beside(document.uri);
+      if (m.action === 'liveSource') return commands.executeCommand('zephyrWorkbench.liveSource');
       if (m.action === 'save') return commands.executeCommand('workbench.action.files.save');
       if (m.action === 'copy') return commands.executeCommand('workbench.action.files.saveAs');
       if (m.action === 'open') return this.pick();
-      if (m.action === 'new') return this.create(model.starter());
-      if (m.action === 'demo') return this.demo();
+      if (m.action === 'new') return this.new_design();
+      if (m.action === 'demo') return this.recorded_example('graph.json','console.txt');
       if (m.action === 'window') return commands.executeCommand('workbench.action.moveEditorToNewWindow');
       if (!workspace.isTrusted) return;
       if (m.action === 'trace' || m.action === 'follow') return this.readTrace(send,follower,m.action==='follow',()=>!disposed);
