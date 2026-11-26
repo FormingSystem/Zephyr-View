@@ -1,0 +1,112 @@
+name: Publish a tested GitHub Release to VS Code Marketplace
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published GitHub Release tag (vX.Y.Z)
+        type: string
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: marketplace-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Verify release, native test results and VSIX
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: python
+        run: |
+          import base64
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import zipfile
+          from pathlib import Path
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          tag = os.environ["RELEASE_TAG"]
+          if not re.fullmatch(r"v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", tag, re.ASCII):
+              raise SystemExit("Enter a stable release tag in vX.Y.Z format.")
+
+          def api(endpoint):
+              return json.loads(subprocess.check_output(["gh", "api", f"repos/{repo}/{endpoint}"]))
+
+          release = api(f"releases/tags/{tag}")
+          if release["tag_name"] != tag or release["draft"] or release["prerelease"] or not release["published_at"]:
+              raise SystemExit("Publish the stable GitHub Release first.")
+          ref = api(f"git/ref/tags/{tag}")["object"]
+          while ref["type"] == "tag":
+              ref = api("git/tags/" + ref["sha"])["object"]
+          if ref["type"] != "commit":
+              raise SystemExit("The release tag must identify a commit.")
+          commit = ref["sha"]
+          version = tag[1:]
+          filename = f"zephyr-extension-{version}.vsix"
+          asset = next((a for a in release["assets"] if a["name"] == filename), None)
+          if not asset or not re.fullmatch(r"sha256:[a-f0-9]{64}", asset.get("digest") or ""):
+              raise SystemExit(f"Missing release asset or SHA-256 digest: {filename}")
+
+          hosts = {"ubuntu-22.04", "ubuntu-24.04", "windows-2022", "windows-11-arm", "macos-15", "macos-15-intel"}
+          required_jobs = {f"hosted ({host})" for host in hosts}
+          runs = api(f"actions/workflows/native-platforms.yml/runs?head_sha={commit}&event=release&per_page=100")
+          trusted_branches = {os.environ["DEFAULT_BRANCH"], tag}
+          expected_receipt = {"sha": commit, "tag": tag, "name": filename, "releaseId": release["id"],
+                              "assetId": asset["id"], "digest": asset["digest"], "size": asset["size"]}
+          for run in runs["workflow_runs"]:
+              if run["head_repository"]["full_name"] != repo or run["head_branch"] not in trusted_branches:
+                  continue
+              if run["conclusion"] != "success":
+                  continue
+              jobs = api(f"actions/runs/{run['id']}/jobs?filter=latest&per_page=100")
+              passed = {job["name"] for job in jobs["jobs"] if job["conclusion"] == "success"}
+              if not required_jobs <= passed:
+                  continue
+              directory = Path(f"result-{run['id']}")
+              command = ["gh", "run", "download", str(run["id"]), "--repo", repo, "--name",
+                         "verified-release-vsix", "--dir", str(directory)]
+              if subprocess.run(command).returncode:
+                  continue
+              receipt = json.loads((directory / "verified-release-vsix.json").read_text(encoding="utf-8"))
+              if all(receipt.get(key) == value for key, value in expected_receipt.items()):
+                  print("Verified native platform checks and release asset:", run["html_url"])
+                  break
+          else:
+              raise SystemExit(f"No successful six-platform release check for {tag} with matching VSIX digest.")
+
+          subprocess.run(["gh", "release", "download", tag, "--repo", repo, "--pattern", filename], check=True)
+          digest = hashlib.sha256(Path(filename).read_bytes()).hexdigest()
+          if asset["digest"] != "sha256:" + digest:
+              raise SystemExit("The downloaded VSIX differs from the GitHub Release digest.")
+          entry = api(f"contents/extension/package.json?ref={commit}")
+          manifest = json.loads(base64.b64decode(entry["content"]))
+          with zipfile.ZipFile(filename) as archive:
+              packaged = json.loads(archive.read("extension/package.json"))
+          expected = {"name": manifest["name"], "publisher": manifest["publisher"], "version": version}
+          if any(source.get(key) != value for source in (manifest, packaged) for key, value in expected.items()):
+              raise SystemExit("The release tag, repository manifest and packaged identity must agree.")
+          print(f"Verified {expected['publisher']}.{expected['name']} {version} SHA-256 {digest}")
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              print("VERIFIED_VSIX=" + filename, file=env)
+      - name: Publish the verified VSIX using Marketplace Trusted Publishing
+        run: npx --yes --package=@vscode/vsce@4.1.1 -- vsce publish --oidc --packagePath "$VERIFIED_VSIX"
