@@ -23,6 +23,18 @@
 
 SDK 按工程源码的 `SDK_VERSION` 推荐版本，再按该发布实际提供的宿主系统和架构筛选。Zephyr 的当前入门指南面向 Ubuntu 24.04 LTS 及以后版本、Apple Silicon Mac。Ubuntu 22.04 和 Intel Mac 用户应按所用 Zephyr 版本选择有兼容工具链的组合。[Zephyr 官方安装要求](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) · [官方 SDK 发布附件](https://github.com/zephyrproject-rtos/sdk-ng/releases) · [Windows App Installer 与 WinGet](https://learn.microsoft.com/en-us/windows/package-manager/winget/)
 
+## 在 GitHub 编写双语发布说明
+
+正式版和预发布版都在同一个版本页提供「简体中文」和「English」两个折叠区。请为同一版本准备两份 UTF-8 Markdown 正文，逐项核对改动、安装步骤、验证结果和已知限制。两份正文使用同一版本号、命令和附件链接。
+
+在仓库根目录运行下列命令，将文件名换成本次发布使用的路径。
+
+```sh
+python tools/release_notes.py --zh notes.zh.md --en notes.en.md --output release.md
+```
+
+把生成的 `release.md` 内容粘贴到 GitHub 发布编辑器，在 **Preview** 中分别展开两种语言检查排版。使用 GitHub CLI 时，通过 `--notes-file release.md` 将同一份说明传给 `gh release create` 或 `gh release edit`。
+
 ## 发布包验证
 
 两台系统安装的是同一份 0.5.17。SHA-256 为 `ba3f65f214c6342540179b14adb92a72ffe23d9e702aa846ed6c222535390fba`。包内文本已检查开发目录、用户目录和构建机工具路径。测试将 VSIX 搬到含空格和中文的目录，用空白配置启动 VS Code，检查工作台、扩展内置依赖，以及在另一目录调用 CMake 和 Ninja 的实际构建结果。

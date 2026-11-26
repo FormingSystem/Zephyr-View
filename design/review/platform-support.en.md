@@ -23,6 +23,18 @@ Open Zephyr Extension from the VS Code Activity Bar, then choose **Workspace →
 
 The recommended SDK version comes from the checkout’s `SDK_VERSION`. The selector filters the assets actually published for that release by host OS and architecture. The Zephyr getting-started guide targets Ubuntu 24.04 LTS and later, and Apple Silicon Macs. On Ubuntu 22.04 or Intel Macs, choose a compatible toolchain for the Zephyr version in use. [Zephyr installation requirements](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) · [Official SDK release assets](https://github.com/zephyrproject-rtos/sdk-ng/releases) · [Windows App Installer and WinGet](https://learn.microsoft.com/en-us/windows/package-manager/winget/)
 
+## Writing bilingual GitHub release notes
+
+Each stable release and prerelease has one version page with two collapsible sections, **简体中文** and **English**. Write the notes for that version in two UTF-8 Markdown files. Check that the changes, installation steps, test results and known limitations agree, including version numbers, commands and asset links.
+
+From the repository root, run the following command with the file paths for this release.
+
+```sh
+python tools/release_notes.py --zh notes.zh.md --en notes.en.md --output release.md
+```
+
+Paste the contents of `release.md` into the GitHub release editor. In **Preview**, expand each language and check the formatting. With the GitHub CLI, pass the same file to `gh release create` or `gh release edit` using `--notes-file release.md`.
+
 ## Release package verification
 
 Both test systems installed the same 0.5.17 VSIX, SHA-256 `ba3f65f214c6342540179b14adb92a72ffe23d9e702aa846ed6c222535390fba`. The checks scanned packaged text for development directories, user directories and tool paths from the build machine. The test moved the VSIX to a directory with spaces and Chinese characters, launched VS Code with an empty profile, opened the workbench, checked the bundled dependencies and used CMake and Ninja to build in a different directory.
