@@ -13,31 +13,54 @@ function repositoryURL(url) {
   if(/^git@[\w.-]+:[\w./-]+$/.test(url))return true;
   try {const u=new URL(url);return ['https:','ssh:'].includes(u.protocol)&&!!u.hostname&&!u.password&&(u.protocol==='ssh:'||!u.username);}catch{return false;}
 }
-async function stat(file){try{return await fs.stat(file);}catch(e){if(e.code==='ENOENT')return;throw e;}}
-async function metadata(dir,contained=false){
+async function stat(file,options){try{return await fs.stat(file,options);}catch(e){if(e.code==='ENOENT')return;throw e;}}
+async function moduleEntry(dir,contained=false){
   async function available(name){
     const file=path.join(dir,name);
-    const info=await stat(file);
+    const info=await stat(file,{bigint:true});
     if(!info||!contained)return info;
     const relative=path.relative(await fs.realpath(dir),await fs.realpath(file));
     return relative==='..'||relative.startsWith('..'+path.sep)||path.isAbsolute(relative)?undefined:info;
   }
   for(const name of ['zephyr/module.yml','zephyr/module.yaml']){
-    const file=path.join(dir,name),info=await available(name);
+    const info=await available(name);
     if(!info)continue;
     if(!info.isFile()||info.size>1048576)throw Error('无效的模块描述文件');
-    return {file:name,yaml:await fs.readFile(file,'utf8')};
+    return {file:name,info};
   }
   if((await available('zephyr/CMakeLists.txt'))?.isFile()&&(await available('zephyr/Kconfig'))?.isFile())return {legacy:true};
   throw Error('该目录没有 Zephyr 模块入口。');
 }
-async function localModule(dir,contained=false) {
-  const record=await metadata(dir,contained);
-  const meta=record.file ? yaml.load(record.yaml,{schema:yaml.JSON_SCHEMA}) : {};
+async function metadata(dir){
+  const entry=await moduleEntry(dir);
+  return entry.file ? {file:entry.file,yaml:await fs.readFile(path.join(dir,entry.file),'utf8')} : {legacy:true};
+}
+
+// Only compact names and verified commit IDs survive a refresh. Old projects give way to recent ones.
+let statusCache=new Map();
+function clearStatusCache(){statusCache=new Map();}
+function remember(cache,dir,record){
+  cache.delete(dir);
+  cache.set(dir,record);
+  if(cache.size>512)cache.delete(cache.keys().next().value);
+}
+async function moduleName(dir,entry,cache){
+  if(!entry.file)return path.basename(dir);
+  const {dev,ino,size,mtimeNs,ctimeNs}=entry.info;
+  const version=cache && [entry.file,dev,ino,size,mtimeNs,ctimeNs].join(':');
+  const saved=cache?.get(dir);
+  if(saved && saved.version===version)return saved.name;
+  const meta=yaml.load(await fs.readFile(path.join(dir,entry.file),'utf8'),{schema:yaml.JSON_SCHEMA});
   if (!meta || typeof meta!=='object' || Array.isArray(meta)) return;
   const name=meta.name??path.basename(dir);
   if (typeof name!=='string' || !name.trim() || /[\r\n\x00]/.test(name)) return;
-  return {name,path:await fs.realpath(dir),evidence:record.file||'zephyr/CMakeLists.txt + zephyr/Kconfig'};
+  if(cache)remember(cache,dir,{version,name});
+  return name;
+}
+async function localModule(dir,contained=false) {
+  const entry=await moduleEntry(dir,contained);
+  const name=await moduleName(dir,entry);
+  if(name)return {name,path:await fs.realpath(dir),evidence:entry.file||'zephyr/CMakeLists.txt + zephyr/Kconfig'};
 }
 function git(s,cwd,args){return exec(s.tools.git||'git',['-c','core.hooksPath='+ (process.platform==='win32'?'NUL':'/dev/null'),...args],
   {cwd,windowsHide:true,maxBuffer:8*1024*1024,timeout:120000,env:{...process.env,GIT_TERMINAL_PROMPT:'0'}}).then(r=>r.stdout.trim());}
@@ -87,34 +110,52 @@ async function verifyParent(root,dir){
   const resolved=path.relative(await fs.realpath(root),await fs.realpath(parent));
   if(resolved==='..'||resolved.startsWith('..'+path.sep)||path.isAbsolute(resolved))throw Error('检出路径指向工作区以外的位置。');
 }
-async function checkout(s,entry){
+// Only a Git-verified detached HEAD is reusable. Git itself resolves branches, tags and worktrees.
+async function matchesDetachedHead(gitDir,head){
+  const file=path.join(gitDir,'HEAD');
+  const info=await fs.lstat(file).catch(()=>undefined);
+  return info?.isFile() && info.size<=42 && (await fs.readFile(file,'utf8').catch(()=>'')).trim()===head;
+}
+function revisionStatus(head,required,exists){
+  return {head,required,objects:[head,...(exists?[required]:[])],status:required?(required===head?'已同步':'版本不同'):'已下载 · 要求待核对'};
+}
+async function checkout(s,entry,cache){
   const root=rootOf(s);
-  const dir=entry.kind==='local'?entry.path:path.resolve(root,entry.checkout||entry.path||entry.name);
+  const dir=path.resolve(root,entry.kind==='local'?entry.path:entry.checkout||entry.path||entry.name);
   if(entry.kind==='local') {
-    try {if(await localModule(dir))return {status:'本地已识别'};}catch{}
+    try {if(await moduleName(dir,await moduleEntry(dir),cache)===entry.name)return {status:'本地已识别'};}catch{}
     return {status:'待本机验证'};
   }
   if(!await stat(dir))return {status:'未下载'};
-  if(!vscode.workspace.isTrusted||!await stat(path.join(dir,'.git')))return {status:'待本机验证'};
+  const gitDir=path.join(dir,'.git');
+  if(!vscode.workspace.isTrusted||!await stat(gitDir))return {status:'待本机验证'};
   try{
-    const head=await git(s,dir,['rev-parse','HEAD']);
     const ref=entry.revision||'HEAD';
+    // Repository overrides can point Git at a different HEAD from the displayed checkout.
+    const useLocalHead=cache && !process.env.GIT_DIR && !process.env.GIT_COMMON_DIR && !process.env.GIT_NAMESPACE;
+    const saved=useLocalHead && cache.get(dir);
+    if(saved?.head && saved.git===s.tools.git && (ref==='HEAD'||ref===saved.head) && await matchesDetachedHead(gitDir,saved.head))
+      return revisionStatus(saved.head,sha(ref)?ref:undefined,sha(ref));
+    const head=await git(s,dir,['rev-parse','HEAD']);
     const required=sha(ref)?ref:ref==='HEAD'?undefined:await git(s,dir,['rev-parse','--verify','--end-of-options',ref+'^{commit}']).catch(()=>undefined);
     const exists=required&&(head===required||await git(s,dir,['cat-file','-e',required+'^{commit}']).then(()=>true,()=>false));
-    return {head,required,objects:[head,...(exists?[required]:[])],status:required?(required===head?'已同步':'版本不同'):'已下载 · 要求待核对'};
+    if(useLocalHead && sha(head) && (ref==='HEAD'||head===required))remember(cache,dir,{head,git:s.tools.git});
+    return revisionStatus(head,required,exists);
   }catch{return {status:'待本机验证'};}
 }
 async function rows(context,s,method){
   if(!s.folder)return [];
   const configured=await resolvedModules(s);
-  const record=selectedState(context,s,method);
+  const byName=new Map(configured.map(module=>[module.name,module]));
+  const cache=statusCache;
+  const record=selectedState(context,s,method),selected=new Set(record.selected);
   const all=entries({...s,localModules:[...(s.localModules||[]),...configured]},record),result=[];
   for(let i=0;i<all.length;i+=6)result.push(...await Promise.all(all.slice(i,i+6).map(async entry=>{
-    const state=await checkout(s,entry);
-    const applied=configured.find(module=>module.name===entry.name);
+    const state=await checkout(s,entry,cache);
+    const applied=byName.get(entry.name);
     state.configured=Boolean(applied && await sameCheckout(applied.path,path.resolve(rootOf(s),entry.path||entry.name)));
     return [entry.name,({workspace:'工作区清单',local:'本地模块',official:'Zephyr 官方仓库',git:'个人仓库'})[entry.kind],
-      entry.revision||'本地检出',state.status,record.selected.includes(entry.name),entry,state];
+      entry.revision||'本地检出',state.status,selected.has(entry.name),entry,state];
   })));
   return result;
 }
@@ -212,4 +253,4 @@ async function operate(context,s,method,request){
   }else throw Error('未知模块操作。');
   await context.workspaceState.update(scope(s,method),record);
 }
-module.exports={rows,operate,selectedState,entries,rootOf,scope,localModule,resolvedModules};
+module.exports={rows,clearStatusCache,operate,selectedState,entries,rootOf,scope,localModule,resolvedModules};
