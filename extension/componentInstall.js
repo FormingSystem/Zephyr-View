@@ -118,13 +118,14 @@ async function verifyHost({name,location,brew,file},env) {
   }
 }
 
-async function runStep(folder,env,title,step) {
+async function runStep(folder,env,title,step,successCodes=[0]) {
   const id=randomUUID(),definition={type:'zephyrProvision',id};
   const task=new vscode.Task(definition,folder,title,'Zephyr',new vscode.ProcessExecution(step.program,step.args,{cwd:step.cwd||folder.uri.fsPath,env:{...env,...step.env}}));
   task.presentationOptions={reveal:vscode.TaskRevealKind.Always,panel:vscode.TaskPanelKind.Dedicated};
   const code = await require('./taskCompletion').executeAndWait(task);
   if (code === undefined) throw Error(t('任务已结束，未收到退出码','Task ended without an exit code'));
-  if (code !== 0) throw Error(title+' · '+t('退出码','Exit code')+' '+code);
+  if (!successCodes.includes(code)) throw Error(title+' · '+t('退出码','Exit code')+' '+code);
+  return code;
 }
 
 async function with_install_lock(folder,work) {
@@ -181,4 +182,4 @@ async function install(context,s,name,current) {
   if(!s.folder || !current())return;
   return with_install_lock(s.folder,()=>install_one(context,s,name,current));
 }
-module.exports={source,install,install_one,with_install_lock};
+module.exports={source,install,install_one,with_install_lock,runStep};

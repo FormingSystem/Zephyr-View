@@ -1,0 +1,2 @@
+# The VSIX verifies the upstream file hashes before installing these rules.
+extension/vendor/pyocd-udev/*.rules -text

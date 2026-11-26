@@ -22,5 +22,11 @@ argparse 2.0.1 (dependency of js-yaml)
     Python-2.0, as declared by the npm package. Its complete upstream
     license and copyright notices are included in node_modules/argparse/LICENSE.
 
-Zephyr sources, SDKs, host tools and probe drivers selected through the
+pyOCD USB device access rules for Linux
+    https://github.com/pyocd/pyOCD/tree/e5f75eae468cadea39ccd607ad5b46141f62131c/udev
+    Unmodified CMSIS-DAP and ST-LINK rules. The upstream project credits
+    STMicroelectronics for the ST-LINK rules. Apache License, Version 2.0.
+    The upstream license is included at vendor/pyocd-udev/LICENSE.
+
+Zephyr sources, SDKs, host tools and vendor driver packages selected through the
 workbench are obtained separately and keep their respective licenses.
