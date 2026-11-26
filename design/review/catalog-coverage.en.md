@@ -2,6 +2,30 @@
 
 [简体中文](catalog-coverage.md) | **English**
 
+## Zephyr 3.x and 4.x releases
+
+Windows Server 2022 and Ubuntu 24.04 each downloaded the official tags, ran `west boards`, and compared the extension's west and CMake board lists entry by entry. Both hosts passed every row. Build targets include board revisions, SoCs, CPU clusters and variants. [Results for all 14 jobs](https://github.com/FormingSystem/zephyr-extension/actions/runs/45754136914)
+
+| Zephyr release | Board names | Distinct build targets |
+| --- | ---: | ---: |
+| 3.6.0 | 666 | 666 |
+| 3.7.0 | 564 | 820 |
+| 3.7.2 | 564 | 823 |
+| 4.2.0 | 788 | 1,216 |
+| 4.3.0 | 893 | 1,393 |
+| 4.4.2 | 1,014 | 1,619 |
+| 4.5.0 | 1,191 | 2,014 |
+
+3.6 uses the legacy hardware model. The 3.7 board API returns a list and later versions return a mapping keyed by board name. The test reads each checkout's own command output, using the output supplied to CMake when older west commands omit target fields. It also resolves the Cortex-M3 board DTS on each release. Firmware builds are verified separately. Windows 11 built firmware for ARM, RISC-V and x86 targets across releases 3.6.0, 3.7.0 and 4.3.0. Windows 10 client verification requires a separate run. The board catalog workflow accepts a registered Windows 10 runner for a manual run.
+
+To reproduce locally, activate a Python environment containing west and the selected checkout's requirements, then pass one or more source directories. The test creates a temporary workspace.
+
+```text
+node tests/integration/official-board-catalog.cjs <checkout-1> <checkout-2>
+```
+
+## Architectures, devicetrees and applications on 4.5.0-rc1
+
 Tested on Windows on 2026-11-26 with a local Zephyr 4.5.0-rc1 checkout at `25c8f4a23988dd3b2cfb463613622738298c2d6c`. Discovery produced the same results for the standalone source directory and the current west workspace. These counts describe targets available in the picker and information available before configuration. Actual firmware builds are documented in the [native build comparison](adaptive-builds.en.md) and the [previous multi-architecture build review](multi-board-build.en.md).
 
 | Check | Result | Reference |
