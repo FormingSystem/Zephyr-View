@@ -92,14 +92,31 @@ async function projectFixture(root) {
   return {workspace,app,declared,legacy,external};
 }
 
+async function canonicalPaths(paths) {
+  return (await Promise.all(paths.map(p=>fs.realpath(p)))).sort();
+}
+
+async function verifyCompiler(commands,compiler) {
+  assert.ok(compiler && path.isAbsolute(compiler),'No compiler path in CMakeCache.txt');
+  const canonical=await fs.realpath(compiler);
+  const source=commands.find(c=>path.basename(c.file)==='main.c');
+  assert.ok(source,'compile_commands.json has no application translation unit');
+  // CMake writes quoted command strings or literal argument arrays, optionally with a compiler launcher.
+  const args=source.arguments ?? [...source.command.matchAll(/"([^"]+)"|'([^']+)'|(\S+)/g)].map(m=>m[1]??m[2]??m[3]);
+  for(const arg of args){
+    if(path.isAbsolute(arg) && (await fs.realpath(arg).catch(()=>undefined))===canonical)return;
+  }
+  assert.fail('Application compile command does not use '+canonical);
+}
+
 async function checkBuild(context,s,fixture,env,root) {
-  const expected=[fixture.declared,fixture.legacy,fixture.external].map(p=>path.resolve(p)).sort();
+  const expected=await canonicalPaths([fixture.declared,fixture.legacy,fixture.external]);
   const generated=await fs.readFile(path.join(s.build.fsPath,'zephyr_modules.txt'),'utf8');
-  const actual=[...generated.matchAll(/^"[^"]+":"([^"]+)":/gm)].map(m=>path.resolve(m[1])).sort();
+  const actual=await canonicalPaths([...generated.matchAll(/^"[^"]+":"([^"]+)":/gm)].map(m=>m[1]));
   assert.deepEqual(actual,expected,'Zephyr must use the two selected modules and the application-owned module only');
   const cached=s.target.cache;
   assert.equal(cached.get('WEST'),'WEST-NOTFOUND');
-  assert.equal(path.relative(cached.get('CMAKE_HOME_DIRECTORY'),fixture.app),'');
+  assert.equal(await fs.realpath(cached.get('CMAKE_HOME_DIRECTORY')),await fs.realpath(fixture.app));
   assert.equal(s.setup.board,'qemu_riscv32');
   const config=await fs.readFile(path.join(s.build.fsPath,'zephyr','.config'),'utf8');
   const commands=JSON.parse(await fs.readFile(path.join(s.build.fsPath,'compile_commands.json'),'utf8'));
@@ -109,9 +126,7 @@ async function checkBuild(context,s,fixture,env,root) {
   }
   assert.ok(!commands.some(command=>path.basename(command.file)==='offline_unused.c'));
   const compiler=cached.get('CMAKE_C_COMPILER');
-  assert.ok(compiler && path.isAbsolute(compiler),'No compiler path in CMakeCache.txt');
-  assert.ok((await fs.stat(compiler)).isFile());
-  assert.ok(commands.some(c=>cmakePath(c.command??c.arguments.join(' ')).toLowerCase().includes(cmakePath(compiler).toLowerCase())));
+  await verifyCompiler(commands,compiler);
   assert.ok(s.setup.canBuild,JSON.stringify(s.setup.readiness));
   await run(s.setup.plan.executable,s.setup.plan.build,root,host.taskEnvironment(context,s),path.join(root,'build.log'));
   const elf=await fs.readFile(path.join(s.build.fsPath,'zephyr','zephyr.elf'));
@@ -119,7 +134,7 @@ async function checkBuild(context,s,fixture,env,root) {
   assert.equal(elf.readUInt16LE(18),243,'Expected RISC-V machine in the linked ELF');
   assert.equal(await fs.readFile(env.ZEPHYR_OFFLINE_AUDIT,'utf8').catch(e=>{if(e.code==='ENOENT')return '';throw e;}),'');
   const resolved=await host.moduleCatalog.resolvedModules(s);
-  assert.deepEqual(resolved.map(m=>path.resolve(m.path)).sort(),expected,'Workbench must show modules chosen by the application as well as checked modules');
+  assert.deepEqual(await canonicalPaths(resolved.map(m=>m.path)),expected,'Workbench must show modules chosen by the application as well as checked modules');
   assert.ok(resolved.every(m=>m.evidence==='zephyr_modules.txt'));
   const rows=await host.moduleCatalog.rows(context,s,'CMake');
   const selection=Object.fromEntries(rows.filter(([name])=>name.startsWith('offline_') || name==='hal_gigadevice')
@@ -155,7 +170,9 @@ async function main(){
   s.environment=env;
   s.saved={};
   await discovery.apply(context,s);
-  assert.equal(s.application,fixture.app);
+  const candidates=s.locations.groups.find(group=>group.key==='application')?.options || [];
+  assert.equal(s.application && await fs.realpath(s.application),await fs.realpath(fixture.app),
+    'Expected the fixture application. Selected: '+(s.application||'(none)')+'; candidates: '+JSON.stringify(candidates));
   assert.deepEqual(s.localModules.map(m=>m.name).sort(),['hal_gigadevice','offline_legacy','offline_unused']);
   s.setup={app:s.application};
   for(const name of ['hal_gigadevice','offline_legacy']){

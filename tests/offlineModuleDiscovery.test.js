@@ -47,7 +47,8 @@ test('detached sample finds adjacent YAML and legacy modules, keeps local paths 
   const catalog=host.moduleCatalog;
   const rows=await catalog.rows(state,s,'CMake');
   const row=rows.find(([name])=>name==='driver');
-  assert.equal(row[5].kind,'local');assert.equal(row[5].path,driver);assert.equal(row[4],false);
+  const driverDirectory=await fs.realpath(driver);
+  assert.equal(row[5].kind,'local');assert.equal(row[5].path,driverDirectory);assert.equal(row[4],false);
   const target={app,cacheStatus:'absent'};
   assert.deepEqual(await moduleArguments(state,s,target,'CMake',[],{}),[]);
   const add=()=>catalog.operate(state,s,'CMake',{op:'add',value:{kind:'local',name:'driver',path:path.relative(app,driver)}});
@@ -55,7 +56,7 @@ test('detached sample finds adjacent YAML and legacy modules, keeps local paths 
   const selected=await catalog.rows(state,s,'CMake');
   assert.deepEqual(selected.filter(r=>r[4]).map(r=>r[0]),['driver']);
   const flags=await moduleArguments(state,s,target,'CMake',[],{});
-  assert.ok(flags.includes('-DZEPHYR_MODULES='+driver.split(path.sep).join('/')));
+  assert.ok(flags.includes('-DZEPHYR_MODULES='+driverDirectory.split(path.sep).join('/')));
   assert.ok(!flags.some(arg=>arg.includes(path.join(app,'modules'))));
   const external=path.join(root,'private','external');
   await write(external,'zephyr/module.yml','name: driver\n');
@@ -69,14 +70,14 @@ test('explicit absolute and relative directories deduplicate junction aliases an
   await fs.symlink(external,link,process.platform==='win32'?'junction':'dir');
   settings.locations={modules:[path.relative(app,external),link,path.join(root,'missing')]};
   await discovery.apply(state,s);
-  assert.deepEqual(s.localModules.map(({name,path})=>[name,path]),[['my-driver',external]]);
+  assert.deepEqual(s.localModules.map(({name,path})=>[name,path]),[['my-driver',await fs.realpath(external)]]);
   assert.ok(s.locations.diagnostics.some(row=>row.path===path.join(root,'missing','zephyr','module.yml')));
   s.manifest.projects.push({name:'custom',path:'modules/custom'});
   const custom=path.join(root,'another','custom');
   await write(custom,'zephyr/module.yml','name: custom\n');
   await host.moduleCatalog.operate(state,s,'CMake',{op:'add',value:{kind:'local',name:'custom',path:custom}});
   const row=(await host.moduleCatalog.rows(state,s,'CMake')).find(entry=>entry[0]==='custom');
-  assert.equal(row[5].path,custom);assert.equal(row[4],true);
+  assert.equal(row[5].path,await fs.realpath(custom));assert.equal(row[4],true);
 });
 
 test('project CMake and explicit module lists are preserved; deselecting releases only extension-owned cache entries',async t=>{
