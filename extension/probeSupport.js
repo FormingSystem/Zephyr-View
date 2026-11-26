@@ -1,121 +1,160 @@
 'use strict';
 
-const vscode = require('vscode');
 const path = require('node:path');
-const {promisify} = require('node:util');
-const {execFile} = require('node:child_process');
-const {executeAndWait} = require('./taskCompletion');
-const {profiles,findProgram,inspectDevices,verifyInstaller} = require('./probeDiagnostics');
-const exec=promisify(execFile);
-const tr=(cn,en)=>vscode.env.language.toLowerCase().startsWith('zh')?cn:en;
-const pick=(label,description,action,detail)=>({label,description,action,detail});
-const statusText=status=>({
-  present:tr('系统已枚举','Enumerated by the OS'),accessible:tr('设备节点可读写','Device node is accessible'),
-  permission:tr('访问权限不足','Permission denied'),driver:tr('未安装设备驱动（代码 28）','Device driver missing (code 28)'),
-  unknown:tr('设备状态待核实','Device status unknown')
-})[status];
+const vscode = require('vscode');
+const {profiles} = require('./probeDiagnostics');
+const {listProbeTools, probeDevices, selectProbeLocation, resetProbeLocation} = require('./probeInventory');
+const {deploymentActions, deployProbe} = require('./probeDeployment');
+const {pickDirectory, inputDirectory, pickFile} = require('./fileDialogs');
+const {t} = require('./installationDialogs');
+
+function runnerProfile(runner) {
+  if (Object.hasOwn(profiles, runner)) return runner;
+  if (['esp32', 'mcumgr', 'bossac'].includes(runner)) return 'serial';
+}
 
 function accessHint(id) {
-  if(process.platform==='darwin')return tr('在搭载 Apple 芯片的 Mac 笔记本上，首次连接时解锁并允许 USB 配件。','On a Mac laptop with Apple silicon, unlock it and allow the USB accessory when prompted.');
-  if(process.platform==='linux')return id==='serial'
-    ?tr('核对串口设备的所属组和读写权限。','Check the serial device group and read/write permissions.')
-    :tr('核对厂商的 udev 规则，应用规则后重新插拔探针。','Check the vendor’s udev rules and reconnect the probe after applying them.');
-  const hints={
-    pyocd:tr('CMSIS-DAP v1 使用 HID，v2 使用 WinUSB。','CMSIS-DAP v1 uses HID. Version 2 uses WinUSB.'),
-    stm32cubeprogrammer:tr('ST-LINK 的 Windows 驱动包为 STSW-LINK009。','STSW-LINK009 provides ST-LINK drivers for Windows.'),
-    jlink:tr('SEGGER 安装程序包含 J-Link 的 USB 驱动。','The SEGGER installer includes J-Link USB drivers.'),
-    'dfu-util':tr('选择开发板的 DFU 接口并核对其 USB 驱动绑定。','Check the USB driver binding for the board’s DFU interface.'),
-    serial:tr('标准 CDC ACM 使用系统 Usbser。USB 转串口桥可能需要厂商驱动。','CDC ACM uses Usbser. USB-to-UART bridges may need a vendor driver.')
+  if (process.platform === 'darwin') return t('首次连接时请允许 USB 配件。','Allow the USB accessory when prompted.');
+  if (process.platform === 'linux') return id === 'serial'
+    ? t('检查串口所属组及读写权限。','Check the serial port group and read/write permissions.')
+    : t('检查厂商的 udev 规则，应用后重新插拔探针。','Check the vendor udev rules and reconnect the probe after applying them.');
+  const windows = {
+    pyocd: ['CMSIS-DAP v1 使用 HID，v2 使用 WinUSB。','CMSIS-DAP v1 uses HID. Version 2 uses WinUSB.'],
+    stm32cubeprogrammer: ['ST-LINK 的 Windows 驱动包为 STSW-LINK009。','STSW-LINK009 provides the ST-LINK drivers.'],
+    jlink: ['SEGGER 安装包包含 J-Link USB 驱动。','The SEGGER installer includes the J-Link USB driver.'],
+    'dfu-util': ['检查开发板 DFU 接口的 USB 驱动绑定。','Check the USB driver binding for the DFU interface.'],
+    serial: ['CDC ACM 使用系统 Usbser 驱动。USB 转串口桥可能需要厂商驱动。','CDC ACM uses Usbser. USB-to-UART bridges may need a vendor driver.']
   };
-  return process.platform==='win32'?hints[id]:undefined;
+  if (process.platform === 'win32') return t(...windows[id]);
 }
 
-async function chooseFile(folder,title,filters) {
-  const files=await vscode.window.showOpenDialog({defaultUri:folder?.uri,title,filters,canSelectMany:false,canSelectFolders:false});
-  return files?.[0]?.fsPath;
+function probeProfiles() {
+  return Object.entries(profiles).map(([id, {label, program}]) => ({
+    id, label, program, ...deploymentActions(id), accessHint: accessHint(id)
+  }));
 }
 
-function runInstall(command,args,folder,label) {
-  const task=new vscode.Task({type:'zephyrProbeInstall',id:require('node:crypto').randomUUID()},folder||vscode.TaskScope.Global,label,'Zephyr',
-    new vscode.ProcessExecution(command,args));
-  task.presentationOptions={reveal:vscode.TaskRevealKind.Always,panel:vscode.TaskPanelKind.Dedicated};
-  return executeAndWait(task);
-}
-
-async function installation(id,profile,folder,python) {
-  let program,args=[];
-  if (id==='pyocd') {
-    python ||= await chooseFile(folder,tr('选择目标虚拟环境的 Python','Select the target virtual environment’s Python'));
-    if (!python) return;
-    const {stdout}=await exec(python,['-I','-c','import sys; print(sys.prefix != sys.base_prefix)'],{windowsHide:true,timeout:5000});
-    if (stdout.trim()!=='True')throw Error(tr('请选择虚拟环境中的 Python。','Select Python from a virtual environment.'));
-    program=python;args=['-m','pip','install','pyocd'];
-  } else if (id==='dfu-util' && process.platform==='linux') {
-    const apt=await findProgram('apt-get',undefined,[]),sudo=await findProgram('sudo',undefined,[]);
-    if (!apt || !sudo) return vscode.env.openExternal(vscode.Uri.parse(profile.url));
-    program=sudo;args=[apt,'install','dfu-util'];
-  } else if (id==='dfu-util' && process.platform==='darwin') {
-    program=await findProgram('brew');
-    if (!program) return vscode.env.openExternal(vscode.Uri.parse('https://formulae.brew.sh/formula/dfu-util'));
-    args=['install','dfu-util'];
-  } else {
-    program=await chooseFile(folder,tr('选择厂商签名的安装程序','Select a vendor-signed installer'),{'Windows installer':['exe']});
-    if (!program) return;
-    if (!await verifyInstaller(program,profile))throw Error(tr('未能验证该安装程序的厂商签名。','Could not verify the expected vendor signature.'));
-  }
-  const install=tr('安装','Install');
-  const choice=await vscode.window.showInformationMessage([program,...args].join(' '),{modal:true},install);
-  if (choice!==install || !vscode.workspace.isTrusted) return;
-  const code=await runInstall(program,args,folder,profile.label);
-  if(code!==0)throw Error(tr('安装没有成功完成。请查看任务终端。','Installation did not finish successfully. See the task terminal.'));
-  if(id==='pyocd')return findProgram(profile.program,undefined,[path.dirname(python)],'');
-}
-
-async function probeSupport(context,folder,runner) {
-  const known=Object.hasOwn(profiles,runner)?runner:['esp32','mcumgr','bossac'].includes(runner)?'serial':undefined;
-  let id=known;
-  const toolsKey='probeSupport.tools:'+folder?.uri.toString();
-  while (true) {
-    if (!id) {
-      const selected=await vscode.window.showQuickPick(Object.entries(profiles).map(([key,p])=>pick(p.label,'',key)),
-        {title:tr('选择探针或传输方式','Choose a probe or transport')});
-      if (!selected)return;
-      id=selected.action;
-    }
-    const p=profiles[id], saved=context.workspaceState.get(toolsKey,{}),trusted=vscode.workspace.isTrusted;
-    const python=require('./environment').overrides(context,folder)?.python;
-    const dirs=python?[path.dirname(python)]:[];
-    if(folder)dirs.push(path.join(folder.uri.fsPath,'.venv',process.platform==='win32'?'Scripts':'bin'));
-    dirs.push(...require('./toolDirectories').searchDirectories(context,folder));
-    const file=await findProgram(p.program,saved[id],dirs);
-    let devices,problem;
-    try {if(trusted) devices=await inspectDevices(p);}catch(e){problem=e.message;}
-    const list=[];
-    if(p.program)list.push(pick(p.program,file||tr('工具路径未找到','Tool path not found'),'tool',file?undefined:tr('选择本机已有的可执行文件','Choose an installed executable')));
-    for(const d of devices||[])list.push(pick(d.name,statusText(d.status),'refresh',d.id+(d.detail?' · '+d.detail:'')));
-    if(!devices?.length)list.push(pick(tr('探针或端口','Probe or port'),!trusted?tr('工作区未受信任','Workspace is untrusted'):
-      problem?tr('无法读取系统设备','Could not read system devices'):devices?tr('未发现匹配设备','No matching device found'):tr('此主机暂不支持枚举','Device discovery unavailable on this host'),'refresh',problem));
-    list.push(pick(tr('重新检测','Detect again'),'', 'refresh'),pick(tr('官方下载','Official download'),new URL(p.url).hostname,'download'),
-      pick(tr('驱动及访问说明','Driver and access instructions'),new URL(p.guide).hostname,'guide',accessHint(id)));
-    const canInstall=id==='pyocd' || (id==='dfu-util'&&['darwin','linux'].includes(process.platform)) || (p.signer&&process.platform==='win32');
-    if(trusted && canInstall)list.push(pick(p.signer?tr('运行本地厂商安装程序…','Run local vendor installer…'):tr('安装工具…','Install tool…'),p.label,'install'));
-    list.push(pick(tr('选择其他探针或传输方式','Choose another probe or transport'),'','profiles'));
-    const choice=await vscode.window.showQuickPick(list,{title:p.label+' · '+(vscode.env.remoteName||process.platform),matchOnDescription:true});
-    if(!choice)return;
-    if(choice.action==='profiles'){id=undefined;continue;}
-    if(choice.action==='download'||choice.action==='guide'){await vscode.env.openExternal(vscode.Uri.parse(choice.action==='guide'?p.guide:p.url));continue;}
-    if(!vscode.workspace.isTrusted)continue;
-    if(choice.action==='tool'){
-      const selected=await chooseFile(folder,tr('选择已安装的工具','Choose installed tool'));
-      if(selected && await findProgram(p.program,selected,[],'')===selected)await context.workspaceState.update(toolsKey,{...saved,[id]:selected});
-    }
-    if(choice.action==='install') {
-      try {
-        const installed=await installation(id,p,folder,python);
-        if(typeof installed==='string')await context.workspaceState.update(toolsKey,{...saved,[id]:installed});
-      }catch(e){await vscode.window.showErrorMessage(e.message);}
-    }
+async function chooseTool(context, s, row, op, current) {
+  const previous = row.path || row.selectedPath;
+  const directory = op !== 'executable';
+  const title = directory ? t('选择工具安装目录','Select the tool installation directory') : t('选择可执行文件','Select the executable');
+  const defaultUri = previous ? vscode.Uri.file(directory ? path.dirname(previous) : previous) : s.folder.uri;
+  const options = {title: row.label + ' · ' + title, defaultUri};
+  const uri = op === 'typedDirectory' ? await inputDirectory({...options, baseUri:s.folder.uri}) :
+    await (directory ? pickDirectory : pickFile)(options);
+  if (!uri || !current()) return;
+  if (!await selectProbeLocation(context, s.folder, row.id, uri.fsPath, directory ? 'directory' : 'executable')) {
+    throw Error(t('所选位置没有可用的工具','Tool not found at the selected location') + ' · ' + row.program);
   }
 }
 
-module.exports={probeSupport};
+function deploymentStatus(result) {
+  switch (result?.status) {
+    case 'external': return t('已打开厂商下载页。完成安装后可重新检测。','Vendor download opened. Detect again after installation.');
+    case 'diskImage': return t('已打开磁盘映像。运行其中的安装程序后，请重新检测。','Disk image opened. Run its installer, then detect again.');
+    case 'installed': return t('安装程序已结束。','Installer finished.');
+    case 'reconnect': return t('请重新插拔探针，然后重新识别。','Reconnect the probe, then choose Detect again.');
+    case 'restart': return t('系统需要重启才能完成驱动安装。重启后请重新识别。','Restart the system to finish driver installation, then choose Detect again.');
+  }
+}
+
+class ProbeSupport {
+  constructor(context, publish) {
+    this.context = context;
+    this.publish = publish;
+    this.active = new Set();
+  }
+
+  reset() { this.session = undefined; }
+
+  forWorkspace(s) {
+    const key = JSON.stringify([s.folder?.uri.toString(), vscode.workspace.isTrusted, s.tools?.python, s.toolDirectories]);
+    if (this.session?.key !== key) {
+      this.session = {key, folder: s.folder?.uri.fsPath, rows: probeProfiles(), checked: 0};
+    }
+    return this.session;
+  }
+
+  report(session) {
+    if (this.session !== session) return;
+    const rows = session.rows.map(row => ({...row, busy: this.active.has(row.id)}));
+    return this.publish({folder: session.folder, rows, scanning: Boolean(session.scan), error: session.error});
+  }
+
+  async list(s, fresh = false) {
+    const session = this.forWorkspace(s);
+    if (!vscode.workspace.isTrusted) return this.report(session);
+    if (session.scan) {
+      await this.report(session);
+      return session.scan;
+    }
+    if (!fresh && Date.now() - session.checked < 5000) return this.report(session);
+    session.error = undefined;
+    session.scan = this.scan(s, session, fresh).finally(() => {
+      session.scan = undefined;
+      session.checked = Date.now();
+      return this.report(session);
+    });
+    await this.report(session);
+    return session.scan;
+  }
+
+  async scan(s, session, fresh) {
+    // A slow USB bus must not hold back locally available tool paths.
+    const tools = listProbeTools(this.context, s.folder, s, fresh).then(entries => {
+      for (const row of session.rows) {
+        const entry = entries.find(item => item.id === row.id);
+        row.path = entry?.path;
+        row.source = entry?.source;
+        row.selectedPath = entry?.selectedPath;
+        row.toolChecked = Boolean(entry);
+      }
+      return this.report(session);
+    });
+    const devices = probeDevices().then(groups => {
+      for (const row of session.rows) {
+        row.devices = groups[row.id]?.devices;
+        row.deviceError = groups[row.id]?.problem;
+      }
+      return this.report(session);
+    });
+    const results = await Promise.allSettled([tools, devices]);
+    session.error = results.filter(result => result.status === 'rejected').map(result => result.reason.message).join(' · ');
+  }
+
+  async act(s, {id, op} = {}, current) {
+    if (op === 'refresh') return this.list(s, true);
+    if (!Object.hasOwn(profiles, id)) return;
+    if (op === 'download' || op === 'guide') {
+      return vscode.env.openExternal(vscode.Uri.parse(op === 'guide' ? profiles[id].guide : profiles[id].url));
+    }
+    if (!s.folder || !vscode.workspace.isTrusted || !current() || this.active.has(id)) return;
+    const session = this.forWorkspace(s);
+    const row = session.rows.find(item => item.id === id);
+    const supported = {directory:row.program, typedDirectory:row.program, executable:row.program, reset:row.program,
+      deploy:row.canDeploy, localInstaller:row.canInstallLocal, driver:row.canDeployDriver, localDriver:row.canInstallLocalDriver};
+    if (!Object.hasOwn(supported, op) || !supported[op]) return;
+    this.active.add(id);
+    row.statusMessage = undefined;
+    try {
+      await this.report(session);
+      if (!current()) return;
+      if (op === 'reset') await resetProbeLocation(this.context, s.folder, id);
+      else if (['directory','typedDirectory','executable'].includes(op)) await chooseTool(this.context, s, row, op, current);
+      else {
+        const result = await deployProbe(this.context, s, id, op, current);
+        if (result?.file && current()) await selectProbeLocation(this.context, s.folder, id, result.file, 'executable');
+        row.statusMessage = deploymentStatus(result);
+      }
+    } catch (error) {
+      row.statusMessage = error.message;
+    } finally {
+      this.active.delete(id);
+      if (session.scan) await session.scan;
+      if (current()) await this.list(s, true);
+      else if (this.session && this.session !== session) await this.report(this.session);
+    }
+  }
+}
+
+module.exports = {ProbeSupport, probeProfiles, runnerProfile};

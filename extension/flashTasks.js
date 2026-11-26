@@ -69,7 +69,7 @@ class FlashTasks {
 
   async describe(s,fresh=false) {
     if (!vscode.workspace.isTrusted || !s.folder || !s.target.generated) return;
-    const rows=await listProbeTools(this.context,s.folder,s);
+    const rows=await listProbeTools(this.context,s.folder,s,fresh);
     // A missing override must stay distinct from a runner that uses its own default tool.
     const tools=Object.fromEntries(rows.filter(row=>row.path || row.selectedPath).map(row=>[row.id,row.path || null]));
     const selectedTools=rows.filter(row=>row.selectedPath).map(row=>row.id);

@@ -39,7 +39,10 @@
     if (data.page === 'configuration') return studioView.open(data);
     studioView.leave();
     if (data.page === 'build') return build_screen.render($('#main'), data);
-    if (data.page === 'workspace') $('#main').innerHTML = setupViews.workspace(data);
+    if (data.page === 'workspace') {
+      $('#main').innerHTML = setupViews.workspace(data);
+      probeControls.enter(data);
+    }
   });
   host.postMessage({action:'ready'});
 })();

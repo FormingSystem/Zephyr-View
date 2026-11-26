@@ -100,7 +100,7 @@ function pick(kind,button){
 function go(k){debugSide.source=false;clearTimeout(timer);$('#notice').textContent='';k=route(k);page=k;if(location.hash!=='#'+k)location.hash=k;render();window.scrollTo(0,0)}
 function handle(action,button){const [a,v,x]=action.split(':');
  if(a==='flash')return flashPanel.action(v,demoFlashAction);
- if(a==='demoProbe')return demoProbeAction(v);
+ if(a==='probe')return demoProbeAction(v,x);
  if(a==='demoFlash')return demoFlashConfirm(v);
  if(a==='setup')return demo_toolchain_action(v,x);
  if(a.startsWith('path'))return pathActions(a,v,x);

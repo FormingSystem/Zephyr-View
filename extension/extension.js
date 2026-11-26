@@ -221,7 +221,6 @@ function activate(context) {
   register('chooseWorkspaceFolder', () => target.chooseFolder());
   register('chooseBuild', () => target.chooseBuild());
   register('launch', () => target.launch());
-  register('probeSupport', runner => require('./probeSupport').probeSupport(context,target.folder(),runner));
   register('open', async () => {
     target.manual = true;
     await context.workspaceState.update('targetVisible', true);

@@ -42,9 +42,12 @@ exports.run = async function run() {
   const {tools} = await inspectWorkspace(target);
   const cmake = await verify_cmake(tools, target.folder().uri.fsPath);
   await vscode.commands.executeCommand('zephyrWorkbench.show', 'workspace');
+  await vscode.commands.executeCommand('zephyrWorkbench.probeSupport', 'jlink');
   const tabs = () => vscode.window.tabGroups.all.flatMap(group => group.tabs);
   for (let attempt = 0; attempt < 100; attempt++) {
-    if (tabs().some(tab => tab.input instanceof vscode.TabInputWebview && tab.label === 'Zephyr Extension')) {
+    const workbenchTabs = tabs().filter(tab => tab.input instanceof vscode.TabInputWebview && tab.label === 'Zephyr Extension');
+    assert.ok(workbenchTabs.length <= 1, 'Probe support should open inside the same workbench');
+    if (workbenchTabs.length === 1) {
       const result = {extension: extension.packageJSON.version, vscode: vscode.version,
         platform: process.platform, arch: process.arch, cmake, hostBuild: 'passed'};
       await fs.writeFile(process.env.ZEPHYR_TEST_EVIDENCE, JSON.stringify(result));

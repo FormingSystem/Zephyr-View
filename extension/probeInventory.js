@@ -59,12 +59,12 @@ async function probeInDirectories(program,directories) {
   }
 }
 
-async function automaticProgram(id,program,directories) {
+async function automaticProgram(id,program,directories,fresh) {
   if (id!=='jlink') return findProgram(program,undefined,directories);
   const custom = await probeInDirectories(program,directories);
   if (custom) return custom;
   const vendor = vendorDirectories(program);
-  const registered = process.platform==='win32' ? await registeredDirectory() : undefined;
+  const registered = process.platform==='win32' ? await registeredDirectory(fresh) : undefined;
   const standard = await probeInDirectories(program,[registered,...vendor].filter(Boolean));
   if (standard) return standard;
   for (const parent of new Set(vendor.map(dir=>path.dirname(dir)))) {
@@ -82,7 +82,7 @@ function toolDirectories(context,folder,snapshot) {
   return [...dirs,...(snapshot?.toolDirectories || searchDirectories(context,folder))];
 }
 
-async function listProbeTools(context,folder,snapshot) {
+async function listProbeTools(context,folder,snapshot,fresh = false) {
   const trusted = workspace.isTrusted;
   const saved = folder && trusted ? context.workspaceState.get(toolsKey(folder),{}) : {};
   const dirs = trusted ? toolDirectories(context,folder,snapshot) : [];
@@ -92,7 +92,7 @@ async function listProbeTools(context,folder,snapshot) {
       const file = await selectedProgram(selectedPath,program);
       return {id,path:file,selectedPath,source:'selected'};
     }
-    const file = program && trusted ? await automaticProgram(id,program,dirs) : undefined;
+    const file = program && trusted ? await automaticProgram(id,program,dirs,fresh) : undefined;
     return {id,path:file,source:'auto'};
   }));
 }

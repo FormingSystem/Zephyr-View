@@ -9,9 +9,10 @@ const run = promisify(execFile);
 const registry = new ProbeCache(1,5000);
 
 // Zephyr's J-Link runner uses SEGGER's per-user registration to avoid Java's same-named linker.
-function registeredDirectory() {
+function registeredDirectory(fresh = false) {
   const root = process.env.SystemRoot;
   if (!root) return;
+  if (fresh) registry.clear();
   return registry.read(root,async()=>{
     const ps = path.join(root,'System32','WindowsPowerShell','v1.0','powershell.exe');
     const query = "[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); " +

@@ -80,7 +80,6 @@ const setupViews=(()=>{
     const nav=groups.map(([label,entries],i)=>'<button data-act="setup:group:'+i+'" aria-pressed="'+(group===i)+'"><strong>'+esc(label)+'</strong>'+(i<2?'<small>'+entries.filter(value).length+' / '+entries.length+'</small>':'')+'</button>').join('');
     let content=names.map(entry).join('');
     if(group===0)content+=wrap(b(tr('工具搜索目录…','Tool search directories…'),'setup:toolDirectories','plain','',!s.folder||!s.trusted));
-    if(group===3)content=wrap(b(tr('检测探针与驱动…','Inspect probes and drivers…'),'setup:probeSupport'));
     if(group===1)content+=environmentField(tr('Zephyr 构建依赖','Zephyr build dependencies'),'scripts/requirements-base.txt','',
       installActions('dependencies',!s.folder||!s.trusted||s.busy));
     if(group===2){
@@ -90,9 +89,10 @@ const setupViews=(()=>{
       content+=target_compiler.render(s)+prefix;
     }
     const setup=b(tr('补齐缺失组件…','Set up missing components…'),'setup:installMissing','primary','',!s.folder||!s.trusted||s.busy);
-    return workspaceSection('environment',tr('环境搭建','Environment setup'),setup+b(tr('重新检测','Detect again'),'setup:refresh','','refresh'),
-      environmentSections('<div class="envgroups">'+nav+'</div>',panel(title,content),
-        processVariables(s.environmentRows,s.environmentCacheStatus)));
+    const actions=group===3?'':setup+b(tr('重新检测','Detect again'),'setup:refresh','','refresh');
+    return workspaceSection('environment',tr('环境搭建','Environment setup'),actions,
+      environmentSections('<div class="envgroups">'+nav+'</div>',group===3?probeControls.render(s):panel(title,content),
+        group===3?'':processVariables(s.environmentRows,s.environmentCacheStatus)));
   }
   function west(s){
     const open=b(tr('打开已有工作区','Open existing workspace'),'setup:folder','','folder')+(s.folder?b(tr('输入路径…','Enter path…'),'setup:folder:typed','plain'):'');
@@ -141,6 +141,7 @@ const setupViews=(()=>{
       b(tr('暂不保存','Not now'),'setup:locations:dismiss','plain')+'</div>'));
   }
   function workspace(s){
+    if(s.openProbes)group=3;
     const jump=b(tr('定位 west 工作区','Go to west workspace'),'setup:west');
     return heading(ZephyrPathDisplay.path(s.folder)||'Zephyr Extension',tr('工作区','Workspace'),'',jump)+
       discovery_diagnostics(s.discoveryIssues)+discoveryPanel(s.detected,s.folder)+environment(s)+west(s);
@@ -155,6 +156,7 @@ const setupViews=(()=>{
       group=Number(key);
       document.getElementById('environment').outerHTML=environment(data);
       document.querySelector('[data-act="setup:group:'+group+'"]').focus({preventScroll:true});
+      if(group===3)probeControls.enter({...data,openProbes:undefined});
     }else if(action==='west'){
       const section=document.getElementById('west-workspace');
       section.querySelector('button')?.focus({preventScroll:true});

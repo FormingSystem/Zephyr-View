@@ -15,6 +15,7 @@ const {appearance_settings} = require('./appearance_settings');
 const {readDevicetreeCatalog}=require('./devicetreeCatalog');
 const setup = require('./buildSetup');
 const {FlashTasks} = require('./flashTasks');
+const {ProbeSupport, probeProfiles, runnerProfile} = require('./probeSupport');
 const {previewPlan} = require('./buildVariables');
 const {pickDirectory,inputDirectory}=require('./fileDialogs');
 const {path: displayPath} = require('./media/pathDisplay');
@@ -44,8 +45,8 @@ function documentHtml(view, base, title) {
   const shared='design/';
   const template=fs.readFileSync(Uri.joinPath(base,shared,'index.html').fsPath,'utf8');
   const policy=`default-src 'none'; style-src ${view.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src https://api.github.com https://gitee.com`;
-  const scripts=['fuzzy.js','pathDisplay.js','vendor/js-yaml/js-yaml.min.js','appearance.js','build-context.js','configuration-inputs.js','build-panel.js','toolchain-controls.js','configuration-tree.js','configuration-workspace.js','module-identification.js','module-pagination.js','module-lists.js','module-sources.js']
-    .map(name=>shared+name).concat(['nativeModules.js','kconfigFields.js','fragmentFields.js','deviceTreeDraft.js','studioMap.js','studioView.js','discoveryDiagnostics.js','setupViews.js','targetPicker.js','buildControls.js','flashPlan.js','flashPanel.js','build_page.js','workbench.js']);
+  const scripts=['fuzzy.js','pathDisplay.js','vendor/js-yaml/js-yaml.min.js','appearance.js','build-context.js','configuration-inputs.js','build-panel.js','toolchain-controls.js','configuration-tree.js','configuration-workspace.js','module-identification.js','module-pagination.js','module-lists.js','module-sources.js','probe-list.js']
+    .map(name=>shared+name).concat(['nativeModules.js','kconfigFields.js','fragmentFields.js','deviceTreeDraft.js','studioMap.js','studioView.js','discoveryDiagnostics.js','probeControls.js','setupViews.js','targetPicker.js','buildControls.js','flashPlan.js','flashPanel.js','build_page.js','workbench.js']);
   return template.replace('lang="zh-CN"', `lang="${vscode.env.language.startsWith('zh')?'zh-CN':'en'}" data-path-platform="${process.platform}"`).replace('<title>',`<meta http-equiv="Content-Security-Policy" content="${policy}"><title>`)
     .replace('href="appearance.css"',`href="${asset(shared+'appearance.css')}"`)
     .replace('href="workbench.css"',`href="${asset(shared+'workbench.css')}"`)
@@ -96,7 +97,13 @@ function registerWorkbench(context, provider) {
   const send_appearance = () => panel?.webview.postMessage({appearanceSettings: appearance.read()});
   const discovery = require('./workspaceLocations').createDiscovery();
   const manifests = createManifestResolver();
+  const probes = new ProbeSupport(context, update => {
+    if (page === 'workspace' && update.folder === provider.folder()?.uri.fsPath) {
+      return panel?.webview.postMessage({probeList: update});
+    }
+  });
   function resetDiscovery(folder) {
+    probes.reset();
     manifests.clear();
     discovery.reset(folder);
     modules.clearStatusCache();
@@ -127,6 +134,7 @@ function registerWorkbench(context, provider) {
   }
   let panel, ready = false, page = 'workspace', snapshot, generation = 0;
   let requestedInspector;
+  let requestedProbes;
   const configurationWindow = new ConfigurationWindow();
   const execute = (...args) => vscode.commands.executeCommand(...args);
   const activateConfigurationWindow = () => panel && configurationWindow.activate(panel,vscode.window.tabGroups,execute);
@@ -184,6 +192,7 @@ function registerWorkbench(context, provider) {
     const transfer = page === 'configuration' && configurationWindow.forTarget(panel,studio_scope(s));
     const currentSystem = s.setup.cacheStatus === 'current' ? s.target?.system : undefined;
     s.discoveryIssues = [...(s.manifest.diagnostics || []), ...(s.locations?.diagnostics || [])];
+    const probeRequest = page === 'workspace' ? requestedProbes : undefined;
     const delivered = await panel.webview.postMessage({page,studioDetached:configurationWindow.detached,studioPresentation:configurationWindow.presentation,studioRestore:transfer?.state,inspector:requestedInspector,version,language:vscode.env.language,method:method(s),
       folder:s.folder?.uri.fsPath, app:s.setup.app, board:s.setup.board, projectBoard:s.setup.projectBoard, build:s.build?.fsPath,
       system:s.setup.system,defaultImage:currentSystem?.main?.name,images:currentSystem?.domains?.map(image=>image.name),
@@ -192,6 +201,7 @@ function registerWorkbench(context, provider) {
       readiness:s.setup.readiness,missingModules:s.setup.missingModules||[],lastFailure:s.lastFailure,
       busy:running.has(s.build?.toString()),flash:s.flash,flashLoaded:s.flashLoaded,
       hostPrograms:environmentConfig.programs,
+      probeProfiles:page === 'workspace' ? probeProfiles() : undefined, openProbes:probeRequest,
       detected:s.locations && {groups:s.locations.groups,origins:s.locations.origins,conflicts:s.locations.conflicts,hidden:s.locations.hidden},
       discoveryIssues:s.discoveryIssues,
       runner:debugRunner(s), configured:Boolean(s.target?.cacheFile) && s.setup.cacheStatus !== 'conflict', tools:s.tools, environmentRows:variables,
@@ -201,6 +211,7 @@ function registerWorkbench(context, provider) {
       root:s.manifest.root?.fsPath, manifest:s.manifest.uri?.fsPath, invalid:s.manifest.invalid, manifestScope:s.manifest.scope,
       variants,moduleScope:s.folder?modules.scope(s,method(s)):null,moduleRows,projects:graphProjects||s.manifest.projects, files:s.files.map(f=>f.fsPath), trusted:vscode.workspace.isTrusted});
     if (delivered && transfer) configurationWindow.delivered(transfer);
+    if (delivered && probeRequest === requestedProbes) requestedProbes = undefined;
     if (version === generation) requestedInspector = undefined;
   }
 
@@ -290,7 +301,7 @@ function registerWorkbench(context, provider) {
       await activateConfigurationWindow();
       return refresh();
     }
-    if (m?.action === 'page' && Object.hasOwn(sections,m.id)) {requestedInspector=undefined;page=m.id;return refresh();}
+    if (m?.action === 'page' && Object.hasOwn(sections,m.id)) {requestedInspector=undefined;requestedProbes=undefined;page=m.id;return refresh();}
     if (m?.action === 'refresh') {resetDiscovery(provider.folder());return refresh();}
     const s = snapshot;
     if (m.action === 'studioCheckpoint' && page === 'configuration' && s) {
@@ -313,7 +324,13 @@ function registerWorkbench(context, provider) {
       return;
     }
     if(m.action==='manageTrust')return vscode.commands.executeCommand('workbench.trust.manage');
-    if(m.action==='probeSupport')return vscode.commands.executeCommand('zephyrWorkbench.probeSupport',m.id);
+    if (m.action === 'probeList' || m.action === 'probeAction') {
+      const owner = panel;
+      const current = () => owner === panel && page === 'workspace' && s.folder?.uri.toString() === provider.folder()?.uri.toString();
+      if (!current()) return;
+      if (m.action === 'probeList') return probes.list(s);
+      return probes.act(s, m.id, () => current() && vscode.workspace.isTrusted && !running.has(s.build?.toString()));
+    }
     if(m.action==='showTerminal'){
       const name=s.lastFailure?.terminalName;
       const terminal=name && vscode.window.terminals.find(t=>t.name.includes(name));
@@ -524,6 +541,7 @@ function registerWorkbench(context, provider) {
     });
     panel.onDidDispose(()=>{
       if (!configurationWindow.close()) studioFiles.clear();
+      probes.reset();requestedProbes=undefined;
       provider.showSelection(undefined);panel=undefined;ready=false;snapshot=undefined;++generation;
     });
     panel.webview.onDidReceiveMessage(m=>message(m).catch(report));
@@ -534,6 +552,10 @@ function registerWorkbench(context, provider) {
   const view=vscode.window.createTreeView('zephyrWorkbench.navigation',{treeDataProvider:navigation()});
   context.subscriptions.push(view,view.onDidChangeVisibility(e=>{if(e.visible) open();}),
     vscode.commands.registerCommand('zephyrWorkbench.show',open),
+    vscode.commands.registerCommand('zephyrWorkbench.probeSupport', runner => {
+      requestedProbes = {id:runnerProfile(runner)};
+      return open('workspace');
+    }),
     vscode.commands.registerCommand('zephyrWorkbench.kconfig', () => {requestedInspector='kconfig';open('configuration');}),
     vscode.commands.registerCommand('zephyrWorkbench.inspectDevicetree', () => {requestedInspector='device';open('configuration');}),
     provider.onDidRefreshTarget(rescan => {

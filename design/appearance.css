@@ -1,3 +1,25 @@
+/* Probe tools and USB devices share one workspace section. */
+.probe-panel :is(.probe-list, .probe-devices) { margin: 0; padding: 0; list-style: none; }
+.probe-panel .probe-row { padding: var(--wb-space-block) var(--wb-space-inline); min-width: 0; }
+.probe-row + .probe-row { border-block-start: 1px solid var(--line); }
+.probe-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.probe-heading, .probe-actions, .probe-options, .probe-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .5rem; }
+.probe-meta { gap: .15rem 1rem; }
+.probe-meta > * { min-width: 0; max-width: 100%; }
+.probe-meta > details[open], .probe-meta > .probe-devices { flex-basis: 100%; }
+.probe-heading > strong { overflow-wrap: anywhere; }
+.probe-actions { margin-inline-start: auto; }
+.probe-panel .probe-row code.probe-path { display: block; padding: 0; background: none; color: var(--muted); white-space: normal; overflow-wrap: anywhere; }
+.probe-panel .probe-note { margin: 0; padding: var(--wb-space-block) var(--wb-space-inline); }
+.probe-panel .probe-warning { color: var(--warn); }
+.probe-row p, .probe-row details, .probe-row .probe-devices, .probe-row .probe-path { margin: .2rem 0; }
+.probe-row small, .probe-devices li, .probe-row p { overflow-wrap: anywhere; }
+.probe-row details summary { cursor: pointer; color: var(--muted); width: fit-content; }
+.probe-row details[open] .probe-options { margin-top: .3rem; }
+@media (max-width: 650px) {
+  .probe-heading .probe-actions { flex-basis: 100%; margin: 0; }
+}
+
 /* Spacing belongs to the workbench. Font size and zoom belong to the reader. */
 :root {
   --wb-space-inline: clamp(.65rem, 1.6vw, 1.125rem);

@@ -66,8 +66,8 @@ function environmentPage(){const env=model.env,missing=missingTools(),group=grou
  const scope=groupTabs(['环境默认','当前工程'],env.scope==='当前工程'?1:0,'envscope');
  const state=demo_environment_state();
  const target_tools=env.group===2?demo_compiler.render(state)+external_prefix_details(state):'';
- const groupContent=env.group===3?panel(group,wrap(b('检测探针与驱动…','demoProbe:open'))):
-   panel(group,toolSpecs.filter(s=>s[1]===group).map(entry).join('')+target_tools,scope);
+ if(env.group===3)return workspaceSection('environment','环境搭建','',environmentSections(navList,demoProbeList(),''));
+ const groupContent=panel(group,toolSpecs.filter(s=>s[1]===group).map(entry).join('')+target_tools,scope);
  return workspaceSection('environment','环境搭建',b('切换示例环境','envprofile')+b('验证环境','envcheck','','refresh')+b(model.method==='west'?'west 一键搭建':'本地 CMake 搭建','contextsetup','primary'),
  '<div class="envstrip">'+badge(missing.length?'构建缺 '+missing.length+' 项':'构建工具就绪',missing.length?'warn':'')+'<span>'+esc(model.board)+'</span>'+b(env.offline?'来源策略：离线':'来源策略：允许联网','policy','plain')+'</div>'+environmentSections(navList,groupContent,variablesPanel(),delivery+panel('验证记录',wrap('<p>'+esc(env.report||'尚未运行本轮验证。可逐项查看检测依据。')+'</p><small>'+toolSpecs.filter(s=>s[1]===group).map(s=>esc(s[4])).join('　·　')+'</small>'))))}
 function settingRecord(key,value){const e=model.env;if(e.scope==='当前工程'){(e.overrides[appKey()]??={})[key]=value}else e.values[key]=value;invalidate()}
