@@ -17,6 +17,7 @@ const build_issues = {
   board: ['请选择开发板和 CPU 目标。', 'Choose a board and CPU target.', '选择目标', 'Choose target'],
   directory: ['请选择与当前应用和开发板匹配的构建目录。', 'Choose a build directory for this application and board.', '选择构建目录…', 'Choose build folder…'],
   compilerDirectory: ['现有构建目录使用了其他编译器。请选择一个新的构建目录。','The existing build directory uses a different compiler. Choose a new build directory.','选择构建目录…','Choose build folder…'],
+  sourceCheckout: ['现有构建目录属于另一份 Zephyr 源码。请选择新的构建目录，或切回原先的源码。','This build directory belongs to another Zephyr checkout. Choose a fresh build directory or switch back to its source.','选择构建目录…','Choose build folder…'],
   modules: ['指定的模块目录缺失。', 'Configured module directories are missing.', '管理模块', 'Manage modules'],
   arguments: ['请修正附加 CMake 参数。', 'Correct the additional CMake definitions.', '编辑参数', 'Edit definitions'],
   parallelJobs: ['CMAKE_BUILD_PARALLEL_LEVEL 需要正整数。可在此为构建指定并行任务数。', 'CMAKE_BUILD_PARALLEL_LEVEL needs a positive integer. Choose a job limit for this build.', '设置并行任务数', 'Set build jobs'],
@@ -50,7 +51,7 @@ function build_recovery(key, root) {
     return (row?.querySelector('[data-input-action="list"]:enabled') || row?.querySelector('[data-input-action="browse"]'))?.click();
   }
   if (key === 'parallelJobs') return root.querySelector('#build-parallel-jobs')?.focus();
-  const targets = {application:'search:app', board:'search:board', directory:'browse:build',compilerDirectory:'browse:build'};
+  const targets = {application:'search:app', board:'search:board', directory:'browse:build',compilerDirectory:'browse:build',sourceCheckout:'browse:build'};
   if (targets[key]) return root.querySelector('[data-act="target:'+targets[key]+'"]')?.click();
   if (key === 'arguments') {
     const input = root.querySelector('#build-arguments');

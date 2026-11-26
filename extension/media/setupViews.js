@@ -117,10 +117,10 @@ const setupViews=(()=>{
     const label=group.key==='application'?tr('应用','Application'):group.key.replace(/^module:/,'');
     if(group.options.length===1){
       const item=group.options[0];
-      return environmentField(label,ZephyrPathDisplay.path(item.path),item.evidence);
+      return environmentField(label,ZephyrPathDisplay.directory(item.path),item.evidence);
     }
     const placeholder='<option value="">'+tr('选择一个候选项','Select a candidate')+'</option>';
-    const items=group.options.map(item=>'<option value="'+esc(item.path)+'" '+(item.path===group.selected?'selected':'')+'>'+esc(ZephyrPathDisplay.path(item.path))+'</option>');
+    const items=group.options.map(item=>'<option value="'+esc(item.path)+'" '+(item.path===group.selected?'selected':'')+'>'+esc(ZephyrPathDisplay.directory(item.path))+'</option>');
     return '<label class="detected-choice"><strong>'+esc(label)+'</strong><select data-location="'+esc(group.key)+'">'+placeholder+items.join('')+
       '</select><small>'+esc(group.options[0].evidence)+'</small></label>';
   }
@@ -132,7 +132,7 @@ const setupViews=(()=>{
       tr('本地模块','Local modules')+' · '+modules.length+'</summary>'+modules.map(foundLocation).join('')+'</details>');
     if(detected.conflicts?.length)fields.push('<details class="detected-modules"><summary>'+
       tr('同名模块沿用清单路径','Manifest paths used for duplicate modules')+'</summary>'+
-      detected.conflicts.map(c=>environmentField(c.name,ZephyrPathDisplay.path(c.path),tr('另一个本地目录：','Other local directory: ')+ZephyrPathDisplay.path(c.other))).join('')+'</details>');
+      detected.conflicts.map(c=>environmentField(c.name,ZephyrPathDisplay.directory(c.path),tr('另一个本地目录：','Other local directory: ')+ZephyrPathDisplay.directory(c.other))).join('')+'</details>');
     if(!detected.groups.length)return fields.join('');
     const complete=detected.groups.every(g=>g.selected);
     const question=complete?tr('已临时采用能唯一识别的路径，是否保存到当前工作区？','Unambiguous paths are in use for this session. Save them to this workspace?'):tr('部分项目有多个候选。选定后可保存整组路径。','Some locations have multiple candidates. Select one for each before saving.');
@@ -142,7 +142,8 @@ const setupViews=(()=>{
   }
   function workspace(s){
     const jump=b(tr('定位 west 工作区','Go to west workspace'),'setup:west');
-    return heading(ZephyrPathDisplay.path(s.folder)||'Zephyr Extension',tr('工作区','Workspace'),'',jump)+discoveryPanel(s.detected)+environment(s)+west(s);
+    return heading(ZephyrPathDisplay.path(s.folder)||'Zephyr Extension',tr('工作区','Workspace'),'',jump)+
+      discovery_diagnostics(s.discoveryIssues)+discoveryPanel(s.detected)+environment(s)+west(s);
   }
   document.addEventListener('click',e=>{
     const remove=e.target.closest('[data-remove-board-root]');

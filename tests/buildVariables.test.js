@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const Module = require('node:module');
 const path = require('node:path');
 const {test} = require('node:test');
-const {buildVariables, previewPlan} = require('../extension/buildVariables');
+const {buildVariables, cacheStatus, previewPlan} = require('../extension/buildVariables');
 
 const app = path.resolve('fixture', 'hello world');
 const build = path.join(app, 'build');
@@ -66,6 +66,58 @@ const cache = [
   '//No help, variable specified on the command line.', 'BOARD-LIB:STRING=codec',
   'ZEPHYR_BASE:PATH=' + app, 'UNRELATED:INTERNAL=private'
 ].join('\r\n');
+
+test('a different Zephyr checkout blocks configure and build without adopting the old board or variables', async () => {
+  const other = path.resolve('fixture','其他 source');
+  for (const method of ['CMake','west']) {
+    for (const input of [{environment:{ZEPHYR_BASE:other}}, {args:'ZEPHYR_BASE:PATH='+other}]) {
+      const result = await inspect({cache,generated:true,method,board:null,...input});
+      assert.equal(result.status,'conflict');
+      assert.equal(result.board,'');
+      assert.equal(result.canConfigure,false);
+      assert.equal(result.canBuild,false);
+      assert.ok(result.readiness.configure.includes('sourceCheckout'));
+      assert.ok(result.readiness.build.includes('sourceCheckout'));
+      assert.equal(result.rows.CMAKE_GENERATOR.configured,undefined);
+    }
+  }
+  const result = await inspect({cache,generated:true,environment:{ZEPHYR_BASE:other},args:'ZEPHYR_BASE='+app});
+  assert.equal(result.status,'current');
+  assert.equal(result.canBuild,true);
+});
+
+test('a checkout alias can reuse its cache and sysbuild detects an inconsistent main-image source', async t => {
+  const fs = require('node:fs/promises');
+  const root = await fs.mkdtemp(path.join(require('node:os').tmpdir(),'zephyr-cache-'));
+  t.after(()=>fs.rm(root,{recursive:true,force:true}));
+  const source = path.join(root,'source'), alias = path.join(root,'alias');
+  await fs.mkdir(source);
+  await fs.symlink(source,alias,process.platform === 'win32' ? 'junction' : 'dir');
+  const target = {cacheFile:uri(path.join(build,'CMakeCache.txt')),app:uri(app),board:'a',
+    cache:new Map([['ZEPHYR_BASE',source],['APPLICATION_SOURCE_DIR',app],['CMAKE_CACHEFILE_DIR',build]])};
+  assert.equal(cacheStatus(target,app,'a',build,alias),'current');
+  target.system = {cache:new Map([['ZEPHYR_BASE',path.join(root,'different')],['CMAKE_CACHEFILE_DIR',build]])};
+  assert.equal(cacheStatus(target,app,'a',build,alias),'conflict');
+});
+
+test('switching source checkouts leaves the old application behind unless explicitly selected', () => {
+  const other = path.resolve('fixture','另一个 checkout'), oldApp = path.join(other,'samples','hello_world');
+  const target = {cacheFile:uri(path.join(build,'CMakeCache.txt')),app:uri(oldApp),board:'old_target',
+    cache:new Map([['APPLICATION_SOURCE_DIR',oldApp],['CMAKE_CACHEFILE_DIR',build],['ZEPHYR_BASE',other]])};
+  const s = {folder:{uri:uri(app)},target,build:uri(build),checkout:app,environment:{}};
+  const state = new Map();
+  const context = {workspaceState:{get:(key,fallback)=>state.get(key) ?? fallback}};
+  const fresh = setup.selectedTarget(context,s);
+  assert.equal(fresh.app,app);
+  assert.equal(fresh.cacheStatus,'conflict');
+  assert.equal(fresh.board,'');
+  const explicit = path.resolve('fixture','external application');
+  state.set('buildSetup.app:'+s.folder.uri.toString(),explicit);
+  assert.equal(setup.selectedTarget(context,s).app,explicit);
+  state.clear();
+  s.checkout=other;
+  assert.equal(setup.selectedTarget(context,s).app,oldApp);
+});
 
 test('planned definitions and typed cached values preserve empty, 0, OFF and embedded equals', async () => {
   const args = 'CONF_FILE=new.conf\r\nEMPTY:STRING=\r\nZERO=0\nOPTION:BOOL=OFF\nSPACED \t=  part =value';

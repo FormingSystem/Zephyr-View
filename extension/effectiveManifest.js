@@ -3,6 +3,7 @@
 const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
 const execute = promisify(execFile);
+const {manifestCheckout} = require('./checkout');
 
 function importsProjects(manifest) {
   // The manifest reader uses FAILSAFE_SCHEMA, so YAML false is returned as text.
@@ -23,7 +24,9 @@ async function effectiveManifest(manifest, west, env, run = execute) {
     if (!records.length || records.some(record => record.length !== 4)) return fallback;
     const projects = records.filter(([name]) => name !== 'manifest')
       .map(([name,path,revision,url]) => ({name,path,revision,url}));
-    return {...manifest, projects, scope:'effective'};
+    const result = {...manifest, projects, scope:'effective'};
+    if (!result.checkout) result.checkout = await manifestCheckout(result);
+    return result;
   } catch {
     // Direct declarations remain available offline, including when an import has not been fetched.
     return fallback;

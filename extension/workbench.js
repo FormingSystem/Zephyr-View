@@ -21,6 +21,7 @@ const {ConfigurationWindow} = require('./configurationWindow');
 const {describeFiles, acknowledgeFileReset, prepareFileConfigure} = require('./configurationFiles');
 const {choose_configuration_files, apply_file_readiness} = require('./configurationFilePicker');
 const {inspectWorkspace, buildFiles} = require('./workspace');
+const {targetChoiceReply} = require('./targetChoiceReply');
 const {debugRunner, hasCurrentBuild, lastBuildFailure, taskScope} = require('./target');
 const {Uri, l10n} = vscode;
 const running = new Set();
@@ -43,7 +44,7 @@ function documentHtml(view, base, title) {
   const template=fs.readFileSync(Uri.joinPath(base,shared,'index.html').fsPath,'utf8');
   const policy=`default-src 'none'; style-src ${view.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src https://api.github.com https://gitee.com`;
   const scripts=['fuzzy.js','pathDisplay.js','vendor/js-yaml/js-yaml.min.js','appearance.js','build-context.js','configuration-inputs.js','build-panel.js','toolchain-controls.js','configuration-tree.js','configuration-workspace.js','module-identification.js','module-pagination.js','module-lists.js','module-sources.js']
-    .map(name=>shared+name).concat(['nativeModules.js','kconfigFields.js','fragmentFields.js','deviceTreeDraft.js','studioMap.js','studioView.js','setupViews.js','targetPicker.js','buildControls.js','flashPlan.js','flashPanel.js','build_page.js','workbench.js']);
+    .map(name=>shared+name).concat(['nativeModules.js','kconfigFields.js','fragmentFields.js','deviceTreeDraft.js','studioMap.js','studioView.js','discoveryDiagnostics.js','setupViews.js','targetPicker.js','buildControls.js','flashPlan.js','flashPanel.js','build_page.js','workbench.js']);
   return template.replace('lang="zh-CN"', `lang="${vscode.env.language.startsWith('zh')?'zh-CN':'en'}" data-path-platform="${process.platform}"`).replace('<title>',`<meta http-equiv="Content-Security-Policy" content="${policy}"><title>`)
     .replace('href="appearance.css"',`href="${asset(shared+'appearance.css')}"`)
     .replace('href="workbench.css"',`href="${asset(shared+'workbench.css')}"`)
@@ -67,6 +68,22 @@ async function devicetreeReferences(context, s) {
   if (!vscode.workspace.isTrusted) return {detectionStatus: 'unavailable'};
   const detected = await require('./boardCatalog').detectBoardDts(s, setup.taskEnvironment(context, s), undefined, true);
   return {...detected, generatedFile: tree?.merged?.fsPath};
+}
+
+async function openDiscoveryIssue(filename) {
+  let location = filename;
+  for (;;) {
+    try {
+      const file = await fs.promises.stat(location);
+      const command = file.isFile() ? 'vscode.open' : 'revealFileInOS';
+      return vscode.commands.executeCommand(command, Uri.file(location));
+    } catch (error) {
+      if (!['ENOENT','ENOTDIR'].includes(error.code)) throw error;
+      const parent = path.dirname(location);
+      if (parent === location) return;
+      location = parent;
+    }
+  }
 }
 
 function registerWorkbench(context, provider) {
@@ -112,7 +129,7 @@ function registerWorkbench(context, provider) {
   async function refresh() {
     if (!panel || !ready) return;
     const version = ++generation;
-    const s = await inspectWorkspace(provider,context);
+    const s = await inspectWorkspace(provider,context,discovery);
     Object.assign(s,environmentConfig.resolve(context,s));
     if (s.folder) {
       const west = vscode.workspace.isTrusted ? s.tools.west : undefined;
@@ -152,16 +169,19 @@ function registerWorkbench(context, provider) {
     if (version !== generation || !panel) return;
     s.compilerChoices = compilerChoices;
     const transfer = page === 'configuration' && configurationWindow.forTarget(panel,studio_scope(s));
+    const currentSystem = s.setup.cacheStatus === 'current' ? s.target?.system : undefined;
+    s.discoveryIssues = [...(s.manifest.diagnostics || []), ...(s.locations?.diagnostics || [])];
     const delivered = await panel.webview.postMessage({page,studioDetached:configurationWindow.detached,studioPresentation:configurationWindow.presentation,studioRestore:transfer?.state,inspector:requestedInspector,version,language:vscode.env.language,method:method(s),
       folder:s.folder?.uri.fsPath, app:s.setup.app, board:s.setup.board, projectBoard:s.setup.projectBoard, build:s.build?.fsPath,
-      system:s.setup.system,defaultImage:s.target?.system?.main?.name,images:s.target?.system?.domains?.map(image=>image.name),
+      system:s.setup.system,defaultImage:currentSystem?.main?.name,images:currentSystem?.domains?.map(image=>image.name),
       plan:previewPlan(s.setup.plan), parallelism:s.setup.parallelism, argsText:s.setup.argsText,error:s.setup.error, conflict:s.setup.conflict, canConfigure:s.setup.canConfigure, canBuild:s.setup.canBuild,
       buildVariables:s.buildVariables,devicetree:s.devicetree,configurationFiles:s.configurationFiles,
       readiness:s.setup.readiness,missingModules:s.setup.missingModules||[],lastFailure:s.lastFailure,
       busy:running.has(s.build?.toString()),flash:s.flash,flashLoaded:s.flashLoaded,
       hostPrograms:environmentConfig.programs,
       detected:s.locations && {groups:s.locations.groups,origins:s.locations.origins,conflicts:s.locations.conflicts,hidden:s.locations.hidden},
-      runner:debugRunner(s), configured:Boolean(s.target?.cacheFile), tools:s.tools, environmentRows:variables,
+      discoveryIssues:s.discoveryIssues,
+      runner:debugRunner(s), configured:Boolean(s.target?.cacheFile) && s.setup.cacheStatus !== 'conflict', tools:s.tools, environmentRows:variables,
       compilerChoices, extraRoots:require('./boardRoots').board_roots(s.saved.BOARD_ROOT),
       environmentRegistration:registrationScopes().length > 0 && registrationCandidates(variables).length > 0,
       environmentCacheStatus:s.setup.cacheStatus,overrides:Object.keys(s.saved),inputs:s.inputs||[],symbols,selectedModules,includedInputs:s.setup.includedFragments||[],
@@ -362,6 +382,11 @@ function registerWorkbench(context, provider) {
     }
     if (m.action === 'studioSaveAs' || m.action === 'studioSave') return save_studio_input(s, m);
     const same_folder = () => Boolean(s.folder && s.folder.uri.toString() === provider.folder()?.uri.toString());
+    if (m.action === 'openDiscoveryFile' && same_folder() && vscode.workspace.isTrusted) {
+      const issues = [...(s.discoveryIssues || []), ...(s.boardIssues || [])];
+      if (typeof m.id !== 'string' || !path.isAbsolute(m.id) || !issues.some(issue => issue.path === m.id)) return;
+      return openDiscoveryIssue(m.id);
+    }
     if (m.action === 'registerEnvironment' && registrationScopes().length > 0) {
       const current = () => page==='workspace' && m.version===generation && same_folder() && vscode.workspace.isTrusted;
       if (current()) await require('./registerEnvironment').registerEnvironment(environmentRows(s,setup.taskEnvironment(context,s)),current);
@@ -434,10 +459,11 @@ function registerWorkbench(context, provider) {
       const kind=m.id?.kind;
       if(!s.folder||!vscode.workspace.isTrusted||!['app','board','build'].includes(kind))return;
       if(m.action==='targetList'){
-        const reply={picker:m.id.request};
-        try{const values=await setup.choices(context,s,method(s),kind);(s.choices??={})[kind]=values;reply.items=values;}
-        catch(error){reply.error=error.message;}
-        return panel?.webview.postMessage(reply);
+        const load = async () => kind === 'board' ? setup.boardChoicesResult(context,s,method(s)) :
+          {items:await setup.choices(context,s,method(s),kind)};
+        const reply = await targetChoiceReply(s,m.id,load,()=>snapshot===s && same_folder());
+        if (reply) return panel?.webview.postMessage(reply);
+        return;
       }
       let value=m.id.value;
       if(m.action==='targetBoard'){

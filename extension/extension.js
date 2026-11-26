@@ -9,6 +9,8 @@ const {debugRunner, hasCurrentBuild, hasFile, lastBuildFailure, looksLikeZephyr,
 const {imageDomains} = require('./sysbuild');
 const {selectedTarget, applyLastConfigureResult} = require('./buildSetup');
 const {cacheStatus} = require('./buildVariables');
+const {containingCheckout} = require('./checkout');
+const {explicitSource} = require('./workspace');
 const {Uri, TreeItem, ThemeIcon, l10n} = vscode;
 
 function item(label, value, icon, command) {
@@ -99,7 +101,8 @@ class DebugTarget {
   showSelection(snapshot) {
     const selection = snapshot?.folder && {
       folder:snapshot.folder.uri.toString(), build:snapshot.build.toString(), app:snapshot.setup.app,
-      board:snapshot.setup.board, projectBoard:snapshot.setup.projectBoard, boardFile:snapshot.devicetree.boardFile
+      board:snapshot.setup.board, projectBoard:snapshot.setup.projectBoard, boardFile:snapshot.devicetree.boardFile,
+      source:snapshot.environment?.ZEPHYR_BASE || snapshot.checkout
     };
     if (JSON.stringify(selection) === JSON.stringify(this.selection)) return;
     this.selection = selection;
@@ -112,9 +115,14 @@ class DebugTarget {
     const locations = vscode.workspace.getConfiguration('zephyrWorkbench',folder.uri).get('locations');
     const application = typeof locations?.application === 'string' && locations.application.trim()
       ? path.resolve(folder.uri.fsPath,locations.application) : undefined;
-    const s = {folder,build,target,application,environment:process.env};
-    const {app,board,projectBoard} = selection || selectedTarget(this.context,s);
-    s.setup = {app,board,projectBoard,cacheStatus:cacheStatus(target,app,board,build.fsPath),readiness:{build:[]}};
+    const source = selection?.source || explicitSource(folder,this.context) ||
+      (folder.uri.scheme === 'file' && await containingCheckout(folder.uri.fsPath));
+    const base = source ? path.resolve(folder.uri.fsPath,source) : undefined;
+    const s = {folder,build,target,application:selection?.app || application,environment:{...process.env,ZEPHYR_BASE:base}};
+    const inferred = selectedTarget(this.context,s);
+    const {app,board,projectBoard} = selection || inferred;
+    const status = inferred.sourceConflict ? 'conflict' : cacheStatus(target,app,board,build.fsPath);
+    s.setup = {app,board,projectBoard,cacheStatus:status,readiness:{build:[]}};
     applyLastConfigureResult(s.setup,await lastBuildFailure(this.context,s));
     return s;
   }

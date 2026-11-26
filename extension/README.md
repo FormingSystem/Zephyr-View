@@ -46,6 +46,10 @@
 
 **由工程选择开发板**　「开发板与 CPU → 使用工程设置」沿用应用、环境或现有构建目录决定的 `BOARD`。要改选，在同一列表搜索板名和 CPU；厂商定义的别名或未列出的修订可点「使用此 BOARD」。已有构建目录绑定其他目标时，选择新的构建目录。配置后可核对目标架构和编译器。
 
+**多份源码与选板排错**　同一目录下有多份 Zephyr 时，打开所需源码或其中的应用。打开共同父目录且没有清单、显式配置等依据时，在「工作区」选择本次要使用的源码。已有的 `ZEPHYR_BASE` 会显示其来源；构建缓存绑定其他源码时，为当前源码选择新的构建目录。构建页和配置图使用同一个选板器。搜索结果为空时，仍可输入完整的 `板名[@修订][/SoC/CPU]` 并点「使用此 BOARD」，也可用「添加板卡搜索目录…」选择含 `boards/` 的根目录、`boards/` 本身或其下的板定义目录。
+
+「识别问题」会列出有问题的文件、解析器给出的原因和修复提示。点击「打开文件」检查 YAML 缩进、模块依赖、SoC 引用或清单路径，修复后重新打开选板器；工作区和模块的发现结果可在「工作区 → 环境搭建 → 重新检测」更新。板列表可保留独立的有效条目，最终能否配置和构建由当前源码的 Zephyr 工具判定。[官方板卡目标命名](https://docs.zephyrproject.org/latest/hardware/porting/board_porting.html) · [官方 west 板卡命令](https://docs.zephyrproject.org/latest/develop/west/zephyr-cmds.html)
+
 **多镜像工程**　在新的构建目录勾选 **Sysbuild**，再运行「配置」和「构建」。已有的 sysbuild 根目录会自动识别。构建页列出 `domains.yaml` 中的镜像，标明主镜像；配置图展示主镜像的 Kconfig 和设备树。其他镜像可用 Zephyr 的命名空间参数配置，例如 `remote_CONFIG_DEBUG_OPTIMIZATIONS=y`。[Zephyr sysbuild](https://docs.zephyrproject.org/latest/build/sysbuild/index.html)
 
 例如在 nRF5340 的双核工程里，为主镜像选一份 `.conf` 后，可以点「恢复工程设置」并重新配置。应用核会重新读取工程自己的文件，网络核继续使用自己的配置。调试某个核时，左侧显示该镜像，构建页仍可构建整个系统。

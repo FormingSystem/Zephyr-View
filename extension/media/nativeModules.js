@@ -28,6 +28,8 @@ function render(){
   if(page!=='modules')return;
   const main=$('#main');
   renderModulePage(main);
+  const notices = discovery_diagnostics(live?.discoveryIssues);
+  if (notices) (main.querySelector('.module-sections') || main.firstElementChild)?.insertAdjacentHTML('beforebegin', notices);
   if(live?.manifestScope==='partial'){
     const note=document.createElement('p');
     note.textContent=tr('导入清单未解析，仅显示直接声明和手动添加的模块。','Manifest imports are unresolved. Only direct and manually added modules are shown.');

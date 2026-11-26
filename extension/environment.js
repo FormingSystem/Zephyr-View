@@ -49,7 +49,7 @@ async function change_board_roots(context, s, {reset, remove, typed}, still_curr
     const selected = typed ? await inputDirectory(options) : await pickDirectory({title:options.title, defaultUri:options.defaultUri});
     if (!selected) return;
     added = await selected_root(selected.fsPath);
-    if (!added) throw Error(vscode.l10n.t('Choose a directory containing boards/ (or the boards directory itself).'));
+    if (!added) throw Error(vscode.l10n.t('Choose a board root, its boards folder, or a board definition folder under boards.'));
   }
   if (!still_current()) return;
   const saved = {...overrides(context,s.folder)};

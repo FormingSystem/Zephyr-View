@@ -2,13 +2,13 @@
 const vscode = require('vscode');
 const path = require('node:path');
 const modules=require('./modules');
-const {buildVariables, cacheStatus, parseDefinition} = require('./buildVariables');
+const {buildVariables, cacheSourceConflict, cacheStatus, parseDefinition} = require('./buildVariables');
 const {build_parallelism, build_arguments, job_count} = require('./buildParallelism');
 const {compiler_request, definition_matches, forget_changed_choices} = require('./compiler_selection');
 const {includeFragment, fragmentPlan} = require('./buildFragments');
 const {filePlan} = require('./configurationFiles');
 const {buildMode, buildLayout} = require('./sysbuild');
-const {boardModules, boardTargets, readBoards, pickerRoots} = require('./boardCatalog');
+const {listBoardChoices} = require('./boardPicker');
 const {discoverApplications} = require('./applicationCatalog');
 const {execFile} = require('node:child_process');
 const fs = require('node:fs/promises');
@@ -59,16 +59,29 @@ function plans(s, method, app, board, layout, parallelism) {
   return {executable,configure,build:build_arguments(method,dir,parallelism)};
 }
 
-function selectedTarget(context,s,westBoard) {
-  const app=context.workspaceState.get(setting(s.folder,'app'),s.application||s.target.app.fsPath);
-  const cache=cacheStatus(s.target,app,s.target.board,s.build.fsPath);
-  const choice=context.workspaceState.get(setting(s.folder,'board'));
+function applicationInputs(context,s,app) {
   const argsText=context.workspaceState.get(argsKey(app),'');
-  const argumentBoard=commandValue(argsText.split(/\r?\n/).map(line=>'-D'+line.trimStart().replace(/^-D/,'')),'BOARD');
+  const args=argsText.split(/\r?\n/).map(line=>'-D'+line.trimStart().replace(/^-D/,''));
+  const source=commandValue(args,'ZEPHYR_BASE') || s.environment.ZEPHYR_BASE ||
+    context.workspaceState.get(setting(s.folder,'base')) || s.checkout;
+  const sourceConflict=cacheSourceConflict(s.target,source && path.resolve(app,source));
+  return {app,argsText,argumentBoard:commandValue(args,'BOARD'),sourceConflict};
+}
+
+function selectedTarget(context,s,westBoard) {
+  const selectedApp=context.workspaceState.get(setting(s.folder,'app'),s.application);
+  let inputs=applicationInputs(context,s,selectedApp || s.folder.uri.fsPath);
+  if(!selectedApp && !inputs.sourceConflict && path.relative(inputs.app,s.target.app.fsPath)) {
+    const fromCache=applicationInputs(context,s,s.target.app.fsPath);
+    if(!fromCache.sourceConflict)inputs=fromCache;
+  }
+  const {app,argsText,argumentBoard,sourceConflict}=inputs;
+  const choice=context.workspaceState.get(setting(s.folder,'board'));
+  const cache=sourceConflict ? 'conflict' : cacheStatus(s.target,app,s.target.board,s.build.fsPath);
   const requested=choice || argumentBoard;
   const board=requested || (cache==='current' && s.target.board) || s.environment.BOARD || westBoard || '';
   const status=cache==='current' && requested && requested!==s.target.board?'conflict':cache;
-  return {app,board,projectBoard:!choice,argsText,cacheStatus:status};
+  return {app,board,projectBoard:!choice,argsText,cacheStatus:status,sourceConflict};
 }
 
 // A Zephyr source checkout has a CMakeLists.txt, but it cannot be the application source.
@@ -136,7 +149,7 @@ function readinessResult(configure,build) {
   return {readiness:{configure,build},canConfigure:!configure.length,canBuild:!build.length};
 }
 
-function buildReadiness(s,method,{cmake,west,application,board,directory,ninja,error,pending,current,missingModules,compilerConflict,layoutIssue}) {
+function buildReadiness(s,method,{cmake,west,application,board,directory,ninja,error,pending,current,missingModules,compilerConflict,layoutIssue,sourceConflict}) {
   const issues=[];
   if(vscode.workspace.isTrusted===false)issues.push('trust');
   if(!cmake)issues.push('cmake');
@@ -148,14 +161,17 @@ function buildReadiness(s,method,{cmake,west,application,board,directory,ninja,e
   if(!application)issues.push('application');
   if(!board)issues.push('board');
   if(!directory)issues.push('directory');
+  if(sourceConflict)issues.push('sourceCheckout');
   if(compilerConflict)issues.push('compilerDirectory');
   if(error)issues.push('arguments');
   if(layoutIssue)issues.push(layoutIssue);
   if(ninja)issues.push('ninja');
   if(missingModules.length)issues.push('modules');
   const build=[...issues];
-  if(!current || !s.target.generated)build.push('configureFirst');
-  else if(pending)build.push('reconfigure');
+  if(!sourceConflict){
+    if(!current || !s.target.generated)build.push('configureFirst');
+    else if(pending)build.push('reconfigure');
+  }
   return readinessResult(issues,build);
 }
 
@@ -222,9 +238,9 @@ async function describe(context,s,method) {
     westMode && readWestOption(context,s,'build.generator'),missingModuleDirectories(extra)
   ]);
   const ambiguous=s.locations?.groups.some(g=>g.key==='application'&&!g.selected);
-  const current=status==='current', directory=!conflict && normal(app)!==normal(s.build.fsPath);
+  const current=status==='current', directory=(!conflict || target.sourceConflict) && normal(app)!==normal(s.build.fsPath);
   const ninja=await missingNinja(s,method,plan,extra,westGenerator,current);
-  const readiness=buildReadiness(s,method,{cmake,west,board:board || projectBoard,directory,ninja,error,pending,current,missingModules,compilerConflict:compiler.conflict,layoutIssue:layout.issue,application:appExists&&!ambiguous});
+  const readiness=buildReadiness(s,method,{cmake,west,board:board || projectBoard,directory,ninja,error,pending,current,missingModules,compilerConflict:compiler.conflict,layoutIssue:layout.issue,sourceConflict:target.sourceConflict,application:appExists&&!ambiguous});
   if (parallelism.invalidEnvironment && !parallelism.custom) {
     readiness.readiness.build.push('parallelJobs');
     readiness.canBuild=false;
@@ -256,11 +272,7 @@ async function listApplications(s){
   return [...dirs].sort();
 }
 async function choices(context,s,method,kind){
-  if(kind==='board'){
-    const targets=await queryBoards(context,s,method);
-    // west can emit an empty revision as "board@/soc"; CMake spells this "board/soc".
-    return [...new Set(targets.map(target=>target.replace(/@(?=\/|$)/,'')))].sort();
-  }
+  if(kind==='board')return (await boardChoicesResult(context,s,method)).items;
   if(kind==='app')return listApplications(s);
   const caches=await vscode.workspace.findFiles(new vscode.RelativePattern(s.folder,'**/CMakeCache.txt'),'**/{.git,.venv,node_modules}/**');
   return [...new Set([s.build.fsPath,path.join(s.setup.app,'build'),...caches.map(uri=>path.dirname(uri.fsPath))])];
@@ -284,24 +296,12 @@ function buildEnv(s) {
   return env;
 }
 
-async function queryBoards(context,s,method) {
-  const env=taskEnvironment(context,s);
-  const options={env,cwd:(s.manifest.root||s.folder.uri).fsPath,windowsHide:true,maxBuffer:8*1024*1024,timeout:120000};
-  const {modules,extraModules}=boardModules(s,env);
-  // west boards enumerates its manifest. The checkout's catalog also accepts the build's module selection.
-  if(method==='west' && s.tools.west && s.manifest.root && !modules.length && !extraModules.length) {
-    const rootArgs=Object.entries(await pickerRoots(s,env)).flatMap(([key,roots])=>roots.flatMap(root=>['--'+key.replace('_','-'),root]));
-    try{
-      const result=await execute(s.tools.west,['boards','--all-targets',...rootArgs],options);
-      return result.stdout.split(/\r?\n/).map(v=>v.trim()).filter(Boolean);
-    }catch(e){
-      if(!/unrecognized arguments:.*--all-targets|no such option:.*--all-targets/i.test(e.stderr||''))throw e;
-      const legacy=await execute(s.tools.west,['boards','-f','{name}',...rootArgs],options);
-      return legacy.stdout.split(/\r?\n/).map(v=>v.trim()).filter(Boolean);
-    }
+async function boardChoicesResult(context,s,method) {
+  try { return await listBoardChoices(s,taskEnvironment(context,s),method); }
+  catch(error) {
+    if(error.message==='ZEPHYR_BASE')throw Error(l10n.t('Locate Zephyr source (ZEPHYR_BASE)'));
+    throw error;
   }
-  try{return boardTargets(await readBoards(s,env));}
-  catch(error){if(error.message==='ZEPHYR_BASE')throw Error(l10n.t('Locate Zephyr source (ZEPHYR_BASE)'));throw error;}
 }
 
 function taskEnvironment(context,s) {
@@ -312,4 +312,4 @@ function taskEnvironment(context,s) {
 function variables(context,s,method) {
   return buildVariables(s,method,taskEnvironment(context,s),s.setup.westGenerator);
 }
-module.exports={discover_new_overlay,remember_new_overlay,includeFragment,describe,applyLastConfigureResult,selectedTarget,choices,applyChoice,buildEnv,taskEnvironment,saveArguments,save_parallelism,saveSystem,variables};
+module.exports={discover_new_overlay,remember_new_overlay,includeFragment,describe,applyLastConfigureResult,selectedTarget,boardChoicesResult,choices,applyChoice,buildEnv,taskEnvironment,saveArguments,save_parallelism,saveSystem,variables};

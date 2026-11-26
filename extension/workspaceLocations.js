@@ -2,9 +2,9 @@
 
 const path = require('node:path');
 const vscode = require('vscode');
-const {scanLocations} = require('./discoverLocations');
-const {localModule} = require('./modules');
+const {scanLocations, inspectLocalModule} = require('./discoverLocations');
 const {selectedTarget} = require('./buildSetup');
+const {cacheSourceConflict} = require('./buildVariables');
 
 const preference = 'locations';
 const fields = ['application','ZEPHYR_BASE','ZEPHYR_SDK_INSTALL_DIR'];
@@ -42,8 +42,10 @@ function createDiscovery(){
     if(value)choices.get(id).set(key,path.resolve(folder.uri.fsPath,value));
     else choices.get(id).delete(key);
   }
+  function chosenSource(folder){return folder && choices.get(folder.uri.toString())?.get('ZEPHYR_BASE');}
   async function apply(context,s){
     if(!s.folder || s.folder.uri.scheme!=='file' || !vscode.workspace.isTrusted)return;
+    s.checkout ??= s.manifest.checkout;
     const folder=s.folder,root=folder.uri.fsPath,id=folder.uri.toString();
     const saved=configuration(folder).get(preference,{})||{};
     const skip=new Set();
@@ -54,7 +56,11 @@ function createDiscovery(){
       skip.add('application');
       if(!manualApp)s.application=absolute(root,saved.application);
     }
-    const cache=s.target.cacheFile&&selectedTarget(context,s).cacheStatus==='current'?s.target.cache:undefined;
+    const source=absolute(root,s.saved.ZEPHYR_BASE || saved.ZEPHYR_BASE || s.environment.ZEPHYR_BASE || s.checkout);
+    const foreignCache=cacheSourceConflict(s.target,source);
+    // The cache in a reused build directory may describe a different checkout and application.
+    if(foreignCache && !manualApp && !s.application)s.application=root;
+    const cache=!foreignCache&&s.target.cacheFile&&selectedTarget(context,s).cacheStatus==='current'?s.target.cache:undefined;
     if(cache)skip.add('application');
     for(const name of fields.slice(1)){
       const configured=absolute(root,saved[name]);
@@ -67,8 +73,14 @@ function createDiscovery(){
     const variant=s.environment.ZEPHYR_TOOLCHAIN_VARIANT||cache?.get('ZEPHYR_TOOLCHAIN_VARIANT');
     if(variant && !/^zephyr(?:\/|$)/.test(variant))skip.add('ZEPHYR_SDK_INSTALL_DIR');
     if(Array.isArray(saved.modules))skip.add('modules');
-    if(!scans.has(id))scans.set(id,scanLocations(root,s.manifest.root?.fsPath).catch(error=>{scans.delete(id);throw error;}));
-    const records=await scans.get(id);
+    const westRoot=s.manifest.root?.fsPath;
+    const searchSource=chosenSource(folder) ? undefined : s.checkout;
+    const scope=JSON.stringify([westRoot,searchSource]);
+    if(scans.get(id)?.scope!==scope)scans.set(id,{scope,records:scanLocations(root,westRoot,searchSource)});
+    const scan=scans.get(id);
+    let records,diagnostics;
+    try{({records,diagnostics}=await scan.records);}
+    catch(error){if(scans.get(id)===scan)scans.delete(id);throw error;}
     const manifest=new Map(s.manifest.projects.map(p=>[p.name,path.resolve(s.manifest.root?.fsPath||root,p.path||p.name)]));
     const conflicts=records.filter(r=>r.kind==='modules'&&manifest.has(r.name)&&!same(manifest.get(r.name),r.path))
       .map(r=>({name:r.name,path:relative(root,manifest.get(r.name)),other:relative(root,r.path)}));
@@ -84,10 +96,11 @@ function createDiscovery(){
     }
     const paths=Array.isArray(saved.modules)?saved.modules.map(v=>absolute(root,v)).filter(Boolean):selectedModules;
     const discovered=new Map(records.filter(x=>x.kind==='modules').map(x=>[x.path,x]));
+    diagnostics=[...diagnostics];
     s.localModules=(await Promise.all([...new Set(paths)].map(dir=>discovered.get(dir)||
-      localModule(dir,true).catch(()=>undefined)))).filter(Boolean);
+      inspectLocalModule(dir,diagnostics,true)))).filter(Boolean);
     const signature=JSON.stringify(groups);
-    s.locations={groups,origins,conflicts,signature,hidden:dismissed.get(id)===signature};
+    s.locations={groups,origins,conflicts,diagnostics,signature,hidden:dismissed.get(id)===signature};
   }
   function dismiss(s){dismissed.set(s.folder.uri.toString(),s.locations.signature);}
   async function save(s){
@@ -106,6 +119,6 @@ function createDiscovery(){
     await settings.update(preference,current,vscode.ConfigurationTarget.WorkspaceFolder);
     return true;
   }
-  return {apply,save,reset,dismiss,choose};
+  return {apply,save,reset,dismiss,choose,chosenSource};
 }
 module.exports={createDiscovery};

@@ -19,18 +19,29 @@ function distinct_roots(values, base) {
   });
 }
 
-/** Accept either the directory containing boards/ or the boards directory itself. */
+async function isDirectory(directory) {
+  try { return (await fs.stat(directory)).isDirectory(); }
+  catch (error) {
+    if (['ENOENT','ENOTDIR'].includes(error.code)) return false;
+    throw error;
+  }
+}
+
+/** Resolve a board root, its boards/ folder, or a board definition directory beneath it. */
 async function selected_root(directory) {
   if (directory.includes(';')) return undefined;
   const candidate = path.normalize(directory);
-  try {
-    if ((await fs.stat(path.join(candidate, 'boards'))).isDirectory()) return candidate;
-  } catch (error) {
-    if (!['ENOENT','ENOTDIR'].includes(error.code)) throw error;
+  if (await isDirectory(path.join(candidate,'boards'))) return candidate;
+  if (!await isDirectory(candidate)) return;
+  const isBoards = value => (process.platform === 'win32' ? value.toLowerCase() : value) === 'boards';
+  if (isBoards(path.basename(candidate))) return path.dirname(candidate);
+  const entries = await fs.readdir(candidate, {withFileTypes:true});
+  if (!entries.some(entry => entry.isFile() && (entry.name === 'board.yml' || entry.name.endsWith('_defconfig')))) return;
+  let parent = path.dirname(candidate);
+  while (parent !== path.dirname(parent)) {
+    if (isBoards(path.basename(parent))) return path.dirname(parent);
+    parent = path.dirname(parent);
   }
-  const name = path.basename(candidate);
-  if ((process.platform === 'win32' ? name.toLowerCase() : name) !== 'boards') return undefined;
-  return (await fs.stat(candidate)).isDirectory() ? path.dirname(candidate) : undefined;
 }
 
 module.exports = {board_roots, distinct_roots, selected_root};

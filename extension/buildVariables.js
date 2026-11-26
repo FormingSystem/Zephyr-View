@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('node:path');
+const {realpathSync} = require('node:fs');
 
 // These variables can reach configuration through the Zephyr or CMake environment.
 const environmentKeys = [
@@ -41,9 +42,21 @@ function previewPlan(plan) {
   return {...plan, configure};
 }
 
-/** Identify a cache by its recorded application, board and build directory. */
-function cacheStatus(target, application, board, buildDirectory) {
+/** An existing build can keep its toolchain and generated files when two paths name the same checkout. */
+function cacheSourceConflict(target, selectedBase) {
+  if (!target.cacheFile || !selectedBase) return false;
+  const sources = [target.cache.get('ZEPHYR_BASE'), target.system?.cache.get('ZEPHYR_BASE')];
+  return sources.some(source => {
+    if (!source || source.endsWith('-NOTFOUND') || !path.relative(selectedBase, source)) return false;
+    try { return Boolean(path.relative(realpathSync.native(selectedBase), realpathSync.native(source))); }
+    catch { return true; }
+  });
+}
+
+/** Identify a cache by its recorded application, board, build directory and Zephyr checkout. */
+function cacheStatus(target, application, board, buildDirectory, selectedBase) {
   if (!target.cacheFile) return 'absent';
+  if (cacheSourceConflict(target, selectedBase)) return 'conflict';
   const app = target.cache.get('APPLICATION_SOURCE_DIR') || target.cache.get('CMAKE_HOME_DIRECTORY');
   const directory = (target.system?.cache || target.cache).get('CMAKE_CACHEFILE_DIR');
   if ((app && path.relative(application, target.app.fsPath)) ||
@@ -108,4 +121,4 @@ function buildVariables(snapshot, method, environment, westGenerator) {
   return {status, rows};
 }
 
-module.exports = {buildVariables, cacheStatus, parseDefinition, previewPlan};
+module.exports = {buildVariables, cacheSourceConflict, cacheStatus, parseDefinition, previewPlan};

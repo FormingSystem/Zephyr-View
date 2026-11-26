@@ -163,20 +163,20 @@ function createTargetPicker(adapter){
     const {term,list,status,items,error,kind}=open;
     if(open.customBoard){
       const name=term.value.trim();
-      open.customBoard.hidden=!name || items?.includes(name);
-      open.customBoard.textContent=tr('使用此 BOARD','Use this BOARD')+' · '+name;
+      open.customBoard.disabled=!name;
     }
     if(!items){status.textContent=error||tr('正在发现候选项…','Discovering choices…');return;}
     const display=value=>kind==='board'?value:ZephyrPathDisplay.path(value);
+    const caption=value=>kind==='board'?value:ZephyrPathDisplay.directory(value,open.root);
     const q=display(term.value.trim()).toLowerCase();
-    const matches=items.filter(v=>fuzzy(display(v).toLowerCase(),q));
+    const matches=items.filter(v=>fuzzy(display(v).toLowerCase(),q) || fuzzy(caption(v).toLowerCase(),q));
     status.textContent=matches.length?tr('匹配 ','Matches · ')+matches.length:tr('没有匹配项','No matches');
     const displayed=matches.slice(0,open.limit);
     list.replaceChildren(...displayed.map(v=>{
-      const path=display(v);
+      const path=display(v),label=caption(v);
       const b=document.createElement('button');b.type='button';b.title=path;
-      b.textContent=kind==='board'?v:path.split('/').pop()||path;
-      if(kind!=='board'){const small=document.createElement('small');small.textContent=path;b.append(small);}
+      b.textContent=kind==='board'||label!==path?label:path.split('/').pop()||path;
+      if(kind!=='board' && path!=='.' && path!=='./'){const small=document.createElement('small');small.textContent=path;b.append(small);}
       b.onclick=()=>{close(true);adapter.select(kind,v);};return b;
     }));
     open.more.hidden=matches.length<=displayed.length;
@@ -194,11 +194,11 @@ function createTargetPicker(adapter){
     if(open?.button===button){close(true);return;}
     close();
     const request=++serial,box=document.createElement('section');box.className='target-picker';
-    const title={board:tr('开发板、SoC 或 CPU','Board, SoC or CPU'),app:tr('应用名称或路径','Application name or path'),build:tr('构建目录','Build directory')}[kind];
+    const title={board:tr('搜索开发板、SoC、CPU，或输入完整 BOARD','Search boards, SoCs and CPUs, or enter a full BOARD target'),app:tr('应用名称或路径','Application name or path'),build:tr('构建目录','Build directory')}[kind];
     box.innerHTML='<div class="picker-bar"><input class="input" type="search" placeholder="'+esc(title)+'" aria-label="'+esc(title)+'"><button type="button" class="picker-close" aria-label="'+tr('关闭','Close')+'">×</button></div><small role="status"></small><div class="picker-results"></div>';
     const anchor=button.closest('.target-field,.studio-target,.row')||button;
     anchor.after(box);button.setAttribute('aria-expanded','true');
-    open={request,box,button,kind,term:box.querySelector('input'),status:box.querySelector('[role=status]'),list:box.querySelector('.picker-results')};
+    open={request,box,button,kind,root:kind!=='board' && adapter.directoryRoot?.(),term:box.querySelector('input'),status:box.querySelector('[role=status]'),list:box.querySelector('.picker-results')};
     open.limit=100;open.more=document.createElement('button');open.more.type='button';open.more.hidden=true;
     open.more.textContent=tr('显示更多','Show more');
     open.more.onclick=()=>{
@@ -210,6 +210,7 @@ function createTargetPicker(adapter){
       const custom=document.createElement('button');
       custom.type='button';
       custom.onclick=()=>choose(open.term.value.trim());
+      custom.textContent=tr('使用此 BOARD','Use this BOARD');
       custom.title=tr('配置时由 Zephyr 解析别名、修订和限定目标','Zephyr resolves aliases, revisions and qualifiers during configure');
       open.customBoard=custom;
       const project=document.createElement('button');
@@ -217,7 +218,14 @@ function createTargetPicker(adapter){
       project.textContent=tr('使用工程设置','Use project settings');
       project.title=tr('沿用工程、环境或构建目录中的 BOARD','Use the BOARD from the project, environment or build directory');
       project.onclick=()=>choose(null);
-      box.append(custom,project);
+      box.querySelector('.picker-bar').insertBefore(custom,box.querySelector('.picker-close'));
+      box.append(project);
+      if(adapter.boardRoot){
+        const root=document.createElement('button');
+        root.type='button';root.textContent=tr('添加板卡搜索目录…','Add board root…');
+        root.onclick=adapter.boardRoot;
+        box.append(root);
+      }
     }
     const browse=document.createElement('button');browse.textContent=kind==='board'?tr('指定 Zephyr 源码目录…','Locate Zephyr source…'):tr('浏览本地目录…','Browse folders…');
     browse.onclick=()=>{adapter.browse(kind);};
@@ -225,7 +233,7 @@ function createTargetPicker(adapter){
     box.onkeydown=e=>{
       if(e.key==='Escape'){e.preventDefault();close(true);return;}
       const nodes=[open.term,...open.list.children];
-      if(open.customBoard && !open.customBoard.hidden)nodes.push(open.customBoard);
+      if(open.customBoard && !open.customBoard.disabled)nodes.push(open.customBoard);
       const idx=nodes.indexOf(document.activeElement);
       if(idx<0)return;
       if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();nodes[Math.max(0,Math.min(nodes.length-1,idx+(e.key==='ArrowDown'?1:-1)))].focus();}
@@ -236,6 +244,10 @@ function createTargetPicker(adapter){
   function results(data){
     if(!open||data?.picker!==open.request)return;
     open.items=data.items;open.error=data.error;update();
+    open.box.querySelector('.discovery-diagnostics')?.remove();
+    if(adapter.diagnostics && data.diagnostics?.length){
+      open.status.insertAdjacentHTML('afterend',adapter.diagnostics(data.diagnostics));
+    }
   }
   function snapshot(){
     if(!open)return;

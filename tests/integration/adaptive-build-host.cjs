@@ -87,4 +87,4 @@ function shell() {
   return {base, cwd, tools:{cmake:'cmake', ninja:'ninja', west, python}};
 }
 
-module.exports = {run, shell, host, refresh, workspace_state, uri, yaml: extension('js-yaml')};
+module.exports = {run, shell, host, refresh, workspace_state, uri, vscode, yaml: extension('js-yaml')};

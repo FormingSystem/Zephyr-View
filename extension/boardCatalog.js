@@ -4,24 +4,27 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
-const {parseDefinition} = require('./buildVariables');
+const {cacheSourceConflict, parseDefinition} = require('./buildVariables');
 const {board_roots, distinct_roots} = require('./boardRoots');
+const {sameCheckout} = require('./checkout');
 const execute = promisify(execFile);
 
 function boardSettings(s, environment) {
   const definitions = (s.setup.plan?.configure || []).map(parseDefinition).filter(Boolean);
   const planned = new Map(definitions.map(({name, value}) => [name, value]));
-  const cached = s.setup.cacheStatus === 'current' ? s.target.cache : undefined;
+  const app = s.setup.app;
+  const source = planned.get('ZEPHYR_BASE') ?? environment.ZEPHYR_BASE ?? s.checkout;
+  const cached = s.setup.cacheStatus === 'current' && !cacheSourceConflict(s.target, source && path.resolve(app, source))
+    ? s.target.cache : undefined;
   const configured = name => planned.get(name) ?? cached?.get(name);
   const value = name => configured(name) ?? environment[name];
-  const app = s.setup.app;
   const paths = name => {
     // root.cmake merges the cache, process environment and application declarations.
     const merged = ['BOARD_ROOT','SOC_ROOT','ARCH_ROOT'].includes(name);
     const inputs = merged ? [configured(name), environment[name]] : [value(name)];
     return distinct_roots(inputs.flatMap(board_roots), app).map(file => path.resolve(app, file));
   };
-  return {value, paths, configured};
+  return {value, paths, configured, source:source ?? cached?.get('ZEPHYR_BASE'), cached};
 }
 
 // zephyr_module.cmake replaces the manifest with ZEPHYR_MODULES, then merges both spellings of extra modules.
@@ -42,31 +45,59 @@ async function fileExists(file) {
   catch (error) { if (['ENOENT', 'ENOTDIR'].includes(error.code)) return false; throw error; }
 }
 
-async function readBoards(s, environment, name, roots) {
-  const {value, paths} = boardSettings(s, environment);
-  const explicit = value('ZEPHYR_BASE');
-  const candidates = explicit ? [path.resolve(s.setup.app, explicit)] :
-    [s.manifest.uri && path.dirname(s.manifest.uri.fsPath), s.folder.uri.fsPath].filter(Boolean);
-  let base;
-  for (const dir of candidates) {
-    if (await fileExists(path.join(dir, 'scripts', 'list_boards.py'))) { base = dir; break; }
+async function boardCatalogBase(s, environment) {
+  const {source} = boardSettings(s, environment);
+  const base = source ? path.resolve(s.setup.app, source) : s.folder.uri.fsPath;
+  if (await fileExists(path.join(base, 'scripts', 'list_boards.py'))) return base;
+}
+
+async function catalogModules(s, environment, base) {
+  const {modules, extraModules} = boardModules(s, environment);
+  const resolveModules = entries => distinct_roots(entries,base).map(dir=>path.resolve(base,dir));
+  const result = {modules:resolveModules(modules), extraModules:resolveModules(extraModules)};
+  const manifest = s.manifest;
+  if (modules.length || !s.tools.west || !manifest.root) return result;
+  if (manifest.checkout && !await sameCheckout(manifest.checkout, base)) return result;
+  if (!manifest.invalid) {
+    return {...result, manifest:true, manifestPath:manifest.uri?.fsPath, manifestRoot:manifest.root.fsPath};
   }
+  // A rejected manifest cannot resolve imports. Keep its known local projects only
+  // when the manifest is positively associated with the selected source checkout.
+  if (!manifest.checkout || !manifest.root.fsPath) return result;
+  const root = manifest.root.fsPath;
+  const projectPaths = (manifest.projects || []).map(project=>project.path || project.name)
+    .filter(file=>typeof file === 'string' && file && !path.isAbsolute(file) && !path.win32.isAbsolute(file));
+  const candidates = [manifest.repository?.fsPath, ...projectPaths.map(file=>path.resolve(root,file))].filter(Boolean);
+  for (const dir of distinct_roots(candidates,root)) {
+    const relative = path.relative(root,dir);
+    if (relative === '..' || relative.startsWith('..'+path.sep) || path.isAbsolute(relative)) continue;
+    try { if ((await fs.stat(dir)).isDirectory()) result.modules.push(dir); }
+    catch (error) { if (!['ENOENT','ENOTDIR'].includes(error.code)) throw error; }
+  }
+  return result;
+}
+
+async function readBoardCatalog(s, environment, name, roots) {
+  const {paths, cached} = boardSettings(s, environment);
+  const base = await boardCatalogBase(s, environment);
   if (!base) throw Error('ZEPHYR_BASE');
   roots ??= await pickerRoots(s, environment);
   // boards.cmake caches the directories of one resolved board. list_boards.py treats
   // --board-dir as an exclusive filter, so only reuse it to inspect that same board.
-  const cachedBoard = s.target.cache.get('CACHED_BOARD') || s.target.cache.get('BOARD');
-  const sameBoard = name && s.setup.cacheStatus === 'current' && name === cachedBoard?.split(/[@/]/, 1)[0];
-  const modules = boardModules(s,environment);
-  // Zephyr runs its module parser with ZEPHYR_BASE as its working directory.
-  const resolveModules = entries => distinct_roots(entries,base).map(dir=>path.resolve(base,dir));
-  const options = {base, name, roots, manifest: Boolean(s.manifest.root && s.tools.west),
-    modules: resolveModules(modules.modules), extraModules: resolveModules(modules.extraModules),
+  const cachedBoard = cached?.get('CACHED_BOARD') || cached?.get('BOARD');
+  const sameBoard = name && name === cachedBoard?.split(/[@/]/, 1)[0];
+  const options = {base, name, roots, manifest:false, ...await catalogModules(s,environment,base),
     boardDirectories: sameBoard ? paths('BOARD_DIRECTORIES') : []};
   const python = s.tools.python || (process.platform === 'win32' ? 'python' : 'python3');
-  const {stdout} = await execute(python, ['-B', path.join(__dirname, 'board_catalog.py'), JSON.stringify(options)],
-    {env: environment, cwd: base, windowsHide: true, maxBuffer: 8*1024*1024, timeout: 30000});
-  return JSON.parse(stdout);
+  const {stdout} = await execute(python, ['-X', 'utf8', '-B', path.join(__dirname, 'board_catalog.py'), JSON.stringify(options)],
+    {env: {...environment, ZEPHYR_BASE:base}, cwd: base, windowsHide: true, maxBuffer: 8*1024*1024, timeout: 120000});
+  const result = JSON.parse(stdout);
+  result.diagnostics.unshift(...(s.manifest.diagnostics || []));
+  return result;
+}
+
+async function readBoards(s, environment, name, roots) {
+  return (await readBoardCatalog(s, environment, name, roots)).boards;
 }
 
 function boardTargets(boards) {
@@ -166,4 +197,4 @@ async function detectBoardDts(s, environment, lookup = readBoards, includeLayout
   } catch { return {detectionStatus: 'unavailable'}; }
 }
 
-module.exports = {boardDts, boardModules, boardTargets, detectBoardDts, pickerRoots, readBoards, rootOptions};
+module.exports = {boardCatalogBase, boardDts, boardModules, boardTargets, detectBoardDts, pickerRoots, readBoardCatalog, readBoards, rootOptions};

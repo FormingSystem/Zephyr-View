@@ -1,8 +1,11 @@
 'use strict';
 const targetPicker=createTargetPicker({
+  directoryRoot:()=>live?.folder,
   load:(kind,request)=>send('targetList',{kind,request}),
   select:(kind,value)=>send('targetSelect',{kind,value}),
   boardChoice:value=>send('targetBoard',{kind:'board',value}),
+  boardRoot:()=>send('environment','BOARD_ROOT'),
+  diagnostics:discovery_diagnostics,
   browse:kind=>kind==='board'?send('environment','ZEPHYR_BASE'):send('targetBrowse',{kind})
 });
 function targetControls(kind,disabled=false){
@@ -14,7 +17,8 @@ function targetControls(kind,disabled=false){
     action(tr('输入路径…','Enter path…'),'path');
 }
 function targetField(kind,label,value,display,disabled=false){
-  return targetFieldRow(label,value,display,targetControls(kind,disabled));
+  const caption=kind==='board' ? display : ZephyrPathDisplay.directory(display,live?.folder);
+  return targetFieldRow(label,value,caption,targetControls(kind,disabled));
 }
 document.addEventListener('click',e=>{
   const button=e.target.closest('[data-act^="target:"]');

@@ -144,6 +144,18 @@ test('the directory prompt displays forward slashes and accepts the native path 
   }
 });
 
+test('the debug sidebar discards generated runner data from a sibling Zephyr checkout', async t => {
+  const {a,b,row}=await setup(t);
+  const packageDir=path.join(a.uri.fsPath,'share','zephyr-package','cmake');
+  await fs.mkdir(packageDir,{recursive:true});
+  await fs.writeFile(path.join(packageDir,'ZephyrConfig.cmake'),'');
+  await fs.writeFile(path.join(a.uri.fsPath,'VERSION'),'');
+  await fs.appendFile(path.join(a.uri.fsPath,'build','CMakeCache.txt'),'\nZEPHYR_BASE:PATH='+b.uri.fsPath);
+  const runner=await row('Debug runner');
+  assert.equal(runner.command,undefined);
+  assert.equal(runner.description,'Build directory belongs to another target');
+});
+
 test('debugging a declared sysbuild image only switches the debug sidebar to that image',async t=>{
   const {a,debug,target,row}=await setup(t);
   const root=path.join(a.uri.fsPath,'build'), image=path.join(root,'remote');

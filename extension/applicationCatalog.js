@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const {isZephyrSource} = require('./checkout');
 
 const descriptors = ['sample.yaml', 'tests.yaml', 'testcase.yaml', 'app.yaml', 'prj.conf'];
 const ignoredDirectories = new Set(['.git', '.west', '.venv', '__pycache__', 'node_modules', 'CMakeFiles']);
@@ -29,6 +30,8 @@ async function inspectDirectory(directory, checkout) {
   const names = new Set(entries.map(entry => entry.name));
   if (names.has('CMakeCache.txt') || names.has('pyvenv.cfg') ||
       (names.has('sdk_version') && names.has('cmake'))) return {};
+  if (names.has('VERSION') && names.has('share') && (!checkout || path.relative(directory, checkout)) &&
+      await isZephyrSource(directory)) return {};
   const children = entries.filter(entry => entry.isDirectory() && !ignoredDirectories.has(entry.name))
     .map(entry => path.join(directory, entry.name));
   if (!names.has('CMakeLists.txt') || (checkout && !path.relative(directory, checkout))) return {children};

@@ -16,6 +16,17 @@ test('the board picker accepts a board root or its boards subdirectory and rejec
   assert.equal(await selected_root(boards),fixture);
   assert.equal(await selected_root(fixture),fixture);
   assert.equal(await selected_root(unrelated),undefined);
+  assert.equal(await selected_root(path.join(unrelated,'missing')),undefined);
+  const vendorBoard = path.join(boards, '供应商', 'test_board');
+  await fs.mkdir(vendorBoard, {recursive:true});
+  await fs.writeFile(path.join(vendorBoard,'board.yml'),'board: {}\n');
+  assert.equal(await selected_root(vendorBoard),fixture);
+  await fs.writeFile(path.join(unrelated,'board.yml'),'board: {}\n');
+  assert.equal(await selected_root(unrelated),undefined);
+  const legacyBoard = path.join(boards, 'arm', 'old_board');
+  await fs.mkdir(legacyBoard, {recursive:true});
+  await fs.writeFile(path.join(legacyBoard,'old_board_defconfig'),'CONFIG_GPIO=y\n');
+  assert.equal(await selected_root(legacyBoard),fixture);
 });
 
 test('board lookup merges effective CMake and environment roots without replacing the project list', () => {
