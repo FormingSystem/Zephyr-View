@@ -108,13 +108,16 @@ function macUsbDevices(output) {
 }
 
 async function windowsUsbDevices(run) {
-  const fields='Name,PNPDeviceID,ConfigManagerErrorCode';
-  const query=`SELECT ${fields} FROM Win32_PnPEntity WHERE Present = TRUE`;
-  const script="[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)\n"+
-    `Get-CimInstance -Query '${query}' -OperationTimeoutSec 45 -ErrorAction Stop | Select-Object ${fields} | ConvertTo-Json -Compress`;
-  // Include PowerShell startup and the first WMI connection in the process deadline.
-  const {stdout}=await run(powershell(),['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout:60000,maxBuffer:4096*1024});
-  return stdout.trim()?JSON.parse(stdout):[];
+  const script = [
+    "$ErrorActionPreference = 'Stop'",
+    '[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)',
+    'Add-Type -LiteralPath $env:ZEPHYR_PROBE_READER',
+    'ConvertTo-Json -InputObject @([WindowsProbeDevices]::Enumerate()) -Compress'
+  ].join('\n');
+  const env = {...process.env,ZEPHYR_PROBE_READER:path.join(__dirname,'WindowsProbeDevices.cs')};
+  const {stdout} = await run(powershell(),['-NoProfile','-NonInteractive','-Command',script],
+    {env,windowsHide:true,timeout:15000,maxBuffer:4096*1024});
+  return JSON.parse(stdout);
 }
 
 async function usbMatcher(platform,run) {

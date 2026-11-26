@@ -4,7 +4,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs/promises');
 const path=require('node:path');
 const os=require('node:os');
-const {profiles,windowsDevices,findProgram,inspectDevices,serialDevices,vendorDirectories}=require('../extension/probeDiagnostics');
+const {profiles,windowsDevices,findProgram,inspectDevices,inspectDeviceGroups,serialDevices,vendorDirectories}=require('../extension/probeDiagnostics');
 
 test('matches interfaces independently and reports only driver evidence supplied by the OS',()=>{
   const rows=[
@@ -28,6 +28,28 @@ test('USB serial ports exclude Bluetooth and virtual COM devices; ST hardware ID
   const device = {Name:'USB Device',PNPDeviceID:'USB\\VID_0483&PID_374B&MI_00\\instance',ConfigManagerErrorCode:28};
   assert.equal(windowsDevices([device],profiles.stm32cubeprogrammer)[0].status,'driver');
   assert.deepEqual(windowsDevices([{...device,PNPDeviceID:'USB\\VID_0483&PID_374B0'}],profiles.stm32cubeprogrammer),[]);
+});
+
+test('Windows shares one native read and reports a failed scan separately from an empty bus',
+  {skip:process.platform!=='win32'},async()=>{
+    const {pyocd,serial}=profiles;
+    let queries=0;
+    const run=async(_program,_args,options)=>{
+      queries++;
+      await fs.access(options.env.ZEPHYR_PROBE_READER);
+      return {stdout:JSON.stringify([
+        {Name:'CMSIS-DAP',PNPDeviceID:'HID\\probe',ConfigManagerErrorCode:0},
+        {Name:'USB UART (COM7)',PNPDeviceID:'USB\\port',ConfigManagerErrorCode:null}
+      ])};
+    };
+    const matched=await inspectDeviceGroups({pyocd,serial},'win32',run);
+    assert.equal(queries,1);
+    assert.equal(matched.pyocd.devices[0].status,'present');
+    assert.equal(matched.serial.devices[0].status,'unknown');
+    const vacant=await inspectDeviceGroups({pyocd},'win32',async()=>({stdout:'[]'}));
+    assert.deepEqual(vacant.pyocd,{devices:[]});
+    const failed=await inspectDeviceGroups({pyocd},'win32',async()=>{throw Error('device provider unavailable');});
+    assert.deepEqual(failed.pyocd,{problem:'device provider unavailable'});
 });
 
 test('resolves existing local tools in user selection, virtual environment, then PATH order',async t=>{
@@ -94,5 +116,9 @@ test('macOS offers serial callout devices and Linux offers ttyUSB and ttyACM nod
 
 test('the host can enumerate CMSIS-DAP and serial interfaces without a connected probe',
   {skip:!['win32','darwin','linux'].includes(process.platform)},async()=>{
-    for (const profile of [profiles.pyocd,profiles.serial]) assert.ok(Array.isArray(await inspectDevices(profile)));
+    const reports = await inspectDeviceGroups();
+    for (const id of Object.keys(profiles)) {
+      assert.equal(reports[id].problem,undefined,id + ': ' + reports[id].problem);
+      assert.ok(Array.isArray(reports[id].devices),id);
+    }
 });
