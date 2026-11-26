@@ -19,6 +19,7 @@ const ZephyrFlashPlan = (() => {
     const result = {images, names, runners:runnerChoices(images)};
     if (!images.length || (runner && !result.runners.includes(runner))) return {...result,issue:'runner'};
     if (images.some((image,i) => !image.runners.includes(names[i]))) return {...result,issue:'runner'};
+    if (names.some(name=>model.tools?.[name]===null)) return {...result,issue:'probeTool'};
     if (!model.west) return {...result,issue:'west'};
     if (model.system && model.domainFlag===false && !domain) return {...result,issue:'domain'};
     const capabilities = names.map(name => model.caps[name]);
@@ -28,13 +29,18 @@ const ZephyrFlashPlan = (() => {
     if (device && images.some((img,i) => (img.deviceIds[names[i]] || []).some(id => id !== device)))
       return {...result,issue:'pinned'};
     if (images.some(image => !image.files.length)) return {...result,issue:'image'};
+    const oneRunner=names.every(name=>name===names[0]) && names[0];
+    if (!oneRunner && names.some(name=>model.selectedTools?.includes(name) && model.caps[name]?.toolOption))
+      return {...result,issue:'perImageTool'};
     const args = ['flash','-d',model.system && model.domainFlag===false ? images[0].dir : model.root];
     if (model.noRebuild) args.push(model.noRebuild);
     if (domain && model.system && model.domainFlag!==false) args.push('--domain',domain);
     if (runner) args.push('-r',runner);
-    const oneRunner=names.every(name=>name===names[0]) && names[0];
-    if (oneRunner && model.tools?.[oneRunner] && model.caps[oneRunner]?.toolOption)
-      args.push(model.caps[oneRunner].toolOption,model.tools[oneRunner]);
+    const toolOption=oneRunner && model.caps[oneRunner]?.toolOption;
+    if (toolOption && model.tools?.[oneRunner]) {
+      const fromBoard=images.some(image=>image.args?.[oneRunner]?.some(arg=>arg===toolOption || arg.startsWith(toolOption+'=')));
+      if (!fromBoard || model.selectedTools?.includes(oneRunner)) args.push(toolOption,model.tools[oneRunner]);
+    }
     if (device && !images.every((img,i) => img.deviceIds[names[i]]?.includes(device))) {
       if (images.some((img,i) => img.deviceIds[names[i]]?.includes(device))) return {...result,issue:'mixed'};
       args.push('--dev-id',device);

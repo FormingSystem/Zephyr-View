@@ -9,16 +9,25 @@ const {profiles,windowsDevices,findProgram,inspectDevices,serialDevices,vendorDi
 test('matches interfaces independently and reports only driver evidence supplied by the OS',()=>{
   const rows=[
     {Name:'ST-LINK Debug',PNPDeviceID:'a',ConfigManagerErrorCode:28},
-    {Name:'STLINK Virtual COM Port (COM3)',PNPDeviceID:'b',ConfigManagerErrorCode:0},
+    {Name:'STLINK Virtual COM Port (COM3)',PNPDeviceID:'USB\\port',ConfigManagerErrorCode:0},
     {Name:'CMSIS-DAP v2',PNPDeviceID:'c',ConfigManagerErrorCode:10},
     {Name:'STM32 BOOTLOADER',PNPDeviceID:'d',ConfigManagerErrorCode:0}
   ];
   const devices=id=>windowsDevices(rows,profiles[id]).map(d=>[d.id,d.status]);
-  assert.deepEqual(devices('stm32cubeprogrammer'),[['a','driver'],['b','present']]);
-  assert.deepEqual(devices('serial'),[['b','present']]);
+  assert.deepEqual(devices('stm32cubeprogrammer'),[['a','driver'],['USB\\port','present']]);
+  assert.deepEqual(devices('serial'),[['USB\\port','present']]);
   assert.deepEqual(devices('pyocd'),[['c','unknown']]);
   assert.deepEqual(devices('dfu-util'),[['d','present']]);
   assert.deepEqual(devices('jlink'),[]);
+});
+
+test('USB serial ports exclude Bluetooth and virtual COM devices; ST hardware IDs survive a missing driver',()=>{
+  const port = id=>({Name:'Serial port (COM12)',PNPDeviceID:id,ConfigManagerErrorCode:0});
+  const rows = [port('BTHENUM\\id'),port('ROOT\\port'),port('FTDIBUS\\port'),port('USB\\port')];
+  assert.deepEqual(windowsDevices(rows,profiles.serial).map(device=>device.id),['FTDIBUS\\port','USB\\port']);
+  const device = {Name:'USB Device',PNPDeviceID:'USB\\VID_0483&PID_374B&MI_00\\instance',ConfigManagerErrorCode:28};
+  assert.equal(windowsDevices([device],profiles.stm32cubeprogrammer)[0].status,'driver');
+  assert.deepEqual(windowsDevices([{...device,PNPDeviceID:'USB\\VID_0483&PID_374B0'}],profiles.stm32cubeprogrammer),[]);
 });
 
 test('resolves existing local tools in user selection, virtual environment, then PATH order',async t=>{

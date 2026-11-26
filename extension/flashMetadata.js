@@ -79,7 +79,7 @@ class FlashMetadata {
     return this.result;
   }
 
-  async describe(s, env, fresh = false, tools = {}) {
+  async describe(s, env, fresh = false, tools = {}, selectedTools = []) {
     if (!s.folder || !hasCurrentBuild(s) || s.lastFailure) return;
     const target = fresh ? await readTarget(s.folder,s.build) : s.target;
     if (!target.generated || target.board !== s.target.board || path.relative(target.app.fsPath,s.setup.app)) return;
@@ -89,7 +89,7 @@ class FlashMetadata {
     const realRoot = await fs.realpath(root);
     const images = await Promise.all(domains.map(domain=>domainImage(target,domain,s.folder,realRoot,caps)));
     const order = system ? system.flashOrder || [] : [target.board];
-    const model = {root,system:Boolean(system),west,domainFlag,noRebuild,cwd,order,images,caps,tools};
+    const model = {root,system:Boolean(system),west,domainFlag,noRebuild,cwd,order,images,caps,tools,selectedTools};
     model.id = createHash('sha256').update(JSON.stringify(model)).digest('hex');
     return model;
   }

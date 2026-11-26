@@ -8,14 +8,14 @@ const {FlashMetadata} = require('./flashMetadata');
 const {executeAndWait} = require('./taskCompletion');
 const {plan,command} = require('./media/flashPlan');
 const {taskEnvironment} = require('./buildSetup');
-const {profiles,findProgram} = require('./probeDiagnostics');
+const {listProbeTools} = require('./probeInventory');
 const {pathKey} = require('./hostExecutables');
 
 function text(english,chinese) {return vscode.env.language.startsWith('zh') ? chinese : english;}
 
 function toolsEnvironment(context,s,names) {
   const env = {...taskEnvironment(context,s)};
-  const saved = s.flash?.tools || context.workspaceState.get('probeSupport.tools:'+s.folder.uri.toString(),{});
+  const saved = s.flash?.tools || {};
   const key = pathKey(env);
   const tools = names.map(id=>saved[id]).filter(tool=>typeof tool==='string' && path.isAbsolute(tool));
   env[key] = [...new Set(tools.map(tool=>path.dirname(tool))),env[key]].filter(Boolean).join(path.delimiter);
@@ -69,18 +69,15 @@ class FlashTasks {
 
   async describe(s,fresh=false) {
     if (!vscode.workspace.isTrusted || !s.folder || !s.target.generated) return;
-    const saved=this.context.workspaceState.get('probeSupport.tools:'+s.folder.uri.toString(),{});
-    const dirs=[...(s.toolDirectories || [])];
-    if (s.tools.python && path.isAbsolute(s.tools.python)) dirs.unshift(path.dirname(s.tools.python));
-    const found=await Promise.all(Object.entries(profiles).filter(([,profile])=>profile.program)
-      .map(async ([id,profile])=>[id,await findProgram(profile.program,saved[id],dirs)]));
-    const tools=Object.fromEntries(found.filter(([,file])=>file));
-    return this.metadata.describe(s,taskEnvironment(this.context,s),fresh,tools);
+    const rows=await listProbeTools(this.context,s.folder,s);
+    // A missing override must stay distinct from a runner that uses its own default tool.
+    const tools=Object.fromEntries(rows.filter(row=>row.path || row.selectedPath).map(row=>[row.id,row.path || null]));
+    const selectedTools=rows.filter(row=>row.selectedPath).map(row=>row.id);
+    return this.metadata.describe(s,taskEnvironment(this.context,s),fresh,tools,selectedTools);
   }
 
   async probes(s) {
-    const saved=this.context.workspaceState.get('probeSupport.tools:'+s.folder.uri.toString(),{});
-    const {stdout}=await exec(s.flash?.tools?.pyocd || saved.pyocd || 'pyocd',['list','--json'],{
+    const {stdout}=await exec(s.flash.tools.pyocd || 'pyocd',['list','--json'],{
       env:toolsEnvironment(this.context,s,['pyocd']),cwd:s.folder.uri.fsPath,windowsHide:true,timeout:10000});
     const result=JSON.parse(stdout);
     if (!Array.isArray(result.boards)) throw Error(text('No pyOCD probe list was returned.','pyOCD 未返回探针列表。'));

@@ -8,6 +8,8 @@ const flashPanel = (() => {
     runner:['当前镜像没有共同可用的烧写方式','No applicable flash runner for these images'],
     mixed:['请选单个镜像，为其指定目标设备','Select an individual image to choose its device'],
     device:['请选择探针或输入完整设备 ID','Select a probe or enter its complete device ID'],
+    perImageTool:['多个镜像使用不同运行器，请逐个选择镜像以使用指定的探针工具','These images use different runners. Select each image to apply its chosen probe tool.'],
+    probeTool:['所选探针工具已失效，请在“探针与驱动”重新选择或恢复自动识别','The selected probe tool is unavailable. Select it again or restore automatic detection in Probes and drivers.'],
     pinned:['设备 ID 与当前板配置不同','Device ID differs from the board configuration'],
     west:['可使用工程烧写任务，或安装并配置 west','Choose a workspace flashing task or configure west'],
     domain:['此版本的 west 仅支持逐一烧写镜像','This west version can flash one image at a time'],

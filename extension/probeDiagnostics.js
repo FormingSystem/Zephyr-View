@@ -46,8 +46,16 @@ async function findProgram(name, selected, extra=[], search) {
   return await host.findProgram(name,{directories:extra}) || host.findProgram(name,{directories:vendorDirectories(name),includeHostPath:false});
 }
 
+function matchesWindowsDevice(row,profile) {
+  const id = row.PNPDeviceID || '';
+  if (profile === profiles.serial && !/^(USB|FTDIBUS)\\/i.test(id)) return false;
+  // The STSW-LINK009 hardware IDs also identify interfaces without a configured driver name.
+  if (profile === profiles.stm32cubeprogrammer && /^USB\\VID_0483&PID_(374[8ABDEF]|375[23])(?=[&\\]|$)/i.test(id)) return true;
+  return profile.usb.test(row.Name || '');
+}
+
 function windowsDevices(rows,profile) {
-  return [].concat(rows||[]).filter(row=>profile.usb.test(row.Name||'')).map(row=>({
+  return [].concat(rows||[]).filter(row=>matchesWindowsDevice(row,profile)).map(row=>({
     name:row.Name,id:row.PNPDeviceID,
     status:row.ConfigManagerErrorCode===0?'present':row.ConfigManagerErrorCode===28?'driver': 'unknown',
     detail:row.ConfigManagerErrorCode?'PnP '+row.ConfigManagerErrorCode:undefined
@@ -67,20 +75,20 @@ async function serialDevices(platform,directory='/dev') {
   }));
 }
 
-async function linuxDevices(profile) {
+async function linuxUsbDevices() {
   const root='/sys/bus/usb/devices';
-  const names=await fs.readdir(root), devices=[];
-  for (const name of names.filter(name=>!name.includes(':'))) {
+  const names=await fs.readdir(root);
+  const rows=await Promise.all(names.filter(name=>!name.includes(':')).map(async name=>{
     const read=key=>fs.readFile(path.join(root,name,key),'utf8').then(value=>value.trim(),()=>'');
     const [product,manufacturer,bus,dev]=await Promise.all(['product','manufacturer','busnum','devnum'].map(read));
-    if (!profile.usb.test(manufacturer+' '+product) || !bus || !dev) continue;
+    if (!bus || !dev) return;
     const id='/dev/bus/usb/'+bus.padStart(3,'0')+'/'+dev.padStart(3,'0');
-    devices.push({name:product||manufacturer,id,status:await accessStatus(id)});
-  }
-  return devices;
+    return {identity:manufacturer+' '+product, name:product||manufacturer,id,status:await accessStatus(id)};
+  }));
+  return rows.filter(Boolean);
 }
 
-function macUsbDevices(output,profile) {
+function macUsbDevices(output) {
   const entries=[];
   let current;
   for (const line of output.split(/\r?\n/)) {
@@ -93,26 +101,60 @@ function macUsbDevices(output,profile) {
     const property = /^[| \t]*"USB (Product Name|Vendor Name|Serial Number)" = "(.*)"\s*$/.exec(line);
     if (current && property) current[property[1]]=property[2];
   }
-  return entries.filter(entry => profile.usb.test([entry.location,entry['Product Name'],entry['Vendor Name']].join(' '))).map(entry=>({
+  return entries.map(entry=>({
+    identity:[entry.location,entry['Product Name'],entry['Vendor Name']].join(' '),
     name:entry['Product Name'] || entry.location, id:entry.location, status:'present',detail:entry['Serial Number']
   }));
 }
 
-async function inspectDevices(profile,platform=process.platform,run=exec) {
-  if (profile===profiles.serial && ['darwin','linux'].includes(platform)) return serialDevices(platform);
-  if (platform==='linux') return linuxDevices(profile);
-  if (platform==='darwin') {
-    const {stdout}=await run('/usr/sbin/ioreg',['-p','IOUSB','-l','-w','0'],{timeout:10000,maxBuffer:4096*1024});
-    return macUsbDevices(stdout,profile);
-  }
-  if (platform!=='win32') return;
+async function windowsUsbDevices(run) {
   const fields='Name,PNPDeviceID,ConfigManagerErrorCode';
   const query=`SELECT ${fields} FROM Win32_PnPEntity WHERE Present = TRUE`;
   const script="[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)\n"+
     `Get-CimInstance -Query '${query}' -OperationTimeoutSec 45 -ErrorAction Stop | Select-Object ${fields} | ConvertTo-Json -Compress`;
   // Include PowerShell startup and the first WMI connection in the process deadline.
   const {stdout}=await run(powershell(),['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout:60000,maxBuffer:4096*1024});
-  return windowsDevices(stdout.trim()?JSON.parse(stdout):[],profile);
+  return stdout.trim()?JSON.parse(stdout):[];
+}
+
+async function usbMatcher(platform,run) {
+  if (platform==='win32') {
+    const rows=await windowsUsbDevices(run);
+    return profile=>windowsDevices(rows,profile);
+  }
+  const rows=platform==='linux' ? await linuxUsbDevices() :
+    macUsbDevices((await run('/usr/sbin/ioreg',['-p','IOUSB','-l','-w','0'],{timeout:10000,maxBuffer:4096*1024})).stdout);
+  return profile=>rows.filter(row=>profile.usb.test(row.identity)).map(({identity,...device})=>device);
+}
+
+async function deviceReports(entries,getMatcher) {
+  if (!entries.length) return [];
+  try {
+    const match=await getMatcher();
+    return entries.map(([id,profile])=>[id,{devices:match(profile)}]);
+  } catch (error) {
+    return entries.map(([id])=>[id,{problem:error.message}]);
+  }
+}
+
+async function inspectDeviceGroups(groups=profiles,platform=process.platform,run=exec) {
+  const entries=Object.entries(groups);
+  if (!['win32','darwin','linux'].includes(platform)) return Object.fromEntries(entries.map(([id])=>[id,{}]));
+  const isPort=([,profile])=>platform!=='win32' && profile===profiles.serial;
+  const [usb,ports]=await Promise.all([
+    deviceReports(entries.filter(entry=>!isPort(entry)),()=>usbMatcher(platform,run)),
+    deviceReports(entries.filter(isPort),async()=>{
+      const ports=await serialDevices(platform);
+      return ()=>ports;
+    })
+  ]);
+  return Object.fromEntries([...usb,...ports]);
+}
+
+async function inspectDevices(profile,platform,run) {
+  const {one}=await inspectDeviceGroups({one:profile},platform,run);
+  if (one.problem) throw Error(one.problem);
+  return one.devices;
 }
 
 async function verifyInstaller(file,profile) {
@@ -123,4 +165,4 @@ async function verifyInstaller(file,profile) {
   return profile.signer.test(stdout);
 }
 
-module.exports={profiles,findProgram,inspectDevices,serialDevices,vendorDirectories,windowsDevices,verifyInstaller};
+module.exports={profiles,findProgram,inspectDevices,inspectDeviceGroups,serialDevices,vendorDirectories,windowsDevices,verifyInstaller};
