@@ -22,6 +22,18 @@ function createStudioMap(adapter){
     const state=adapter.state(),a=entry.action,disabled=!state.trusted||state.busy||!state.folder;
     if(a.kind==='source')return send('devicetreeFile',a.path);
     if(a.kind==='inputGroup')return tree.editor(button,configuration_input_rows(state,[a.group]));
+    if(a.kind==='hardware'&&deviceTreeDraft.isReferenceNode(a.record.path)){
+      const references=(a.record.properties||[]).map(p=>'<div class="map-property"><strong>'+esc(p.name)+'</strong><code>'+esc(p.value||p.name+';')+'</code></div>').join('');
+      return tree.editor(button,'<small>'+esc(a.record.path)+'</small>'+references);
+    }
+    if(a.kind==='property'){
+      const prop=a.property;
+      if(deviceTreeDraft.isReferenceNode(a.record.path)||(prop.name!=='status'&&!deviceTreeDraft.editableProperty(prop))){
+        return tree.editor(button,'<small>'+esc(a.record.path)+'</small><code>'+esc(prop.value||prop.name+';')+'</code>'+
+          '<small>'+tr('构建记录中的只读属性','Read-only property from the build')+'</small>');
+      }
+      return fragment(entry,button,disabled,restoring?.file,prop.name);
+    }
     if(a.kind==='symbol'||a.kind==='hardware')return fragment(entry,button,disabled,restoring?.file,restoring?.property);
     if(a.kind==='target'){
       const value=state[a.target]||'';
@@ -62,7 +74,7 @@ function createStudioMap(adapter){
     const file=target?label(tr('草稿目标片段','Draft fragment'),paths):
       '<small>'+tr('请先创建应用配置片段。','Create an application fragment first.')+'</small>';
     const text=target?textOf(target):'';
-    const controls=isSymbol?symbolControls(entry.action.item,text):hardwareControls(entry.action.record,text,property);
+    const controls=isSymbol?symbolControls(entry.action.item,text):hardwareControls(entry.action.record,text,property,entry.action.kind==='property');
     const remove=isSymbol&&kconfigFields.assignments(text).some(v=>v.key===entry.action.item.name);
     const buttons='<div class="actions">'+action(tr('加入草稿','Stage change'),'data-map-stage',disabled||!target||controls.locked)+
       (remove?action(tr('移除显式赋值','Remove assignment'),'data-map-remove',disabled):'')+'</div>';
@@ -103,7 +115,7 @@ function createStudioMap(adapter){
     const meta=[item.menu,item.type,item.range?.join(' … '),tr('构建值','Configured value')+' = '+item.value].filter(Boolean).join(' · ');
     return {html:'<small>'+esc(meta)+'</small>'+label(item.prompt||item.name,field),locked:!item.choice&&item.allowed?.length<2};
   }
-  function hardwareControls(record,text,property){
+  function hardwareControls(record,text,property,fixed){
     const props=record.properties||[],edit=props.filter(p=>p.name!=='status'&&deviceTreeDraft.editableProperty(p));
     const prop=edit.find(p=>p.name===property);
     const status=deviceTreeDraft.stagedStatus(text,record)??record.status;
@@ -111,11 +123,11 @@ function createStudioMap(adapter){
     const field=prop?input(deviceTreeDraft.stagedProperty(text,record,property)??prop.scalar):
       '<select data-map-value>'+(!statusOptions.includes(status)?'<option selected disabled>'+esc(status??'—')+'</option>':'')+
       statusOptions.map(v=>option(v,v,v===status)).join('')+'</select>';
-    const pick='<select data-map-property>'+['status',...edit.map(p=>p.name)].map(v=>option(v,v,v===property)).join('')+'</select>';
-    const details=props.length?'<details><summary>'+tr('构建记录中的属性','Configured properties')+' ('+props.length+')</summary>'+
+    const pick=fixed?'':label(tr('节点属性','Node property'),'<select data-map-property>'+['status',...edit.map(p=>p.name)].map(v=>option(v,v,v===property)).join('')+'</select>');
+    const details=!fixed&&props.length?'<details><summary>'+tr('构建记录中的属性','Configured properties')+' ('+props.length+')</summary>'+
       props.map(p=>'<div class="map-property"><strong>'+esc(p.name)+'</strong> <code>'+esc(p.value??'')+'</code></div>').join('')+'</details>':'';
     const effective=prop?prop.scalar:record.status;
-    return {html:'<small>'+esc(record.path)+'</small>'+label(tr('节点属性','Node property'),pick)+
+    return {html:'<small>'+esc(record.path)+'</small>'+pick+
       '<small>'+tr('构建生效值','Configured value')+' · <code>'+esc(effective??'—')+'</code></small>'+
       label(tr('草稿值','Draft value'),field)+details,locked:false};
   }

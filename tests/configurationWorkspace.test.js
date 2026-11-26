@@ -86,3 +86,42 @@ test('module leaves edit selection in place and only the parent opens the module
   for(const kind of ['kconfig','device'])open({action:{kind}},button);
   assert.deepEqual(inspected,['kconfig','device']);
 });
+
+test('a property opens its own value and stages only editable hardware into the chosen overlay',()=>{
+  const source=fs.readFileSync(require.resolve('../extension/media/studioMap'),'utf8');
+  const deviceTreeDraft=require('../extension/media/deviceTreeDraft');
+  const property={name:'current-speed',type:'num',value:'<115200>',scalar:115200};
+  const record={path:'/bus/uart',properties:[property],status:'okay'};
+  const file={file:'app.overlay',kind:'device',text:'// existing overlay\n'};
+  const state={folder:'project',trusted:true,inputs:[file]};
+  const field={value:'9600',addEventListener(){}},stage={},feedback={};
+  let open,markup,draft;
+  const elements={'[data-map-value]':field,'[data-map-stage]':stage,'[data-map-feedback]':feedback};
+  const context={
+    stored:()=>({}),tr:(_,english)=>english,esc:String,deviceTreeDraft,
+    ZephyrPathDisplay:{path:String,relative:String},
+    createConfigurationTree(callback){
+      open=callback;
+      return {editor(_button,html){markup=html;return {querySelector:selector=>elements[selector]};}};
+    }
+  };
+  vm.runInNewContext(source+'\ncreateStudioMap',context)({
+    state:()=>state,draft:()=>undefined,preferred:()=>file,chooseFile(){},changed(){},
+    stage(target,text){assert.equal(target,file);draft=text;}
+  });
+  const openProperty=(owner,prop)=>open({action:{kind:'property',record:owner,property:prop}},{});
+  openProperty(record,property);
+  assert.match(markup,/115200/);
+  assert.doesNotMatch(markup,/data-map-property|data-map-stage disabled/);
+  stage.onclick();
+  assert.match(draft,/current-speed = <9600>;/);
+  assert.equal(file.text,'// existing overlay\n');
+  state.trusted=false;
+  openProperty(record,property);
+  assert.match(markup,/data-map-stage disabled/);
+  for(const prop of [{name:'reg',type:'num',scalar:1,value:'<1>'},{name:'status',type:'path',value:'&uart0'}]){
+    openProperty(prop.name==='status'?{path:'/aliases'}:record,prop);
+    assert.match(markup,/Read-only/);
+    assert.doesNotMatch(markup,/data-map-stage|data-map-value/);
+  }
+});

@@ -11,7 +11,8 @@ function designTreeState(){
   if(tree.boardFile==='boards/arm/mps2/mps2_an386.dts')tree.catalog={nodes:[
     {path:'/',parent:null,name:'/',labels:[],status:'okay'},
     {path:'/soc',parent:'/',name:'soc',labels:[],status:'okay'},
-    {path:'/soc/uart@40004000',parent:'/soc',name:'uart@40004000',labels:['uart0'],status:'okay'}
+    {path:'/soc/uart@40004000',parent:'/soc',name:'uart@40004000',labels:['uart0'],status:'okay',
+      properties:[{name:'status',type:'string',value:'"okay"',scalar:'okay'}]}
   ]};
   return {app:appKey(),board:model.board,build:dir(),folder:model.activeWs,manifest:workspaceState()?.manifest,
     method:model.method,trusted:true,configurationFiles:demo_input_groups(),symbols:{items},devicetree:tree,
@@ -36,7 +37,7 @@ function editDesignNode(entry,button){
     return designTree.editor(button,row('目录',ZephyrPathDisplay.path(a.project.path)||'—')+row('清单版本',a.project.revision)+
       '<label><input type="checkbox" data-select="'+esc(m[0])+'" '+(m[4]?'checked':'')+'>勾选模块</label>');
   }
-  if(a.kind==='hardware'){
+  if(a.kind==='hardware'||a.kind==='property'){
     const record=a.record;
     const box=designTree.editor(button,'<code>'+esc(record.path)+'</code><label>status<select data-map-value><option>okay</option><option>disabled</option></select></label>'+
       '<button data-map-stage>加入 app.overlay 草稿</button>');

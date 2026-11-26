@@ -97,4 +97,8 @@ On a 1920 × 1080 display, entering Full-screen configuration and pressing Esc n
 
 [Full-screen configuration screenshot](installed/configuration-map-fullscreen-0.5.13.png) · [Editing Kconfig in a detached window](installed/configuration-map-detached-0.5.13.png)
 
+### 0.5.23 Devicetree nodes and properties
+
+With the preview VSIX installed in VS Code on Windows 11, we expanded the tree from the root to a UART on both MPS2 AN386 and HC32F4A0 and changed `current-speed` from `115200` to `57600` in the graph. Staging the change and saving a copy preserved the original overlay byte for byte. After writing the change to the project and running CMake again, both generated `zephyr.dts` files contained the new value. We also checked read-only register addresses and clock references, and collapsed and reopened a parent node. [1920 × 1080 screenshot of the installed extension](installed/devicetree-properties-0.5.23.png)
+
 [简体中文](configuration-modules.md) | **English**

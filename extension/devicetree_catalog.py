@@ -24,19 +24,30 @@ def property_data(prop):
     return result
 
 
+def hardware_metadata(node):
+    # These nodes map names to other nodes or boot settings. Even a property
+    # named "status" in /aliases identifies a target, not a device state.
+    if node.path in ("/aliases", "/chosen"):
+        return {"compatible": [], "status": None, "statusImplicit": False}
+    status = node.props.get("status")
+    compatible = node.props.get("compatible")
+    return {
+        "compatible": compatible.to_strings() if compatible else [],
+        "status": status.to_string() if status is not None else "okay",
+        "statusImplicit": status is None,
+    }
+
+
 def export_nodes(tree):
     aliases = defaultdict(list)
     for alias, node in tree.alias2node.items():
         aliases[node.path].append(alias)
     nodes = []
     for node in tree.node_iter():
-        status = node.props.get("status")
-        compatible = node.props.get("compatible")
         nodes.append({
             "path": node.path, "parent": node.parent.path if node.parent else None,
             "name": node.name or "/", "labels": node.labels, "aliases": aliases[node.path],
-            "compatible": compatible.to_strings() if compatible else [],
-            "status": status.to_string() if status is not None else "okay", "statusImplicit": status is None,
+            **hardware_metadata(node),
             "children": [child.path for child in node.nodes.values()],
             "properties": [property_data(prop) for prop in node.props.values()],
         })

@@ -97,4 +97,8 @@ Windows 的 `hello_world` 实测中，在首次运行配置前选择 `qemu_corte
 
 [全屏配置实机截图](installed/configuration-map-fullscreen-0.5.13.png) · [独立窗口编辑 Kconfig 实机截图](installed/configuration-map-detached-0.5.13.png)
 
+### 0.5.23 设备树节点与属性
+
+在 Windows 11 的 VS Code 中安装预发布 VSIX，分别打开 MPS2 AN386 和 HC32F4A0 工程。从设备树根节点展开到串口，在图上将 `current-speed` 从 `115200` 改为 `57600`。加入草稿和另存副本后，原 overlay 的字节内容保持一致。写回工程并重新运行 CMake 后，两份生成的 `zephyr.dts` 都读到了新值。另验证了寄存器地址和时钟引用的只读显示，以及折叠父节点后重新展开的操作。[1920 × 1080 安装版截图](installed/devicetree-properties-0.5.23.png)
+
 **简体中文** | [English](configuration-modules.en.md)

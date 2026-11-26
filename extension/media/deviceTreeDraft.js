@@ -7,6 +7,7 @@ const deviceTreeDraft = (() => {
   const property_name = /^[\w,.+?#-]+$/;
   const status_values = new Set(['okay', 'disabled', 'reserved', 'fail']);
   const structural = new Set(['compatible', 'phandle', 'linux,phandle', 'reg', 'interrupts', 'device_type', 'status']);
+  const isReferenceNode = path => path === '/aliases' || path === '/chosen';
   const quoted = /"(?:[^"\\\r\n]|\\["\\nt])*"/;
   const assignment = new RegExp('\\s*([\\w,.+?#-]+)\\s*=\\s*(' + quoted.source + '|<[0-9]+>)\\s*;', 'y');
 
@@ -60,6 +61,7 @@ const deviceTreeDraft = (() => {
 
   function update_field(text, path, name, expression) {
     if (!node_path.test(path || '')) throw Error('Invalid devicetree path');
+    if (isReferenceNode(path)) throw Error('Reference mappings are read-only');
     const section = read_overrides(text);
     const nodes = section?.nodes ?? new Map();
     const fields = nodes.get(path) ?? new Map();
@@ -94,6 +96,6 @@ const deviceTreeDraft = (() => {
     return field.startsWith('<') ? Number(field.slice(1, -1)) : JSON.parse(field);
   }
   const stagedStatus = (text, record) => stagedProperty(text, record, 'status');
-  return {status, stagedStatus, property, stagedProperty, editableProperty};
+  return {status, stagedStatus, property, stagedProperty, editableProperty, isReferenceNode};
 })();
 if (typeof module !== 'undefined') module.exports = deviceTreeDraft;

@@ -14,6 +14,15 @@ const port = {
   ]
 };
 
+test('alias and chosen names never become editable hardware properties',()=>{
+  for(const path of ['/chosen','/aliases']){
+    const reference={path,properties:[{name:'serial',type:'string',scalar:'/bus/uart'}]};
+    assert.throws(()=>draft.status('',reference,'disabled'),/read-only/);
+    assert.throws(()=>draft.property('',reference,'serial','other'),/read-only/);
+  }
+  assert.match(draft.status('',{path:'/soc/chosen'},'okay'),/&\{\/soc\/chosen\}/);
+});
+
 test('independent nodes retain the original overlay and line endings across edits', () => {
   const other = {path:'/other/serial@1000'};
   const original = '// existing settings\r\n&serial_a { status = "disabled"; };\r\n';

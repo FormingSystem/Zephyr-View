@@ -153,7 +153,11 @@ const studioView=(()=>{
       }
     }
     const route=['kconfig','device'].includes(data.inspector)?data.inspector:requestedNode;
-    if(route){node=route;requestedNode=undefined;workspace.openPane('inspector');}
+    if(route){
+      node=route;requestedNode=undefined;
+      const hardware=route==='device'&&data.devicetree?.catalog?.nodes?.length;
+      workspace.openPane(hardware?'':'inspector');
+    }
     state=data;render(route);
     if(route)requestAnimationFrame(()=>tree.route(route));
   }

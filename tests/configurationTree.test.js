@@ -1,7 +1,8 @@
 'use strict';
 const assert=require('node:assert/strict');
 const test=require('node:test');
-const {configurationTreeModel,configurationMapFitScale}=require('../design/configuration-tree');
+const {configurationTreeModel,configurationMapFitScale,configurationSearchResults}=require('../design/configuration-tree');
+const pathDisplay=require('../design/pathDisplay');
 const en=(_cn,text)=>text;
 const child=(node,id)=>node.children.find(item=>item.id===id);
 
@@ -47,6 +48,31 @@ test('unknown module selection and absent hardware records remain unknown',()=>{
   assert.equal(child(tree,'modules').children[0].detail,'abc');
   state.selectedModules=[];
   assert.match(child(configurationTreeModel(state,en),'modules').children[0].detail,/Unselected/);
+});
+
+test('DTS nodes expand to their children and their own properties, independently of catalog order',()=>{
+  const baud={name:'current-speed',type:'num',value:'<0x1c200>',scalar:115200};
+  const label={name:'label',type:'string',value:'"UART"',scalar:'UART'};
+  const nodes=[{path:'/bus/port',properties:[baud,label]},{path:'/'},{path:'/bus',properties:[label]},
+    {path:'/unused/port',properties:[baud]},{path:'/unused'},{path:'/empty'}];
+  const hardware=child(child(configurationTreeModel({devicetree:{catalog:{nodes}}},en),'device'),'device:hardware');
+  const root=hardware.children[0],bus=child(root,'hardware:/bus');
+  const port=child(bus,'hardware:/bus/port'),fields=child(bus,'properties:/bus');
+  assert.equal(port.label,'port');
+  assert.deepEqual(port.children.map(property=>property.label),['current-speed','label']);
+  assert.equal(port.children[0].action.property,baud);
+  assert.equal(port.children[0].action.record,nodes[0]);
+  assert.equal(fields.children[0].action.record.path,'/bus');
+  assert.deepEqual(child(root,'hardware:/empty').children,[]);
+
+  const index=new Map();
+  function visit(entry){index.set(entry.id,{entry});entry.children.forEach(visit);}
+  visit(root);
+  const hits=term=>configurationSearchResults(index,term,pathDisplay);
+  assert.deepEqual(hits('/bus/port:current-speed'),[port.children[0]]);
+  assert.deepEqual(hits('/bus/port'),[port]);
+  assert.deepEqual(hits('current-speed').map(hit=>hit.action.record.path),['/bus/port','/unused/port']);
+  assert.notEqual(hits('current-speed')[0].id,hits('current-speed')[1].id);
 });
 
 test('map labels share one path style while file and module actions keep their original targets',()=>{

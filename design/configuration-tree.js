@@ -46,19 +46,34 @@ function configurationTreeModel(state, translate=tr) {
     if(tree.boardFile)sources.push(source(tree.boardFile,t('板级 DTS','Board DTS')));
     for(const file of tree.overlays||[])sources.push(source(file,t('已应用覆盖','Applied overlay')));
     if(tree.generatedFile)sources.push(source(tree.generatedFile,t('最终设备树','Merged devicetree')));
-    const records=tree.catalog?.nodes||[], nodes=new Map();
-    for(const record of records){
-      const label=record.path==='/'?'/':record.name;
-      nodes.set(record.path,branch('hardware:'+record.path,label,record.labels?.join(', ')||record.status,[],{kind:'hardware',record}));
-    }
-    const roots=[];
-    for(const record of records)(nodes.get(record.parent)?.children||roots).push(nodes.get(record.path));
+    const records=tree.catalog?.nodes||[],roots=hardwareHierarchy(records);
     const content=[...file_group('dts',t('板级设备树','Board devicetree')),
       ...file_group('overlay',t('应用覆盖文件','Application overlays'))];
     if(sources.length)content.push(branch('device:sources',t('设备树来源','Devicetree sources'),String(sources.length),sources));
     if(roots.length)content.push(branch('device:hardware',t('硬件节点','Hardware nodes'),String(records.length),roots));
     return branch('device',t('设备树','Devicetree'),records.length?t('硬件节点 ','Hardware nodes · ')+records.length:
       catalogStatus(tree.catalog?.source),content,{kind:'device'});
+  }
+  function hardwareHierarchy(records) {
+    const nodes=new Map(),roots=[];
+    for(const record of records){
+      const label=record.name||record.path.split('/').pop()||'/';
+      nodes.set(record.path,branch('hardware:'+record.path,label,record.labels?.join(', ')||record.status,[],{kind:'hardware',record}));
+    }
+    for(const [path,node] of nodes){
+      const parent=path!=='/' && nodes.get(path.slice(0,path.lastIndexOf('/'))||'/');
+      (parent?parent.children:roots).push(node);
+    }
+    for(const node of nodes.values()){
+      const {record}=node.action;
+      const properties=(record.properties||[]).map(property=>leaf(
+        'property:'+JSON.stringify([record.path,property.name]),property.name,property.value||property.type,
+        {kind:'property',record,property}));
+      if(!properties.length)continue;
+      if(node.children.length)node.children.push(branch('properties:'+record.path,t('属性','Properties'),String(properties.length),properties));
+      else node.children=properties;
+    }
+    return roots;
   }
   const target=(kind,title,value)=>leaf('target:'+kind,title,pathDisplay.directory(value,state.folder,t('当前目录','Current directory'))||'—',{kind:'target',target:kind});
   const [identifier,...qualifiers]=(state.board||'').split('/');
@@ -90,6 +105,21 @@ function configurationMapFitScale(width,height,treeWidth,treeHeight) {
   return Math.min(1,ratio(width,treeWidth),ratio(height,treeHeight));
 }
 
+function configurationSearchResults(index,term,pathDisplay) {
+  const matches=[],pathTerm=pathDisplay.path(term);
+  for(const {entry} of index.values()){
+    const action=entry.action,record=action?.record;
+    const file=action?.path||action?.project?.path||(['app','build'].includes(action?.target)?entry.detail:'');
+    const fields=[entry.label,entry.detail];
+    if(action?.kind==='hardware')fields.push(record.path,...(record.labels||[]),...(record.aliases||[]),...(record.compatible||[]));
+    if(action?.kind==='property'&&term.includes(':'))fields.push(record.path+':'+entry.label);
+    const fileMatches=file&&pathDisplay.path(file).toLowerCase().includes(pathTerm);
+    if(fileMatches||fields.some(value=>value&&String(value).toLowerCase().includes(term)))matches.push(entry);
+    if(matches.length===40)break;
+  }
+  return matches;
+}
+
 /** Size the scrollable sheet to the drawn tree while leaving a fixed panning margin around it. */
 class ConfigurationMapViewport {
   constructor(stage, view, start, onMove) {
@@ -101,15 +131,25 @@ class ConfigurationMapViewport {
     this.onMove=onMove;
     this.resize();
     if(!view.fitted)stage.scrollTo(...start);
-    this.observer=new ResizeObserver(()=>{
-      if(stage.isConnected)this.resize();
-      else this.disconnect();
+    const editor=stage.nextElementSibling;
+    this.observer=new ResizeObserver(entries=>{
+      if(!stage.isConnected)return this.disconnect();
+      if(entries.some(entry=>entry.target!==editor))this.resize();
+      else this.onMove();
     });
     this.observer.observe(stage);
     this.observer.observe(this.tree);
+    this.observer.observe(editor);
+    this.onOuterScroll=event=>{
+      if(!editor.hidden && (event.target===document||event.target.contains?.(stage)) && event.target!==stage)this.onMove();
+    };
+    window.addEventListener('scroll',this.onOuterScroll,true);
   }
 
-  disconnect(){this.observer.disconnect();}
+  disconnect(){
+    this.observer.disconnect();
+    window.removeEventListener('scroll',this.onOuterScroll,true);
+  }
 
   resize() {
     if(this.view.fitted)return this.fit();
@@ -260,6 +300,12 @@ function createConfigurationTree(onOpen,restoredView) {
   }
   function route(id){
     if(!stage||!index.has(id))return;
+    if(id==='device'&&index.has('hardware:/')){
+      reveal('hardware:/',false);
+      const button=buttonFor('hardware:/');
+      toggle(button,true);viewport.frame(button,.25,.25);
+      return;
+    }
     reveal(id,false);toggle(buttonFor(id),true);
     const search=stage.previousElementSibling.querySelector('[data-map-search]');
     search.focus({preventScroll:true});search.scrollIntoView({block:'nearest'});
@@ -280,14 +326,17 @@ function createConfigurationTree(onOpen,restoredView) {
     if(box.hidden)return;
     const button=buttonFor(box.dataset.editing);
     if(!button)return;
-    const host=stage.parentNode.getBoundingClientRect(),rect=button.getBoundingClientRect();
+    const host=stage.parentNode.getBoundingClientRect(),canvas=stage.getBoundingClientRect(),rect=button.getBoundingClientRect();
+    const upper=Math.max(canvas.top,0)-host.top+4;
+    const lower=Math.min(canvas.bottom,window.innerHeight)-host.top-4;
+    if(lower<=upper)return;
+    box.style.maxHeight=(lower-upper)+'px';
     const right = rect.right - host.left + 8, left = rect.left - host.left - box.offsetWidth - 8;
     const side = right + box.offsetWidth <= host.width - 4 ? right : left >= 4 ? left : undefined;
     const below = rect.bottom - host.top + 4, above = rect.top - host.top - box.offsetHeight - 4;
-    const top = side !== undefined ? rect.top - host.top : below + box.offsetHeight <= host.height ? below : above;
+    const top = side !== undefined ? rect.top - host.top : below + box.offsetHeight <= lower ? below : above;
     box.style.left = Math.max(4,Math.min(side ?? rect.left-host.left,host.width-box.offsetWidth-4))+'px';
-    const toolbarHeight=stage.previousElementSibling.offsetHeight;
-    box.style.top = Math.max(toolbarHeight,Math.min(top,host.height-box.offsetHeight))+'px';
+    box.style.top = Math.max(upper,Math.min(top,lower-box.offsetHeight))+'px';
   }
   function editor(button,html){
     const box=stage.nextElementSibling;
@@ -322,16 +371,9 @@ function createConfigurationTree(onOpen,restoredView) {
     const input=box.querySelector('[data-map-search]'),list=box.querySelector('.map-search-results');
     input.oninput=()=>{
       const term=input.value.trim().toLowerCase();list.hidden=!term;list.replaceChildren();if(!term)return;
-      const pathTerm=ZephyrPathDisplay.path(term);
-      const matches=[...index.values()].map(v=>v.entry).filter(entry=>{
-        const action=entry.action,record=action?.record;
-        const file=action?.path||action?.project?.path||(['app','build'].includes(action?.target)?entry.detail:'');
-        if(file && ZephyrPathDisplay.path(file).toLowerCase().includes(pathTerm))return true;
-        return [entry.label,entry.detail,record?.path,...(record?.labels||[]),...(record?.aliases||[]),...(record?.compatible||[])]
-          .some(value=>value&&String(value).toLowerCase().includes(term));
-      });
-      list.innerHTML=matches.slice(0,40).map(entry=>'<button type="button" data-map-result="'+esc(entry.id)+'"><strong>'+esc(entry.label)+
-        '</strong><small>'+esc(entry.detail||'')+'</small></button>').join('')||'<small>'+tr('无匹配节点','No matching nodes')+'</small>';
+      const matches=configurationSearchResults(index,term,ZephyrPathDisplay);
+      list.innerHTML=matches.map(entry=>'<button type="button" data-map-result="'+esc(entry.id)+'"><strong>'+esc(entry.label)+
+        '</strong><small>'+esc(entry.action?.kind==='property'?entry.action.record.path:entry.detail||'')+'</small></button>').join('')||'<small>'+tr('无匹配节点','No matching nodes')+'</small>';
     };
     list.onclick=e=>{const result=e.target.closest('[data-map-result]');if(result){list.hidden=true;reveal(result.dataset.mapResult,true,true);}};
     input.onkeydown=e=>{if(e.key==='Escape')list.hidden=true;if(e.key==='ArrowDown')list.querySelector('button')?.focus();
@@ -378,4 +420,4 @@ function configurationTreeHeader(app,board,method,actions){
   return '<div class="map-page-header"><div><h1>'+tr('工程配置','Project configuration')+'</h1><small>'+
     esc([app,board,method].filter(Boolean).join(' · '))+'</small></div><div class="actions">'+actions+'</div></div>';
 }
-if(typeof module!=='undefined')module.exports={configurationTreeModel,configurationMapFitScale};
+if(typeof module!=='undefined')module.exports={configurationTreeModel,configurationMapFitScale,configurationSearchResults};

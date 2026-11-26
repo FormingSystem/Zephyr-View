@@ -89,7 +89,8 @@ test('a configured board directory restricts only a named lookup of that same bo
   s.setup.cacheStatus = 'current';
   s.target.cache = new Map([['ZEPHYR_BASE',app],['BOARD_ROOT',other],
     ['CACHED_BOARD','previous-board@2/chip/cpu'],['BOARD_DIRECTORIES',cached]]);
-  const names = async name => (await readBoards(s,process.env,name)).map(record=>record.name);
+  const env = {...process.env, ZEPHYR_BASE: app};
+  const names = async name => (await readBoards(s,env,name)).map(record=>record.name);
   assert.ok((await names()).includes('extra-root'));
   assert.deepEqual(await names('extra-root'),['extra-root']);
   assert.deepEqual(await names('previous-board'),['previous-board']);

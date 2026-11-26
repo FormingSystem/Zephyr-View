@@ -68,3 +68,28 @@ class DevicetreeCatalogTest(unittest.TestCase):
         self.assertEqual(props["offsets"]["type"], "nums")
         self.assertNotIn("scalar", props["offsets"])
         self.assertEqual(props["wakeup-source"]["value"], "")
+
+    def test_special_nodes_keep_name_mappings_separate_from_hardware_metadata(self):
+        dts = '''/dts-v1/;
+/ {
+    aliases { status = &uart; compatible = &uart; };
+    chosen { zephyr,console = &uart; };
+    soc { uart: serial@4000 { compatible = "vendor,uart"; }; };
+};'''
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "zephyr.dts"
+            source.write_text(dts, encoding="utf-8")
+            nodes = {node["path"]: node for node in catalog.export_nodes(self.dtlib.DT(str(source)))}
+
+        for path, names in (("/aliases", ["status", "compatible"]), ("/chosen", ["zephyr,console"])):
+            node = nodes[path]
+            self.assertIsNone(node["status"])
+            self.assertFalse(node["statusImplicit"])
+            self.assertEqual(node["compatible"], [])
+            self.assertEqual({p["name"]: p["value"] for p in node["properties"]}, dict.fromkeys(names, "&uart"))
+
+        uart = nodes["/soc/serial@4000"]
+        self.assertEqual(uart["parent"], "/soc")
+        self.assertEqual(nodes["/soc"]["children"], [uart["path"]])
+        self.assertCountEqual(uart["aliases"], ["status", "compatible"])
+        self.assertEqual(uart["compatible"], ["vendor,uart"])
