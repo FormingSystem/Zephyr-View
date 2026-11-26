@@ -1,5 +1,7 @@
 # Zephyr Extension 逐项设计与评审
 
+[工程分析设计评审：从应用入口到线程、函数和数据流](thread-analysis.md) · [双线程交互样例](thread-analysis-preview.html)
+
 [0.5.17 缺失组件安装向导、跨平台适配和安装包搬迁验证](platform-support.md)
 
 [0.5.16 全量评审和验证：组件安装、探针驱动、固件烧写与界面职责](installation-and-flashing.md)

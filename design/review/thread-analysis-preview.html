@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>线程分析 · Basic Synchronization</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f6f7; --panel: #fff; --text: #192e33; --muted: #526970;
+      --line: #ccd8da; --accent: #086c60; --tint: #e5f3ef; --focus: #177dab;
+      --soft: #f6f8f8; --wire: #758d91;
+      font: 15px/1.5 system-ui, "Segoe UI", sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #172024; --panel: #202c30; --text: #e2eeee; --muted: #aec4c6;
+        --line: #41565a; --accent: #8addc9; --tint: #23453f; --focus: #7dcdef;
+        --soft: #263337; --wire: #97b2b4;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text); background: var(--bg); }
+    main { max-width: 1120px; margin: 0 auto; padding: clamp(16px, 3vw, 36px); }
+    h1, h2, h3, p, dl, dd { margin: 0; }
+    h1 { font-size: clamp(24px, 3.2vw, 36px); line-height: 1.2; }
+    h2 { font-size: 18px; } h3 { font-size: 16px; }
+    small, .muted, footer { color: var(--muted); }
+    a { color: var(--accent); text-underline-offset: 3px; overflow-wrap: anywhere; }
+    button { color: inherit; font: inherit; cursor: pointer; }
+    :is(button, a):focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    code, .node strong { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+    header, .pane, .inspector { margin-bottom: 14px; }
+    header p { margin-top: 6px; }
+    [role="tablist"] { display: flex; gap: 4px; padding: 0 2px; border-bottom: 1px solid var(--line); }
+    [role="tab"] { padding: 9px 17px; border: 0; border-bottom: 3px solid transparent; background: transparent; }
+    [role="tab"][aria-selected="true"] { color: var(--accent); border-bottom-color: currentColor; font-weight: 650; }
+    .pane, .inspector { padding: clamp(12px, 2vw, 22px); background: var(--panel); border: 1px solid var(--line); border-radius: 9px; }
+    .pane { margin-top: 12px; }
+    .hint { color: var(--muted); font-size: 13px; margin: 3px 0 12px; }
+    .lane { display: grid; grid-template-columns: minmax(0, 1fr) 68px minmax(0, 1fr) 68px minmax(0, 1fr); align-items: center; }
+    .lane + .lane { margin-top: 8px; }
+    .node { border: 1px solid var(--line); border-radius: 6px; background: var(--soft); padding: 8px 12px; text-align: left; min-width: 0; }
+    .node strong, .node small { display: block; overflow-wrap: anywhere; }
+    .node strong { font-size: 14px; } .node small { margin-top: 2px; }
+    button:hover { color: var(--accent); }
+    .node:hover, .node[aria-pressed="true"] { border-color: var(--accent); }
+    .node[aria-pressed="true"] { background: var(--tint); box-shadow: inset 3px 0 var(--accent); }
+    .wire { display: flex; flex-direction: column; align-items: center; color: var(--muted); font-size: 12px; }
+    .wire::after { content: ''; width: 100%; height: 8px; background: var(--wire); clip-path: polygon(0 42%, 88% 42%, 88% 0, 100% 50%, 88% 100%, 88% 58%, 0 58%); }
+    .calls { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 16px; align-items: stretch; }
+    .calls .node { flex: 1 1 125px; }
+    ol { margin: 5px 0 0; padding-inline-start: 1.7em; }
+    ol li { padding-inline-start: 3px; margin: 4px 0; }
+    ol .node { display: inline-flex; gap: .8em; flex-wrap: wrap; align-items: baseline; padding: 5px 9px; }
+    .inspector h2 { overflow-wrap: anywhere; }
+    dl { margin-top: 6px; } dl div { display: grid; grid-template-columns: 5em minmax(0, 1fr); padding: 6px 0; }
+    dl div + div { border-top: 1px solid var(--line); } dt { color: var(--muted); }
+    dd { overflow-wrap: anywhere; } footer { font-size: 13px; }
+    @media (max-width: 590px) {
+      .lane { grid-template-columns: 1fr; }
+      .lane + .lane { border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 12px; }
+      .wire { flex-direction: row; gap: 5px; justify-content: center; }
+      .wire::after { content: '↓'; clip-path: none; background: none; height: auto; width: auto; }
+      dl div { grid-template-columns: 3.6em 1fr; }
+    }
+    @media (forced-colors: active) {
+      .node[aria-pressed="true"], [role="tab"][aria-selected="true"] { outline: 2px solid Highlight; }
+      .wire::after { content: '→'; clip-path: none; background: none; width: auto; height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>线程分析</h1>
+      <p><strong>Basic Synchronization</strong> · Zephyr v4.2.0</p>
+      <p class="muted">静态源码示例。图中展示调用与同步关系，尚未采集实时调用栈或运行时数据。</p>
+    </header>
+    <nav role="tablist" aria-label="分析视图">
+      <button role="tab" id="tab-overview" aria-controls="graph" aria-selected="true">总览</button>
+      <button role="tab" id="tab-a" aria-controls="graph" aria-selected="false" tabindex="-1">线程 A</button>
+      <button role="tab" id="tab-b" aria-controls="graph" aria-selected="false" tabindex="-1">线程 B</button>
+    </nav>
+    <section role="tabpanel" class="pane" id="graph" aria-labelledby="tab-overview"></section>
+    <section class="inspector" id="details" aria-label="节点详情" aria-live="polite"></section>
+    <footer>
+      <a href="https://docs.zephyrproject.org/4.2.0/samples/synchronization/README.html">官方例程与控制台输出</a>
+      · <a href="https://github.com/zephyrproject-rtos/zephyr/blob/v4.2.0/samples/synchronization/src/main.c">完整源码</a>
+    </footer>
+  </main>
+  <script>
+    'use strict';
+    const graph = document.getElementById('graph');
+    const details = document.getElementById('details');
+    const tabs = [...document.querySelectorAll('[role="tab"]')];
+    const source = 'https://github.com/zephyrproject-rtos/zephyr/blob/v4.2.0/samples/synchronization/src/main.c';
+    const views = ['overview', 'a', 'b'];
+    let objects = new Map();
+
+    function object(id, title, caption, input, output, lines) {
+      objects.set(id, {title, input, output, lines});
+      return '<button class="node" data-id="' + id + '" aria-pressed="false" aria-controls="details">' +
+        '<strong>' + title + '</strong><small>' + caption + '</small></button>';
+    }
+    function entry(id) {
+      const other = id === 'a' ? 'b' : 'a';
+      return object(id, 'thread_' + id + '_entry_point', '线程 ' + id.toUpperCase() + ' 入口',
+        '三个启动参数均未使用。传给 hello_loop 的参数为函数名、&thread_' + id + '_sem 和 &thread_' + other + '_sem。',
+        '进入交替打印循环，等待本线程的信号量，结束本轮后释放对方的信号量。', id === 'a' ? [75, 83] : [88, 96]);
+    }
+    function semaphore(id) {
+      const other = id === 'a' ? 'B' : 'A';
+      return object('sem-' + id, 'thread_' + id + '_sem', '初值 ' + (id === 'a' ? 1 : 0) + ' · 上限 1',
+        '线程 ' + other + ' 调用 k_sem_give，交出下一次打印的许可。',
+        '线程 ' + id.toUpperCase() + ' 可通过 k_sem_take 获得一次许可。线程之间只传递轮次，控制台消息由各线程自行产生。',
+        id === 'a' ? [71, 71] : [72, 72]);
+    }
+    function wire(label) { return '<span class="wire">' + label + '</span>'; }
+    function overview() {
+      const a = entry('a'), b = entry('b');
+      const lane = (sender, token, receiver) => '<div class="lane">' + sender + wire('释放') + token + wire('取得') + receiver + '</div>';
+      return '<h2>信号量交接</h2><p class="hint">线程 A 的信号量初值为 1，因此由 A 发出第一条问候。选择节点查看输入、输出和源码。</p>' +
+        lane(a, semaphore('b'), b) + lane(b, semaphore('a'), a);
+    }
+    function thread(id) {
+      const name = id.toUpperCase(), own = 'thread_' + id + '_sem', other = 'thread_' + (id === 'a' ? 'b' : 'a') + '_sem';
+      const start = id === 'a'
+        ? object('start', 'main()', '创建后显式启动', '线程对象 thread_a_data、栈 thread_a_stack_area、入口和优先级 7。',
+          'k_thread_create 以 K_FOREVER 创建线程；k_thread_start 将 A 置为可运行。', [102, 127])
+        : object('start', 'K_THREAD_DEFINE', '静态线程 · 无启动延迟', '线程标识 thread_b、入口、栈大小 1024、优先级 7、延迟 0。',
+          '线程 B 可参与调度。若它第一次取信号量时 A 尚未释放许可，B 会阻塞等待。', [97, 99]);
+      const loop = object('loop', 'hello_loop()', '两线程共用的函数', '名称及两个信号量指针；当前线程先取 ' + own + '。',
+        '持续打印问候并向 ' + other + ' 交接许可。', [36, 68]);
+      const operations = [
+        object('take', 'k_sem_take', '等待自己的许可', own + '、K_FOREVER。', '获得一个许可后才继续；计数为零时阻塞等待。', [45, 45]),
+        object('print', 'printk', '向控制台输出问候', '取当前线程名，缺省时使用入口函数名；读取 CPU 编号和 CONFIG_BOARD。', '输出一行问候，包含线程名、CPU 编号和板名。', [47, 61]),
+        object('busy', 'k_busy_wait', '忙等 100 ms', '100000 微秒。', '忙等结束后继续执行。', [64, 64]),
+        object('sleep', 'k_msleep', '休眠 500 ms', 'SLEEPTIME 定义为 500 毫秒。', '线程休眠，之后由调度器决定何时恢复运行。', [65, 65]),
+        object('give', 'k_sem_give', '交给另一线程', other + '。', '对方可取得许可；当前线程回到循环开头。', [66, 66])
+      ];
+      return '<h2>线程 ' + name + ' 的调用路径</h2><p class="hint">选择调用可查看作用及实际参数。</p><div class="calls">' +
+        start + entry(id) + loop + '</div><h3>每轮执行顺序</h3><ol>' + operations.map(node => '<li>' + node + '</li>').join('') + '</ol>';
+    }
+    function inspect(id) {
+      const item = objects.get(id);
+      const [from, to] = item.lines;
+      for (const node of graph.querySelectorAll('[data-id]')) node.setAttribute('aria-pressed', String(node.dataset.id === id));
+      const range = from === to ? 'L' + from : 'L' + from + '-L' + to;
+      details.innerHTML = '<h2>' + item.title + '</h2><dl><div><dt>输入</dt><dd></dd></div><div><dt>输出</dt><dd></dd></div>' +
+        '<div><dt>源码</dt><dd><a href="' + source + '#' + range + '">src/main.c · ' + range + '</a></dd></div></dl>';
+      details.querySelectorAll('dd')[0].textContent = item.input;
+      details.querySelectorAll('dd')[1].textContent = item.output;
+    }
+    function select(index) {
+      for (const [i, tab] of tabs.entries()) {
+        tab.tabIndex = i === index ? 0 : -1;
+        tab.setAttribute('aria-selected', String(i === index));
+      }
+      graph.setAttribute('aria-labelledby', tabs[index].id);
+      objects.clear();
+      graph.innerHTML = index === 0 ? overview() : thread(views[index]);
+      inspect(index === 0 ? 'sem-a' : 'start');
+    }
+    graph.addEventListener('click', event => {
+      const node = event.target.closest('[data-id]');
+      if (node) inspect(node.dataset.id);
+    });
+    for (const [i, tab] of tabs.entries()) {
+      tab.addEventListener('click', () => select(i));
+      tab.addEventListener('keydown', event => {
+        const keys = {ArrowLeft: (i + tabs.length - 1) % tabs.length, ArrowRight: (i + 1) % tabs.length, Home: 0, End: tabs.length - 1};
+        if (!Object.hasOwn(keys, event.key)) return;
+        event.preventDefault();
+        select(keys[event.key]);
+        tabs[keys[event.key]].focus();
+      });
+    }
+    select(0);
+  </script>
+</body>
+</html>
