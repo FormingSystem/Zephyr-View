@@ -55,6 +55,9 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
+      - name: Install extension runtime dependencies
+        working-directory: extension-repo/extension
+        run: npm ci --omit=dev
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
