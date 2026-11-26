@@ -2,6 +2,7 @@
 
 const vscode = require('vscode');
 const path = require('node:path');
+const fs = require('node:fs/promises');
 const {FirmwareLog,encoding} = require('./firmwareLog');
 const {randomBytes} = require('node:crypto');
 const {pickFile, pickDirectory} = require('./fileDialogs');
@@ -31,6 +32,18 @@ function decode(text) {
     throw Error(say('无法识别此程序设计格式。可打开 JSON 检查版本和节点。','Unrecognized program format. Open the JSON to inspect the version and nodes.'));
   }
   return graph;
+}
+
+async function dirty_source(target) {
+  const candidates = workspace.textDocuments.filter(document => document.isDirty && localFile(document.uri));
+  const matches = file => path.relative(file,target)==='';
+  const direct = candidates.find(document => matches(document.uri.fsPath));
+  if (direct) return direct;
+  // A separate editor can hold the same file through a workspace junction or symlink.
+  for (const document of candidates) {
+    const physical = await fs.realpath(document.uri.fsPath).catch(() => undefined);
+    if (physical && matches(physical) && document.isDirty) return document;
+  }
 }
 
 function replaceDocument(document, text) {
@@ -204,9 +217,8 @@ class VisualProgramEditor {
     if (!localFile(document.uri)) return;
     const graph = decode(document.getText()), version = document.version;
     const proposal = await preview_program(document.uri.fsPath,graph);
-    const dirty_source = () => workspace.textDocuments.find(d => localFile(d.uri) && d.isDirty &&
-      path.relative(d.uri.fsPath,proposal.target)==='');
-    const dirty = dirty_source();
+    const find_edits = () => dirty_source(proposal.target);
+    const dirty = await find_edits();
     if (!dirty && !proposal.changed) {
       await notice(say('生成的源码已与设计一致。','Generated source already matches this design.'));
       return;
@@ -234,15 +246,14 @@ class VisualProgramEditor {
     const choice = await window.showInformationMessage(prompt,apply,back);
     if (choice===back) return return_to_design();
     if (choice!==apply) return;
-    if (document.isClosed || document.version!==version || dirty_source()) {
-      return stale();
-    }
+    const outdated = async () => Boolean(await find_edits()) || document.isClosed || document.version!==version;
+    if (await outdated()) return stale();
     try {
       const current = await inspectProgram(document.uri.fsPath,graph);
       if (current.original!==proposal.original) throw Object.assign(Error(),{code:'SOURCE_EDITED'});
-      if (document.isClosed || document.version!==version || dirty_source()) return stale();
+      if (await outdated()) return stale();
       if (!await document.save()) return;
-      if (document.version!==version || dirty_source()) return stale();
+      if (await outdated()) return stale();
       await updateProgram(document.uri.fsPath,graph,proposal);
     } catch (error) {
       if (error.code === 'SOURCE_EDITED') return stale();

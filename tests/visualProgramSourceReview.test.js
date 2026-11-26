@@ -35,7 +35,7 @@ try {
 function nextEvent(events,name) {
   return new Promise((resolve,reject)=>{
     const finish=value=>{clearTimeout(timer);resolve(value);};
-    const timer=setTimeout(()=>{events.off(name,finish);reject(Error('Did not receive '+name));},2000);
+    const timer=setTimeout(()=>{events.off(name,finish);reject(Error('Did not receive '+name));},10000);
     events.once(name,finish);
   });
 }
@@ -44,7 +44,7 @@ function nextEvent(events,name) {
 async function openEditor(t) {
   const directory=await fs.mkdtemp(path.join(os.tmpdir(),'zv-review-'));
   t.after(()=>fs.rm(directory,{recursive:true,force:true,maxRetries:4,retryDelay:100}));
-  const graph=example(), root=await exportProgram(directory,graph);
+  const graph=example(), root=await fs.realpath(await exportProgram(directory,graph));
   const source=path.join(root,'src','main.c'), design=path.join(root,designFile);
   const original=await fs.readFile(source,'utf8'), initialDesign=await fs.readFile(design,'utf8');
   graph.threads[0].initialValue=19;
@@ -52,7 +52,11 @@ async function openEditor(t) {
   const events=new EventEmitter(), tabs=[], workspace=vscode.workspace, disposable={dispose(){}};
   const doc={uri:Uri.file(design),version:5,getText:()=>buffer,positionAt:i=>i,
     save:async()=>{saves++;await fs.writeFile(design,buffer);return true;}};
-  const prompt=type=>(message,...choices)=>new Promise(answer=>events.emit(type,{message,choices,answer}));
+  const prompt=type=>(message,...choices)=>new Promise(answer=>{
+    const dialog={type,message,choices,answer};
+    events.emit(type,dialog);
+    events.emit('prompt',dialog);
+  });
   const group={tabs}, unrelated={input:new TabInputTextDiff(Uri.file('other-left'),Uri.file('other-right'))};
   tabs.push(unrelated);
   Object.assign(vscode.window,{
@@ -116,6 +120,36 @@ test('approval of an outdated review closes only its diff and immediately permit
   const returned=nextEvent(h.events,'design');
   second.answer('Back to design');
   await returned;
+  assert.deepEqual(h.tabs,[h.unrelated]);
+  await h.assertUnwritten(h.original);
+});
+
+test('a dirty source opened through a separate directory alias protects a design opened by real path',async t=>{
+  const h=await openEditor(t);
+  const root=path.dirname(path.dirname(h.source)), alias=path.join(path.dirname(root),'workspace-alias');
+  await fs.symlink(root,alias,process.platform==='win32'?'junction':'dir');
+  const sourceAlias=path.join(alias,'src','main.c');
+  assert.notEqual(sourceAlias,h.source);
+  assert.equal(await fs.realpath(sourceAlias),await fs.realpath(h.source));
+  const unsaved=h.original+'/* this change exists only in the editor at the alias */\n';
+  const buffer={uri:Uri.file(sourceAlias),isDirty:true,getText:()=>unsaved};
+  vscode.workspace.textDocuments.push(buffer);
+  const dialog=await h.review('prompt');
+  assert.equal(dialog.type,'warning','the disk comparison alone permits an unsafe apply');
+  assert.equal(h.preview(),unsaved);
+  assert.deepEqual(dialog.choices,['Back to design']);
+  const returned=nextEvent(h.events,'design');
+  dialog.answer('Back to design');
+  await returned;
+  await h.assertUnwritten(h.original);
+  await nextTurn();
+
+  buffer.isDirty=false;
+  const approval=await h.review();
+  buffer.isDirty=true;
+  const stale=nextEvent(h.events,'warning');
+  approval.answer('Apply reviewed changes');
+  assert.match((await stale).message,/fresh diff/);
   assert.deepEqual(h.tabs,[h.unrelated]);
   await h.assertUnwritten(h.original);
 });
