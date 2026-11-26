@@ -187,7 +187,7 @@ function registerWorkbench(context, provider) {
     provider.showSelection(s);
     const show_toolchain = page === 'workspace' || page === 'build';
     const variables = show_toolchain ? environmentRows(s,s.folder ? setup.taskEnvironment(context,s) : s.environment) : [];
-    const compilerChoices = show_toolchain && s.folder && vscode.workspace.isTrusted
+    const compilerChoices = page === 'build' && s.folder && vscode.workspace.isTrusted
       ? await environmentConfig.compiler_choices(context,s) : undefined;
     if (version !== generation || !panel) return;
     s.compilerChoices = compilerChoices;
@@ -484,7 +484,7 @@ function registerWorkbench(context, provider) {
       return refresh();
     }
     if (['compiler','compilerBrowse','compilerPrefix'].includes(m.action)) {
-      const current_target = () => same_folder() && vscode.workspace.isTrusted &&
+      const current_target = () => page === 'build' && same_folder() && vscode.workspace.isTrusted &&
         snapshot?.compilerChoices?.scope === m.scope && !running.has(s.build?.toString());
       if (!s.compilerChoices || s.compilerChoices.scope !== m.scope || !current_target()) return;
       if (m.action === 'compiler') await environmentConfig.select_compiler(context,s,m.id,m.scope,current_target);

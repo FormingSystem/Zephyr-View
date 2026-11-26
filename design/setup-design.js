@@ -65,7 +65,7 @@ function environmentPage(){const env=model.env,missing=missingTools(),group=grou
  const delivery=panel('环境准备',wrap('<div class="actions">'+b('准备安装方案','envplan')+b('配置工具链','envvariant')+b('使用说明','envhelp','plain')+'</div><small>主机平台：'+esc(env.platform)+' · 工具链：'+esc(activeVariant())+'</small>'));
  const scope=groupTabs(['环境默认','当前工程'],env.scope==='当前工程'?1:0,'envscope');
  const state=demo_environment_state();
- const target_tools=env.group===2?demo_compiler.render(state)+external_prefix_details(state):'';
+ const target_tools=env.group===2?external_prefix_details(state):'';
  if(env.group===3)return workspaceSection('environment','环境搭建','',environmentSections(navList,demoProbeList(),''));
  const groupContent=panel(group,toolSpecs.filter(s=>s[1]===group).map(entry).join('')+target_tools,scope);
  return workspaceSection('environment','环境搭建',b('切换示例环境','envprofile')+b('验证环境','envcheck','','refresh')+b(model.method==='west'?'west 一键搭建':'本地 CMake 搭建','contextsetup','primary'),

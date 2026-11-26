@@ -167,7 +167,7 @@
   overflow-wrap:anywhere;
   border-block-start:1px solid var(--line);
 }
-.target-compiler {display:grid;gap:.35em;padding-block:var(--wb-space-block,.6rem)}
+.target-compiler {display:grid;grid-template-columns:minmax(0,1fr);gap:.35em;padding-block:var(--wb-space-block,.6rem)}
 #environment .target-compiler,#environment .toolchain-details {padding-inline:var(--wb-space-inline,1rem)}
 .compiler-caption,.compiler-controls,.toolchain-reading {display:flex;align-items:baseline;flex-wrap:wrap;gap:.25em .8em}
 .compiler-controls {align-items:center}

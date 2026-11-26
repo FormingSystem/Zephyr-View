@@ -1,5 +1,10 @@
 'use strict';
 
+const target_compiler = new compiler_selection(
+  (scope,id) => host.postMessage({action:'compiler',id,scope,version:live?.version}),
+  (scope,action) => host.postMessage({action,scope,version:live?.version})
+);
+
 /** Render host-derived inputs, files and commands for the selected Zephyr target. */
 function build_target_fields(state) {
   const disabled = state.busy || !state.folder || !state.trusted;

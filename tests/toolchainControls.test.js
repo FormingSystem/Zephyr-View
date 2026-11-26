@@ -103,6 +103,12 @@ test('optional roots and historical tool prefixes stay discoverable without requ
   assert.match(legacy, /original\/arm-/);
   assert.match(legacy, /setup:inherit:CROSS_COMPILE/);
   assert.doesNotMatch(legacy, /setup:edit:CROSS_COMPILE/);
+  const firstPrefix = external_prefix_details({...state, environmentRows:[
+    {name:'ZEPHYR_TOOLCHAIN_VARIANT', value:'cross-compile', source:'override'}
+  ]});
+  assert.match(firstPrefix, /setup:edit:CROSS_COMPILE/);
+  assert.match(firstPrefix, /setup:path:CROSS_COMPILE/);
+  assert.equal(external_prefix_details({...state, compilerChoices:{mode:'cross'}}), '');
 });
 
 test('compiler paths and root labels use forward slashes while selection and removal keep the host value', () => {

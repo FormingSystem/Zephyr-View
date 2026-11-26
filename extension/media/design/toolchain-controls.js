@@ -153,9 +153,10 @@ class compiler_selection {
 
 function external_prefix_details(state) {
   const field = state.environmentRows?.find(row => row.name === 'CROSS_COMPILE');
-  const cross = state.compilerChoices?.mode === 'cross';
+  const variant = state.environmentRows?.find(row => row.name === 'ZEPHYR_TOOLCHAIN_VARIANT');
+  const cross = variant?.value === 'cross-compile';
   const override = state.overrides?.includes('CROSS_COMPILE');
-  if (!override && field?.value === undefined && field?.cached === undefined) return '';
+  if (!cross && !override && field?.value === undefined && field?.cached === undefined) return '';
   const disabled = !state.trusted || !state.folder || state.busy;
   const manual = cross ? '<div class="actions">'+b(tr('选择 GCC 可执行文件…','Browse for GCC…'),'setup:edit:CROSS_COMPILE','','',disabled)+
     b(tr('输入工具名前缀…','Enter executable prefix…'),'setup:path:CROSS_COMPILE','','',disabled)+'</div>' : '';

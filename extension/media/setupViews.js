@@ -1,8 +1,4 @@
 'use strict';
-const target_compiler = new compiler_selection(
-  (scope,id) => host.postMessage({action:'compiler',id,scope,version:live?.version}),
-  (scope,action) => host.postMessage({action,scope,version:live?.version})
-);
 const setupViews=(()=>{
   let data,group=0;
   const expanded_prefixes = new Map();
@@ -86,7 +82,7 @@ const setupViews=(()=>{
       content+=entry('ZEPHYR_SDK_INSTALL_DIR');
       let prefix=external_prefix_details(s);
       if(expanded_prefixes.get(s.folder))prefix=prefix.replace('<details ','<details open ');
-      content+=target_compiler.render(s)+prefix;
+      content+=prefix;
     }
     const setup=b(tr('补齐缺失组件…','Set up missing components…'),'setup:installMissing','primary','',!s.folder||!s.trusted||s.busy);
     const actions=group===3?'':setup+b(tr('重新检测','Detect again'),'setup:refresh','','refresh');

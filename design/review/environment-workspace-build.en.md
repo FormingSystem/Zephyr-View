@@ -10,7 +10,7 @@ For automatic discovery, saving detected settings, native selection dialogs and 
 
 ## 0.5.10 Target compiler
 
-Find **Target compiler** below Board and CPU on the Build page, or inspect the same target in the toolchain group under Workspace → Environment setup. Automatic mode follows the project and Zephyr. Before configuration, the board metadata supplies architecture evidence. After configuration, check `.config` and the compiler recorded by CMake. Applying a candidate manually binds it to the current workspace folder, application and board. Original project arguments remain available when automatic selection is restored. When changing the compiler for an existing target, use a new build directory to retain the old build for comparison.
+Find **Target compiler** below Board and CPU on the Build page. Source and toolchain on the Workspace page manages the shared SDK and toolchain variant. Selecting the external GNU toolchain there lets you set the default executable prefix for the workspace. Automatic mode follows the project and Zephyr. Before configuration, the board metadata supplies architecture evidence. After configuration, check `.config` and the compiler recorded by CMake. Applying a candidate manually binds it to the current workspace folder, application and board. Original project arguments remain available when automatic selection is restored. When changing the compiler for an existing target, use a new build directory to retain the old build for comparison.
 
 | Windows acceptance case | Observation |
 | --- | --- |
