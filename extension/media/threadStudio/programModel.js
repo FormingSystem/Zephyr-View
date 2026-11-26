@@ -5,7 +5,8 @@
     msgq:Object.freeze(['send','receive']), sem:Object.freeze(['give','take']), mutex:Object.freeze(['increment'])
   });
   const kinds = Object.keys(operations);
-  const arithmetic = new Map([['set','='],['add','+='],['subtract','-='],['multiply','*=']]);
+  const arithmetic = new Map([['set','='],['add','+='],['subtract','-='],['multiply','*='],
+    ['bit_and','&='],['bit_or','|='],['bit_xor','^='],['shift_left','<<='],['shift_right','>>=']]);
   const comparisons = new Map([['eq','=='],['ne','!='],['lt','<'],['le','<='],['gt','>'],['ge','>=']]);
   const signals = new Map([['send','k_msgq_put'],['receive','k_msgq_get'],['take','k_sem_take'],
     ['give','k_sem_give'],['increment','k_mutex_lock']]);
@@ -18,6 +19,28 @@
   const uint32 = value => inRange(value,0,0xffffffff);
   const validName = name => typeof name === 'string' && /^[A-Za-z][A-Za-z0-9_]{0,47}$/.test(name) && !keywords.has(name);
   const validId = id => typeof id === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(id) && !Object.hasOwn(Object.prototype,id);
+
+  // Each reference has separate type and member IDs. Renaming a symbol leaves the design connected.
+  function enum_member(graph, ref) {
+    if (!record(ref) || !Array.isArray(graph.types)) return;
+    const type = graph.types.find(item => item?.id === ref.type);
+    const member = Array.isArray(type?.members) && type.members.find(item => item?.id === ref.member);
+    if (member) return {type,member};
+  }
+
+  function member_symbol(type, member) { return 'ZV_MEMBER_'+type.name+'_'+member.name; }
+
+  function operand_text(graph, value) {
+    if (!record(value)) return String(value);
+    const entry = enum_member(graph,value);
+    return entry ? entry.type.name+'.'+entry.member.name : String(value.type)+'.'+String(value.member);
+  }
+
+  function c_operand(graph, value) {
+    if (!record(value)) return value+'U';
+    const {type,member} = enum_member(graph,value);
+    return member_symbol(type,member);
+  }
 
   function starter() {
     return {version:1, name:'application', creation:'static', objects:[], functions:[], threads:[],
@@ -72,6 +95,43 @@
       return true;
     }
 
+    types(graph) {
+      this.graph = graph;
+      const type_ids = new Set(), type_names = new Set(), symbols = new Set();
+      for (const [index,type] of this.list(graph.types === undefined ? [] : graph.types,'types',0,32).entries()) {
+        const field = 'types['+index+']';
+        if (!record(type)) {this.issue(field,'schema'); continue;}
+        this.unique(type.id,type_ids,validId,field+'.id','id');
+        this.unique(type.name,type_names,validName,field+'.name','name');
+        if (type.kind !== 'enum') this.issue(field+'.kind','kind');
+        const ids = new Set(), names = new Set();
+        for (const [i,m] of this.list(type.members,field+'.members',1,64).entries()) {
+          const at = field+'.members['+i+']';
+          if (!record(m)) {this.issue(at,'schema'); continue;}
+          this.unique(m.id,ids,validId,at+'.id','id');
+          this.unique(m.name,names,validName,at+'.name','name');
+          if (!uint32(m.value)) this.issue(at+'.value','range');
+          if (validName(type.name) && validName(m.name)) {
+            const symbol = member_symbol(type,m);
+            if (symbols.has(symbol)) this.issue(at+'.name','duplicate');
+            symbols.add(symbol);
+          }
+        }
+      }
+    }
+
+    unique(value,seen,valid,field,code) {
+      if (!valid(value)) this.issue(field,code);
+      else if (seen.has(value)) this.issue(field,'duplicate');
+      seen.add(value);
+    }
+
+    operand(value,field,op) {
+      const numeric = record(value) ? enum_member(this.graph,value)?.member.value : value;
+      if (record(value) && numeric === undefined) this.issue(field,'reference');
+      else if (!uint32(numeric) || (['shift_left','shift_right'].includes(op) && numeric>31)) this.issue(field,'range');
+    }
+
     object(obj,field) {
       if (!this.identify(obj,field,true)) return;
       if (!kinds.includes(obj.kind)) this.issue(field+'.kind','kind');
@@ -103,7 +163,7 @@
         else if (!kinds.includes(target.kind) || !operations[target.kind].includes(step.op)) this.issue(field+'.op','operation');
       } else if (step.op === 'if') {
         if (!comparisons.has(step.test)) this.issue(field+'.test','operation');
-        if (!uint32(step.value)) this.issue(field+'.value','range');
+        this.operand(step.value,field+'.value',step.op);
         this.steps(step.steps,field+'.steps',depth+1,caller);
         this.steps(step.elseSteps,field+'.elseSteps',depth+1,caller);
       } else if (step.op === 'repeat') {
@@ -113,7 +173,7 @@
         if (!this.functions.has(step.function)) this.issue(field+'.function','reference');
         else if (caller) this.calls.get(caller).push([step.function,field+'.function']);
       } else if (arithmetic.has(step.op)) {
-        if (!uint32(step.value)) this.issue(field+'.value','range');
+        this.operand(step.value,field+'.value',step.op);
       } else if (step.op === 'external') {
         if (!validName(step.symbol)) this.issue(field+'.symbol','name');
       } else if (step.op === 'delay') {
@@ -139,6 +199,7 @@
       if (!record(graph) || graph.version !== 1) return [{field:'version',code:'schema'}];
       if (!validName(graph.name)) this.issue('name','name');
       if (!['static','dynamic'].includes(graph.creation)) this.issue('creation','creation');
+      this.types(graph);
       this.list(graph.objects,'objects',0,64).forEach((obj,i) => this.object(obj,'objects['+i+']'));
       const functions = this.list(graph.functions === undefined ? [] : graph.functions,'functions',0,32);
       functions.forEach((fn,i) => {
@@ -185,18 +246,21 @@
   // Only generation inputs enter the fingerprint. Moving a card on the canvas preserves trace compatibility.
   function fingerprint(graph) {
     if (validate(graph).length) return '';
+    const operand_key = value => record(value) ? [value.type,value.member] : value;
     const steps = list => list.map(s => {
       if (signals.has(s.op)) return [s.id,s.op,s.object];
-      if (s.op === 'if') return [s.id,s.op,s.test,s.value,steps(s.steps),steps(s.elseSteps)];
+      if (s.op === 'if') return [s.id,s.op,s.test,operand_key(s.value),steps(s.steps),steps(s.elseSteps)];
       if (s.op === 'repeat') return [s.id,s.op,s.count,steps(s.steps)];
       if (s.op === 'call') return [s.id,s.op,s.function];
       if (s.op === 'external') return [s.id,s.op,s.symbol];
-      return [s.id,s.op,s.op === 'print' ? null : s.value];
+      return [s.id,s.op,s.op === 'print' ? null : operand_key(s.value)];
     });
     const canonical = [graph.version,graph.name,graph.creation,
       graph.threads.map(t => [t.id,t.name,t.stack,t.priority,t.initialValue ?? 42,steps(t.steps)]),
       graph.objects.map(o => [o.id,o.name,o.kind,o.kind === 'mutex' ? null : o.capacity]),
       (graph.functions || []).map(f => [f.id,f.name,steps(f.steps)]),steps(graph.mainSteps || [])];
+    if (graph.types?.length) canonical.push(graph.types.map(type =>
+      [type.id,type.name,type.kind,type.members.map(member => [member.id,member.name,member.value])]));
     let hash = 14695981039346656037n;
     for (const ch of JSON.stringify(canonical)) hash = BigInt.asUintN(64,(hash ^ BigInt(ch.charCodeAt(0))) * 1099511628211n);
     return hash.toString(16).padStart(16,'0');
@@ -260,8 +324,18 @@
       }
     }
 
+    types() {
+      for (const type of this.graph.types || []) {
+        const name = 'zv_type_'+type.name;
+        this.emit('typedef uint32_t '+name+';');
+        for (const member of type.members)
+          this.emit('#define '+member_symbol(type,member)+' (('+name+')UINT32_C('+member.value+'))');
+        this.emit('');
+      }
+    }
+
     branch(step) {
-      this.emit(`if (value ${comparisons.get(step.test)} ${step.value}U) {`);
+      this.emit(`if (value ${comparisons.get(step.test)} ${c_operand(this.graph,step.value)}) {`);
       this.depth++;
       this.event(step,'if-then');
       this.steps(step.steps);
@@ -293,7 +367,7 @@
           this.lines[step.id] = this.code.length+1;
         }
         if (signals.has(step.op)) this.signal(step);
-        else if (arithmetic.has(step.op)) this.emit(`value ${arithmetic.get(step.op)} ${step.value}U;`);
+        else if (arithmetic.has(step.op)) this.emit(`value ${arithmetic.get(step.op)} ${c_operand(this.graph,step.value)};`);
         else if (step.op === 'print') this.emit('printk("%s value=%u\\n", context, (unsigned int)value);');
         else if (step.op === 'delay') this.emit(`k_sleep(K_MSEC(${step.value}));`);
         else if (step.op === 'repeat') this.repeat(step);
@@ -379,6 +453,7 @@
           if (step.op === 'if') declareHooks(step.elseSteps);
         }
       };
+      this.types();
       for (const rows of bodies) declareHooks(rows);
       for (const symbol of this.hooks) this.code.push(`__weak uint32_t zv_hook_${symbol}(uint32_t value)`, '{', '\treturn value;', '}', '');
       for (const obj of this.graph.objects) this.object(obj);
@@ -416,7 +491,7 @@
     };
   }
 
-  const api = {operations,starter,example,validate,describe,generate,fingerprint,execution_contexts};
+  const api = {operations,starter,example,validate,describe,generate,fingerprint,execution_contexts,enum_member,operand_text};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else globalThis.ZephyrProgramModel = api;
 }());

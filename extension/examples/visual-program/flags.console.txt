@@ -1,0 +1,8 @@
+*** Booting Zephyr OS build 25c8f4a23988 ***
+ZVTRACE 2 cbb49d076e560e42 $main start - set 1
+ZVTRACE 2 cbb49d076e560e42 $main mark_alarm - bit_or 2147483649
+ZVTRACE 2 cbb49d076e560e42 $main read_mask - bit_and 2147483648
+ZVTRACE 2 cbb49d076e560e42 $main check_alarm - if-then 2147483648
+ZVTRACE 2 cbb49d076e560e42 $main alarm_bit - shift_right 1
+$main value=1
+ZVTRACE 2 cbb49d076e560e42 $main report_alarm - print 1

@@ -1,0 +1,10 @@
+/* Match the program canvas and VS Code form surfaces in both theme families. */
+.vp-type-library{border-block-start:1px solid var(--rule);margin-block:.5em;padding-block:.5em;}
+.vp-type-head{justify-content:space-between;}
+.vp-type-dialog{width:min(34rem,95%);max-height:85vh;padding:1em;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);}
+.vp-type-dialog::backdrop{background:rgba(0,0,0,.42);}
+.vp-type-dialog[open]{display:grid;gap:.65em;}
+.vp-members{display:grid;gap:.45em;max-height:40vh;overflow:auto;}
+.vp-member-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:.4em;align-items:end;}
+.vp-type-dialog .vp-type-error{color:var(--vscode-errorForeground,var(--ink));}
+.vp-type-error:empty{display:none;}

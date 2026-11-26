@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "name": "status_flags",
+  "creation": "static",
+  "types": [
+    {
+      "id": "status",
+      "name": "Status",
+      "kind": "enum",
+      "members": [
+        {
+          "id": "ready",
+          "name": "ready",
+          "value": 1
+        },
+        {
+          "id": "alarm",
+          "name": "alarm",
+          "value": 2147483648
+        }
+      ]
+    }
+  ],
+  "objects": [],
+  "functions": [],
+  "threads": [],
+  "mainSteps": [
+    {
+      "id": "start",
+      "op": "set",
+      "value": {
+        "type": "status",
+        "member": "ready"
+      }
+    },
+    {
+      "id": "mark_alarm",
+      "op": "bit_or",
+      "value": {
+        "type": "status",
+        "member": "alarm"
+      }
+    },
+    {
+      "id": "read_mask",
+      "op": "bit_and",
+      "value": {
+        "type": "status",
+        "member": "alarm"
+      }
+    },
+    {
+      "id": "check_alarm",
+      "op": "if",
+      "test": "eq",
+      "value": {
+        "type": "status",
+        "member": "alarm"
+      },
+      "steps": [
+        {
+          "id": "alarm_bit",
+          "op": "shift_right",
+          "value": 31
+        },
+        {
+          "id": "report_alarm",
+          "op": "print"
+        }
+      ],
+      "elseSteps": [
+        {
+          "id": "report_clean",
+          "op": "print"
+        }
+      ]
+    }
+  ]
+}

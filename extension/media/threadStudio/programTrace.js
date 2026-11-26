@@ -13,6 +13,19 @@
     eq:(a,b)=>a===b, ne:(a,b)=>a!==b, lt:(a,b)=>a<b, le:(a,b)=>a<=b, gt:(a,b)=>a>b, ge:(a,b)=>a>=b
   };
 
+  function trace_contexts(graph) {
+    const contexts = model.execution_contexts(graph);
+    for (const steps of contexts.values()) {
+      for (const [id,step] of steps) {
+        if (step.op==='if' && typeof step.value==='object') {
+          const value = model.enum_member(graph,step.value).member.value;
+          steps.set(id,{...step,value});
+        }
+      }
+    }
+    return contexts;
+  }
+
   function callBoundary(protocol, op) {
     if (protocol === 1) return ['call','external'].includes(op) ? {operation:op, phase:'return'} : null;
     const match = /^(call|external)-(enter|return)$/.exec(op);
@@ -52,7 +65,7 @@
     if (typeof text !== 'string' || text.length > MAX_BYTES || new TextEncoder().encode(text).length > MAX_BYTES) {
       throw new RangeError('file-size');
     }
-    const contexts = model.execution_contexts(graph);
+    const contexts = trace_contexts(graph);
     const rows = [];
     const counts = counters();
     let start = 0, line = 1, truncated = false;
@@ -82,7 +95,7 @@
     constructor(graph) {
       this.fingerprint=model.fingerprint(graph);
       if (!this.fingerprint) throw new RangeError('invalid-model');
-      this.contexts=model.execution_contexts(graph);
+      this.contexts=trace_contexts(graph);
       this.rows=[];
       this.counts=counters();
       this.line=1;

@@ -148,15 +148,18 @@ globalThis.ZephyrProgramInspector=(()=>{
       else {
         const key=op==='repeat'?'count':'value';
         const control=el('input',''); control.type='number';control.dataset.field='operand';
-        control.value=same?s[key]:op==='delay'?100:1;
+        control.value=same ? (typeof s[key]==='number'?s[key]:'') : op==='delay'?100:1;
         const label=op==='repeat'?t('次数','Count'):op==='delay'?t('毫秒','Milliseconds'):t('常量','Operand');
         let test;
         if(op==='if'){
           test=select(t('条件','Condition'),Object.entries({eq:'==',ne:'!=',lt:'<',le:'<=',gt:'>',ge:'>='}),same?s.test:'eq',()=>{});
           test.dataset.field='test';body.append(field(t('比较 value','Compare value'),test));
         }
-        body.append(field(label,control));
-        read=()=>({[key]:control.value===''?'':control.valueAsNumber,...(test?{test:test.value,elseSteps:same?s.elseSteps:[]}:{}),
+        const named=same && s.value!==null && typeof s.value==='object';
+        const typed=op!=='delay' && op!=='repeat' && (named || (Array.isArray(ctx.graph.types) && ctx.graph.types.length));
+        const read_value=typed ? ZephyrProgramTypeEditor.operand(ctx,body,label,control,same?s.value:undefined) : undefined;
+        if(!typed)body.append(field(label,control));
+        read=()=>({[key]:read_value?read_value():control.value===''?'':control.valueAsNumber,...(test?{test:test.value,elseSteps:same?s.elseSteps:[]}:{}),
           ...(['if','repeat'].includes(op)?{steps:same?s.steps:[]}: {})});
       }
     }
@@ -199,5 +202,5 @@ globalThis.ZephyrProgramInspector=(()=>{
     }
     return el('div','',head,el('strong','vp-identifier',n.name),nodeFields(ctx,n),n.kind?null:sequence(ctx,n));
   }
-  return {render};
+  return {render,typesPanel:ctx=>ZephyrProgramTypeEditor.panel(ctx)};
 })();

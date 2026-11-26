@@ -4,9 +4,10 @@ globalThis.ZephyrProgramFlow=(()=>{
   const mainId='$main';
   const branches=['steps','elseSteps'];
   const actions=['send','receive','give','take','increment'];
-  const instructionKinds=['set','add','subtract','multiply','delay','print','call','external','if','repeat'];
+  const instructionKinds=['set','add','subtract','multiply','bit_and','bit_or','bit_xor','shift_left','shift_right','delay','print','call','external','if','repeat'];
   const labels={set:['赋值','Set value'],add:['加','Add'],subtract:['减','Subtract'],multiply:['乘','Multiply'],
-    delay:['延时','Delay'],print:['输出','Print'],call:['调用函数','Call function'],external:['调用驱动接口','Call driver hook'],if:['条件分支','If / else'],repeat:['循环','Repeat']};
+    bit_and:['按位与','Bitwise AND'],bit_or:['按位或','Bitwise OR'],bit_xor:['按位异或','Bitwise XOR'],
+    shift_left:['左移','Shift left'],shift_right:['右移','Shift right'],delay:['延时','Delay'],print:['输出','Print'],call:['调用函数','Call function'],external:['调用驱动接口','Call driver hook'],if:['条件分支','If / else'],repeat:['循环','Repeat']};
   function owners(graph){
     return [{id:mainId,name:'main',role:'main',steps:graph.mainSteps||[],x:graph.layout?.main?.x,y:graph.layout?.main?.y},
       ...graph.threads.map(n=>({...n,role:'thread'})),...(graph.functions||[]).map(n=>({...n,role:'function'}))];
@@ -40,12 +41,13 @@ globalThis.ZephyrProgramFlow=(()=>{
     const target=s.object?graph.objects.find(o=>o.id===s.object)?.name:s.function?graph.functions?.find(f=>f.id===s.function)?.name:'';
     if(actions.includes(s.op))return [api(s.op),target||s.object];
     const label=Object.hasOwn(labels,s.op)?t(...labels[s.op]):s.op;
-    if(s.op==='if')return [label,'value '+({eq:'==',ne:'!=',lt:'<',le:'<=',gt:'>',ge:'>='}[s.test]||'?')+' '+s.value];
+    const operand=typeof s.value==='object' && s.value!==null ? ZephyrProgramModel.operand_text(graph,s.value) : s.value;
+    if(s.op==='if')return [label,'value '+({eq:'==',ne:'!=',lt:'<',le:'<=',gt:'>',ge:'>='}[s.test]||'?')+' '+operand];
     if(s.op==='repeat')return [label,'× '+s.count];
     if(s.op==='external')return [label,s.symbol];
     if(s.op==='call')return [label,target||s.function];
     if(s.op==='print')return [label,'printk(value)'];
-    return [label,s.op==='delay'?s.value+' ms':'value '+({set:'=',add:'+=',subtract:'−=',multiply:'×='}[s.op]||'')+' '+s.value];
+    return [label,s.op==='delay'?s.value+' ms':'value '+({set:'=',add:'+=',subtract:'−=',multiply:'×=',bit_and:'&=',bit_or:'|=',bit_xor:'^=',shift_left:'<<=',shift_right:'>>='}[s.op]||'')+' '+operand];
   }
   function ports(op,t){
     const portsByOp={
@@ -60,7 +62,7 @@ globalThis.ZephyrProgramFlow=(()=>{
       repeat:[t('循环次数','Count'),t('循环体或后续步骤','Loop body or next step')],
       delay:[t('毫秒','Milliseconds'),t('延时结束后继续','Continue after delay')]
     };
-    if(['add','subtract','multiply'].includes(op))return [t('value 与常量','Value and operand'),t('更新后的 value','Updated value')];
+    if(['add','subtract','multiply','bit_and','bit_or','bit_xor','shift_left','shift_right'].includes(op))return [t('value 与常量','Value and operand'),t('更新后的 value','Updated value')];
     return Object.hasOwn(portsByOp,op)?portsByOp[op]:null;
   }
   function architecture(graph,t) {
