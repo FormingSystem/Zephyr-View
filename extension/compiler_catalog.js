@@ -6,6 +6,7 @@ const {hostBinDirectories} = require('./hostExecutables');
 const {readBoards} = require('./boardCatalog');
 const {platformTarget, readPlatformArchitectures} = require('./platformArchitecture');
 const {hasCurrentBuild} = require('./target');
+const {compilerDirectories} = require('./toolchainDiscoveryCache');
 
 async function text(file) {
   try {return await fs.readFile(file, 'utf8');}
@@ -149,23 +150,38 @@ function cross_prefix(file) {
   return file.replace(suffix,'');
 }
 
+// Keep just relevant names. Recheck directory changes and the executable itself before offering it.
+async function candidateNames(dir, workspaceRoot = false) {
+  let info;
+  try { info = await fs.stat(dir,{bigint:true}); }
+  catch (error) {
+    if (['ENOENT','ENOTDIR','EACCES','EPERM'].includes(error.code)) return [];
+    throw error;
+  }
+  if (!info.isDirectory()) return [];
+  const key = JSON.stringify([dir,workspaceRoot,String(info.ino),String(info.mtimeNs),String(info.ctimeNs)]);
+  return compilerDirectories.read(key, async () => {
+    const files = await entries(dir);
+    return files.filter(item=>workspaceRoot ? item.isDirectory() && !item.name.startsWith('.') : cross_prefix(item.name))
+      .map(item=>item.name);
+  });
+}
+
 async function cross_catalog(s, env, prefix, sdk, triplet, facts) {
   const dirs = new Set(hostBinDirectories(env));
   if (prefix && path.isAbsolute(prefix)) dirs.add(path.dirname(prefix));
   const roots = new Set([s.folder.uri.fsPath,s.manifest?.root?.fsPath].filter(Boolean));
   for (const root of roots) {
     dirs.add(path.join(root,'bin'));
-    for (const entry of await entries(root)) {
-      if (entry.isDirectory() && !entry.name.startsWith('.')) dirs.add(path.join(root,entry.name,'bin'));
-    }
+    for (const name of await candidateNames(root,true)) dirs.add(path.join(root,name,'bin'));
   }
   const rows = await Promise.all([...dirs].map(async dir=>{
     const in_sdk=sdk && under(sdk,dir);
     if (in_sdk && (!prefix || path.relative(path.dirname(prefix),dir))) return [];
     const items = [];
-    for (const {name} of await entries(dir)) {
+    for (const name of await candidateNames(dir)) {
       const file = path.join(dir,name), value = cross_prefix(file);
-      if (!value || (in_sdk && path.relative(value,prefix)) || !await executable(file)) continue;
+      if ((in_sdk && path.relative(value,prefix)) || !await executable(file)) continue;
       const machine = name.split('-')[0];
       const matches = machine === (triplet?.split('-')[0] || facts.arch);
       items.push({id:'cross:'+path.normalize(file),family:'gnu',source:prefix && path.normalize(value)===path.normalize(prefix)?'prefix':'path',

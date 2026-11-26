@@ -7,6 +7,8 @@ const {promisify} = require('node:util');
 const {cacheSourceConflict, parseDefinition} = require('./buildVariables');
 const {board_roots, distinct_roots} = require('./boardRoots');
 const {sameCheckout} = require('./checkout');
+const {singleBoards} = require('./toolchainDiscoveryCache');
+const {probeKey} = require('./probeCache');
 const execute = promisify(execFile);
 
 function boardSettings(s, environment) {
@@ -89,11 +91,15 @@ async function readBoardCatalog(s, environment, name, roots) {
   const options = {base, name, roots, manifest:false, ...await catalogModules(s,environment,base),
     boardDirectories: sameBoard ? paths('BOARD_DIRECTORIES') : []};
   const python = s.tools.python || (process.platform === 'win32' ? 'python' : 'python3');
-  const {stdout} = await execute(python, ['-X', 'utf8', '-B', path.join(__dirname, 'board_catalog.py'), JSON.stringify(options)],
-    {env: {...environment, ZEPHYR_BASE:base}, cwd: base, windowsHide: true, maxBuffer: 8*1024*1024, timeout: 120000});
-  const result = JSON.parse(stdout);
-  result.diagnostics.unshift(...(s.manifest.diagnostics || []));
-  return result;
+  const env = {...environment, ZEPHYR_BASE:base};
+  const read = async () => {
+    const {stdout} = await execute(python, ['-X', 'utf8', '-B', path.join(__dirname, 'board_catalog.py'), JSON.stringify(options)],
+      {env, cwd:base, windowsHide:true, maxBuffer:8*1024*1024, timeout:120000});
+    return JSON.parse(stdout);
+  };
+  const result = name ? await singleBoards.read(probeKey(python,options,env),read,
+    catalog => catalog.boards.length > 0 && !catalog.diagnostics.length) : await read();
+  return {...result, diagnostics:[...(s.manifest.diagnostics || []), ...result.diagnostics]};
 }
 
 async function readBoards(s, environment, name, roots) {

@@ -82,3 +82,44 @@ test('a rejected manifest retains only the bound checkout’s valid local projec
   state.setup.plan.configure = ['-DZEPHYR_BASE='+sibling];
   assert.deepEqual((await read()).boards.map(b=>b.name),['other']);
 });
+
+test('single-board queries coalesce and expire while errors, empty results, and full listings are retried', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(),'board-probe-'));
+  t.after(()=>fs.rm(root,{recursive:true,force:true}));
+  const scripts = path.join(root,'scripts'), log = path.join(root,'probes.log');
+  await fs.mkdir(scripts);
+  await fs.writeFile(path.join(scripts,'list_boards.py'),[
+    'import os', 'from pathlib import Path', 'from types import SimpleNamespace',
+    'def find_boards(args):',
+    '    with open(os.environ["PROBE_COUNTER"], "a") as log: print("read", file=log)',
+    '    if args.board == "error": raise RuntimeError("probe failed")',
+    '    return [SimpleNamespace(name="demo", dir=args.board_roots[-1])]'
+  ].join('\n'));
+  const state = {folder:{uri:{fsPath:root}},tools:{},checkout:root,manifest:{},
+    setup:{app:root,cacheStatus:'absent',plan:{configure:[]}},target:{cache:new Map()}};
+  const env = {...process.env, ZEPHYR_BASE:root, PROBE_COUNTER:log};
+  const roots = {board_root:[],soc_root:[],arch_root:[]};
+  const read = (name='demo', vars=env, options=roots) => readBoardCatalog(state,vars,name,options);
+  const count = async ()=>(await fs.readFile(log,'utf8')).trim().split(/\r?\n/).length;
+  const {performance}=require('node:perf_hooks');
+  let now=100;
+  t.mock.method(performance,'now',()=>now);
+  await Promise.all([read(),read()]);
+  state.manifest.diagnostics=[{message:'manifest warning'}];
+  assert.deepEqual((await read()).diagnostics,state.manifest.diagnostics);
+  assert.equal(await count(),1);
+  await read('demo',{...env,PYTHONHASHSEED:'1'});
+  await read('demo',env,{...roots,board_root:[scripts]});
+  assert.equal(await count(),3);
+  now+=5100;
+  await read();
+  require('../extension/toolchainDiscoveryCache').clearToolchainDiscovery();
+  await read();
+  assert.equal(await count(),5);
+  for(let i=0;i<2;i++) {
+    assert.deepEqual((await read('missing')).boards,[]);
+    await assert.rejects(read('error'));
+    await readBoardCatalog(state,env,undefined,roots);
+  }
+  assert.equal(await count(),11);
+});

@@ -304,3 +304,18 @@ test('SDK version constraints and recorded SDK family remain visible to discover
   assert.equal(incompatible.reason,'unsupported');
   assert.ok(!incompatible.options.some(row=>row.source==='sdk'));
 });
+
+test('a warm compiler scan observes a replaced or removed binary and a different search path', async t => {
+  const {s,context,cross,root} = await fixture(t);
+  const paths = async () => (await selection.compiler_choices(context,s)).options.map(row=>row.path);
+  assert.ok((await paths()).includes(cross));
+  await fs.writeFile(cross,'invalid');
+  assert.ok(!(await paths()).includes(cross));
+  await fs.writeFile(cross,host_image);
+  assert.ok((await paths()).includes(cross));
+  await fs.rm(cross);
+  assert.ok(!(await paths()).includes(cross));
+  const custom = await put(root,'custom/compiler/arm-new-gcc'+exe,host_image);
+  s.environment.PATH=path.dirname(custom);
+  assert.ok((await paths()).includes(custom));
+});
