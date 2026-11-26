@@ -4,6 +4,8 @@
 
 [Engineering analysis design: application entry points, threads, functions and data flow](thread-analysis.en.md) · [Interactive two-thread example](thread-analysis-preview.html?lang=en)
 
+[Beginner workflows, layout and module responsibilities](onboarding.en.md)
+
 [0.5.17 missing-component setup guide, platform support and VSIX relocation checks](platform-support.en.md)
 
 [0.5.16 workbench review and verification: component installation, probe drivers, firmware flashing and page responsibilities](installation-and-flashing.en.md)

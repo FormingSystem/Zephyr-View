@@ -8,6 +8,8 @@ Configure, build and debug Zephyr applications in VS Code. Use a west workspace 
 
 Expand **Assets** on the release page and download the `.vsix` file. In the VS Code Extensions view, choose **… → Install from VSIX…** and select the file.
 
+Start with [Getting started](extension/GETTING_STARTED.en.md) for step-by-step animations, a buildable application and local module, and an out-of-tree board and SoC example.
+
 Open **Zephyr View** in the Activity Bar. The workbench opens on **Workspace**. Its tabs are **Build**, **Workspace**, **Project configuration** and **Modules**. Workspace shows the environment available to the build process. Build shows the inputs for the next configure alongside the last values recorded by CMake. Select a board to see the detected board DTS. In Project configuration, expand the application's graph and double-click a Kconfig symbol or hardware node to edit it in place. Drag the canvas to pan, use Ctrl + wheel to zoom, then save a copy or write the reviewed changes to the application configuration.
 
 Open **Workspace → Environment setup → Probes and drivers** to see local tool paths and connected devices. Select an existing tool folder or deploy the tool and its supported drivers from the same row.

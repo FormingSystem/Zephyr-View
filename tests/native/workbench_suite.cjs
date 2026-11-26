@@ -24,6 +24,28 @@ async function verify_cmake(tools, directory) {
   return stdout.split(/\r?\n/)[0];
 }
 
+async function verify_tutorial(extension, folder) {
+  const guide = vscode.env.language.toLowerCase().startsWith('zh') ? 'GETTING_STARTED.md' : 'GETTING_STARTED.en.md';
+  await fs.access(path.join(extension.extensionPath, guide));
+  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port']) {
+    const file = await fs.open(path.join(extension.extensionPath, 'guides', 'media', name + '.gif'));
+    try {
+      const header = Buffer.alloc(10);
+      await file.read(header, 0, header.length, 0);
+      assert.equal(header.toString('ascii', 0, 3), 'GIF');
+      assert.deepEqual([header.readUInt16LE(6), header.readUInt16LE(8)], [1920, 1080]);
+    } finally { await file.close(); }
+  }
+  await vscode.commands.executeCommand('zephyrWorkbench.gettingStarted');
+  const {copyExamplesTo} = require(path.join(extension.extensionPath, 'gettingStarted.js'));
+  const copy = await copyExamplesTo(extension.extensionUri, folder.uri);
+  await fs.access(path.join(copy.fsPath, 'hardware-port', 'boards', 'vnd', 'view_lab', 'board.yml'));
+  const config = path.join(copy.fsPath, 'onboarding', 'app', 'prj.conf');
+  await fs.writeFile(config, 'CONFIG_PRINTK=n');
+  await assert.rejects(() => copyExamplesTo(extension.extensionUri, folder.uri));
+  assert.equal(await fs.readFile(config, 'utf8'), 'CONFIG_PRINTK=n');
+}
+
 exports.run = async function run() {
   const extension = vscode.extensions.getExtension('zephyr-workbench-preview.zephyr-workbench-preview');
   assert.ok(extension, 'The VSIX must be discovered in the isolated profile');
@@ -41,6 +63,7 @@ exports.run = async function run() {
   assert.equal(target.folder().name, 'Zephyr project 工程');
   const {inspectWorkspace} = require(path.join(extension.extensionPath, 'workspace.js'));
   const {tools} = await inspectWorkspace(target);
+  await verify_tutorial(extension, target.folder());
   const cmake = await verify_cmake(tools, target.folder().uri.fsPath);
   await vscode.commands.executeCommand('zephyrWorkbench.show', 'workspace');
   await vscode.commands.executeCommand('zephyrWorkbench.probeSupport', 'jlink');

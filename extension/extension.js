@@ -2,6 +2,7 @@
 
 const vscode = require('vscode');
 const {registerWorkbench} = require('./workbench');
+const {openGuide, copyTutorialExamples} = require('./gettingStarted');
 const {pickDirectory} = require('./fileDialogs');
 const {path: displayPath, directory: directoryLabel} = require('./media/pathDisplay');
 const path = require('node:path');
@@ -218,6 +219,8 @@ function activate(context) {
     context.subscriptions.push(vscode.window.registerTreeDataProvider(view, target));
   }
   register('refresh', () => target.refresh(true));
+  register('gettingStarted', () => openGuide(context.extensionUri));
+  register('copyExamples', () => copyTutorialExamples(context.extensionUri));
   register('chooseWorkspaceFolder', () => target.chooseFolder());
   register('chooseBuild', () => target.chooseBuild());
   register('launch', () => target.launch());

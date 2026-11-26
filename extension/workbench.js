@@ -29,14 +29,18 @@ const {Uri, l10n} = vscode;
 const running = new Set();
 const sections = {build:'Build',workspace:'Workspace',configuration:'Project configuration',modules:'Modules'};
 function navigation() {
-  const title=l10n.t('Open workbench');
-  const item=new vscode.TreeItem(title);
-  item.iconPath=new vscode.ThemeIcon('layout');
-  item.command={command:'zephyrWorkbench.show',title};
-  const config = new vscode.TreeItem(l10n.t('Configure Kconfig'));
-  config.iconPath = new vscode.ThemeIcon('settings-gear');
-  config.command = {command:'zephyrWorkbench.kconfig', title:l10n.t('Configure Kconfig')};
-  return {getTreeItem:row=>row,getChildren:parent=>parent?[]:[item,config]};
+  function action(title, icon, command) {
+    const row = new vscode.TreeItem(title);
+    row.iconPath = new vscode.ThemeIcon(icon);
+    row.command = {command, title};
+    return row;
+  }
+  const actions = [
+    action(l10n.t('Open workbench'), 'layout', 'zephyrWorkbench.show'),
+    action(l10n.t('Configure Kconfig'), 'settings-gear', 'zephyrWorkbench.kconfig'),
+    action(l10n.t('Getting started'), 'book', 'zephyrWorkbench.gettingStarted')
+  ];
+  return {getTreeItem:row=>row,getChildren:parent=>parent?[]:actions};
 }
 
 function documentHtml(view, base, title) {

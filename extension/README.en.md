@@ -2,6 +2,8 @@
 
 [简体中文](README.md) | **English**
 
+For your first build, open [Getting started](GETTING_STARTED.en.md). The same guide is available offline from the Zephyr View sidebar, with animations and a Command Palette action to copy the examples.
+
 Build Zephyr firmware with west or CMake, inspect board targets, manage modules, and edit Kconfig and devicetree in VS Code. You can use local tools, offline SDKs and existing west workspaces.
 
 Download the `.vsix` file under **Assets** on the GitHub release page. In the VS Code Extensions view, choose **… → Install from VSIX…** and select the file. [Download the current preview](https://github.com/FormingSystem/Zephyr-View/releases)

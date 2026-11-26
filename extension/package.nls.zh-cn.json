@@ -1,4 +1,6 @@
 {
+  "gettingStarted": "入门指南",
+  "copyExamples": "复制入门示例…",
   "toolDirectories": "额外的可执行文件目录。工程相对路径随工作区迁移，查找顺序在 PATH 之前。",
   "probeSupport": "探针工具与驱动",
   "view.title": "Zephyr 调试目标",

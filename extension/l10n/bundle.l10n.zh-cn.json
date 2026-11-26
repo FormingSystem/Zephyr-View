@@ -1,4 +1,9 @@
 {
+  "Getting started": "入门指南",
+  "Choose a folder for the tutorial examples": "选择存放入门示例的目录",
+  "This folder already contains zephyr-view-examples. Choose another folder to make a fresh copy.": "此处已有 zephyr-view-examples。请选择其他目录来创建新副本。",
+  "Open examples in a new window": "在新窗口打开示例",
+  "Tutorial examples copied to {0}.": "入门示例已复制到 {0}。",
   "Current macOS login session": "当前 macOS 登录会话",
   "Programs launched by launchd in this session inherit this value until logout. Quit and reopen VS Code to use it.": "当前会话中由 launchd 新启动的程序可使用此值，注销后失效。退出并重新打开 VS Code 即可使用。",
   "Unset": "未设置",
