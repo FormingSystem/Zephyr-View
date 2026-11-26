@@ -1,0 +1,7 @@
+{
+  "name": "zephyr-workbench-native-tests",
+  "private": true,
+  "devDependencies": {
+    "@vscode/test-electron": "3.1.0"
+  }
+}

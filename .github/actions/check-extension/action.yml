@@ -1,0 +1,62 @@
+name: Check and launch the native extension
+description: Run the regression tests, package the current sources and open the installed workbench.
+inputs:
+  windows-desktop:
+    description: Require the specified client Windows version
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+        package-manager-cache: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+    - name: Install test dependencies
+      shell: bash
+      run: |
+        npm ci --prefix extension
+        npm ci --prefix tests/native
+        python -m venv "$RUNNER_TEMP/zephyr-native-python"
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          test_python="$RUNNER_TEMP/zephyr-native-python/Scripts/python.exe"
+        else
+          test_python="$RUNNER_TEMP/zephyr-native-python/bin/python"
+        fi
+        "$test_python" -m pip install devicetree==0.0.2
+        echo "TEST_PYTHON=$test_python" >> "$GITHUB_ENV"
+    - name: Exercise the current host
+      env:
+        WINDOWS_DESKTOP: ${{ inputs.windows-desktop }}
+      shell: bash
+      run: |
+        args=()
+        if [[ -n "$WINDOWS_DESKTOP" ]]; then args+=(--windows-desktop "$WINDOWS_DESKTOP"); fi
+        "$TEST_PYTHON" tests/native/check_host.py "${args[@]}"
+    - name: Build the VSIX from this checkout
+      if: github.event_name != 'release'
+      working-directory: extension
+      shell: bash
+      run: |
+        version=$(node -p "require('./package.json').version")
+        archive="zephyr-extension-$version.vsix"
+        npx --yes --package=@vscode/vsce@4.1.1 -- vsce package --out "../$archive"
+        echo "NATIVE_TEST_VSIX=$archive" >> "$GITHUB_ENV"
+    - name: Verify and download the published VSIX
+      if: github.event_name == 'release'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      shell: bash
+      run: python tests/native/release_vsix.py
+    - name: Install the VSIX and open the workbench
+      shell: bash
+      run: |
+        python tests/native/archive_paths.py "$NATIVE_TEST_VSIX"
+        if [[ "$RUNNER_OS" == Linux ]]; then
+          xvfb-run -a node tests/native/workbench.cjs "$NATIVE_TEST_VSIX"
+        else
+          node tests/native/workbench.cjs "$NATIVE_TEST_VSIX"
+        fi
