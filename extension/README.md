@@ -19,7 +19,9 @@
 
 **换电脑或换目录**　在 VS Code 的扩展视图选择「从 VSIX 安装…」，从任意目录选安装包。工具在自定义目录时，打开「主机工具 → 工具搜索目录…」，选择存放可执行文件的文件夹。选在工程内的目录会作为相对路径写入工作区设置，工程外的选择仅在当前环境保存。进入「源码与工具链 → 获取源码…」可以选择解压到任意位置的 Zephyr，或选择官方版本，按当前构建方式下载源码或初始化 west 工作区。跨系统搬迁时，为目标系统准备适用的 SDK，重新创建 Python 虚拟环境和构建目录。[Zephyr 官方安装说明](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) · [Python 虚拟环境](https://docs.python.org/3/library/venv.html#how-venvs-work)
 
-**检查模块**　构建、工程配置图和模块列表使用同一份有效 west 清单。导入项无法解析时会标出范围。同步多项遇错时保留每个模块的执行结果；解决访问或版本问题后，可在原处重试剩余项。
+**离线识别模块**　在「构建」选择 CMake，打开「工作区」查看扫描到的本地模块。扩展识别 `zephyr/module.yml` 或 `zephyr/module.yaml`，也识别同时含有 `zephyr/CMakeLists.txt` 和 `zephyr/Kconfig` 的模块。模块放在自定义位置时，可在「模块」页选择其目录。勾选工程需要的模块，再配置构建。配置成功后，「模块」页会标明哪些本地模块已纳入当前构建，包括工程自行引入的模块。可用构建目录中的 `zephyr_modules.txt` 核对实际路径。[Zephyr 官方模块规则](https://docs.zephyrproject.org/latest/develop/modules.html#without-west)
+
+**使用 west 清单**　构建、工程配置图和模块列表共用当前工作区的有效清单。导入项无法解析时，界面会标出范围。批量同步保留每个模块的结果，修复访问或版本问题后可重试剩余项。
 
 **选择 SDK 版本**　优先使用工程源码推荐的版本。下载列表按所选版本实际发布的宿主系统和 CPU 包过滤。当前 Zephyr 入门指南面向 Ubuntu 24.04 LTS 及以后版本，macOS 面向 Apple Silicon。使用 Ubuntu 22.04 或 Intel Mac 时，需按工程版本核对工具版本和可用工具链。缺少兼容 SDK 包时仍可选已有工具链。[Zephyr 安装要求](https://docs.zephyrproject.org/latest/develop/getting_started/index.html) · [SDK 官方发布附件](https://github.com/zephyrproject-rtos/sdk-ng/releases)
 
@@ -42,7 +44,7 @@
 
 **选择本地位置**　「选择目录…」打开 VS Code 的目录窗口，可在支持的系统对话框内新建文件夹。「输入路径…」支持绝对路径，或相对于当前 VS Code 工程文件夹的路径，例如 `build/debug`、`../zephyr-sdk`。构建目录尚未存在时会先询问是否创建。操作系统对话框地址栏中的相对路径以该窗口正在浏览的目录为准。系统工具、源码、SDK 和已有模块可以位于工程外。新建配置片段先生成草稿，点击「保存到工程」才写入。
 
-**选用编译器**　在「构建 → 构建目标」选定开发板与 CPU 后，查看同一区域的「目标编译器」。保留「自动」即可按 Zephyr 默认流程配置；如果识别到适配的 SDK 组件，这里会显示推荐的本机文件。例如 `mps2/an386` 的 Cortex‑M4 使用 Zephyr SDK GNU 时对应 `arm-zephyr-eabi-gcc`。要换用自己的工具链，从列表点选并应用，或展开「指定其他外部 GNU 编译器」选择 GCC 文件。该选择随当前应用和板保存。兼容性待验证的候选也可选择，配置成功后由 `CMAKE_C_COMPILER` 显示实际结果。已有编译器的构建目录换工具链时请选择新的构建目录。自动模式使用自己填写的工具链 `-D` 参数。主动应用其他候选时，只为当前应用和板生成相应的构建参数。恢复自动后，可再次使用原先填写的值。自带开发板随 Zephyr 发现；使用树外板时，在开发板行下展开额外的搜索目录，选择含 `boards/` 的目录。[Zephyr SDK](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html) · [外部交叉编译器](https://docs.zephyrproject.org/latest/develop/toolchains/other_x_compilers.html)
+**选用编译器**　在「构建 → 构建目标」选定开发板与 CPU 后，查看同一区域的「目标编译器」。保留「自动」时，先核对推荐的编译器可执行文件名及路径。配置成功后再核对 CMake 记录的实际编译器；即使两个工具同名，也可用完整路径区分。例如 `mps2/an386` 的 Cortex‑M4 使用 Zephyr SDK GNU 时对应 `arm-zephyr-eabi-gcc`。要换用自己的工具链，从列表点选并应用，或展开「指定其他外部 GNU 编译器」选择 GCC 文件。该选择随当前应用和板保存。兼容性待验证的候选也可选择，配置成功后由 `CMAKE_C_COMPILER` 显示实际结果。已有编译器的构建目录换工具链时请选择新的构建目录。自动模式使用自己填写的工具链 `-D` 参数。主动应用其他候选时，只为当前应用和板生成相应的构建参数。恢复自动后，可再次使用原先填写的值。自带开发板随 Zephyr 发现；使用树外板时，在开发板行下展开额外的搜索目录，选择含 `boards/` 的目录。[Zephyr SDK](https://docs.zephyrproject.org/latest/develop/toolchains/zephyr_sdk.html) · [外部交叉编译器](https://docs.zephyrproject.org/latest/develop/toolchains/other_x_compilers.html)
 
 **由工程选择开发板**　「开发板与 CPU → 使用工程设置」沿用应用、环境或现有构建目录决定的 `BOARD`。要改选，在同一列表搜索板名和 CPU；厂商定义的别名或未列出的修订可点「使用此 BOARD」。已有构建目录绑定其他目标时，选择新的构建目录。配置后可核对目标架构和编译器。
 
