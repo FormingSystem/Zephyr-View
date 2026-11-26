@@ -1,0 +1,8 @@
+.vp-playback { min-width:0; display:grid; gap:.5em; align-content:start; color:var(--text,var(--vscode-foreground)); }
+.vp-playback :is(h3,p) { margin:0; }
+.vp-playback h3 { font-size:1em; }
+.vp-playback .vp-play-tools { display:flex; gap:.35em; flex-wrap:wrap; align-items:center; }
+.vp-playback .vp-play-range { width:100%; min-width:0; padding:0; accent-color:var(--accent,var(--vscode-focusBorder)); }
+.vp-playback :is(.vp-play-note,.vp-play-info) { font-size:.88em; color:var(--muted,var(--vscode-descriptionForeground)); overflow-wrap:anywhere; }
+.vp-playback .vp-play-event { font-family:var(--vscode-editor-font-family,monospace); font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.vp-playback :is(.vp-play-event,.vp-play-info):empty { display:none; }

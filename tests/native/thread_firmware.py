@@ -34,7 +34,8 @@ def expected_serial(kind, lines):
     return {'msgq': 'received 42', 'sem': 'permit acquired'}[kind] in lines
 
 
-async def inspect_serial(qemu, elf, kind, timeout):
+async def read_serial_until(qemu, elf, complete, timeout):
+    """Read the ARM simulator console until the caller observes its terminal condition."""
     process = await asyncio.create_subprocess_exec(
         qemu, '-machine', 'mps2-an386', '-cpu', 'cortex-m4', '-display', 'none',
         '-monitor', 'none', '-serial', 'stdio', '-kernel', str(elf),
@@ -44,13 +45,13 @@ async def inspect_serial(qemu, elf, kind, timeout):
     async def observe():
         while raw := await process.stdout.readline():
             lines.append(raw.decode(errors='replace').strip())
-            if expected_serial(kind, lines):
+            if complete(lines):
                 return True
         return False
 
     try:
         if await asyncio.wait_for(observe(), timeout):
-            return ' | '.join(line for line in lines if line and not line.startswith('***'))
+            return lines
     except asyncio.TimeoutError:
         pass
     finally:
@@ -60,7 +61,20 @@ async def inspect_serial(qemu, elf, kind, timeout):
             except ProcessLookupError:
                 pass
         await process.communicate()
-    raise RuntimeError(f'Expected {kind} output did not arrive from QEMU:\n' + '\n'.join(lines[-20:]))
+    raise RuntimeError(f'Expected output did not arrive from QEMU ({elf}):\n' + '\n'.join(lines[-20:]))
+
+
+def configure_project(app, build, options, *cmake_options):
+    configure = ['cmake', '-S', app, '-B', build, '-G', 'Ninja', '-DBOARD=mps2/an386',
+                 '-DPython3_EXECUTABLE=' + Path(sys.executable).as_posix(), *cmake_options]
+    if options.module:
+        configure.append('-DZEPHYR_MODULES=' + ';'.join(p.resolve().as_posix() for p in options.module))
+    subprocess.run(configure, check=True)
+    if options.require_no_west:
+        cache = (build / 'CMakeCache.txt').read_text(encoding='utf-8')
+        if not re.search(r'^WEST:[^=]+=WEST-NOTFOUND$', cache, re.MULTILINE):
+            raise RuntimeError(f'{app.name}: use a Zephyr build Python without west and supply local modules')
+    return build / 'zephyr/zephyr.elf'
 
 
 def check_project(work, name, files, options):
@@ -70,22 +84,15 @@ def check_project(work, name, files, options):
         target = app / filename
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(source, encoding='utf-8')
-    configure = ['cmake', '-S', app, '-B', build, '-G', 'Ninja', '-DBOARD=mps2/an386',
-                 '-DPython3_EXECUTABLE=' + Path(sys.executable).as_posix()]
-    if options.module:
-        configure.append('-DZEPHYR_MODULES=' + ';'.join(p.resolve().as_posix() for p in options.module))
-    subprocess.run(configure, check=True)
-    if options.require_no_west:
-        cache = (build / 'CMakeCache.txt').read_text(encoding='utf-8')
-        if not re.search(r'^WEST:[^=]+=WEST-NOTFOUND$', cache, re.MULTILINE):
-            raise RuntimeError(f'{name}: use a Zephyr build Python without west and supply local modules')
+    elf = configure_project(app, build, options)
     subprocess.run(['cmake', '--build', build], check=True)
-    return asyncio.run(inspect_serial(options.qemu, build / 'zephyr/zephyr.elf',
-                                      name.split('-')[0], options.timeout))
+    kind = name.split('-')[0]
+    lines = asyncio.run(read_serial_until(options.qemu, elf, lambda rows: expected_serial(kind, rows), options.timeout))
+    return ' | '.join(line for line in lines if line and not line.startswith('***'))
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def firmware_options(description):
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--module', type=Path, action='append', default=[],
                         help='Local Zephyr module root; repeat to set the complete ZEPHYR_MODULES list')
     parser.add_argument('--qemu', default='qemu-system-arm', help='ARM QEMU executable path or name on PATH')
@@ -100,6 +107,11 @@ def main():
     for directory in options.module:
         if not directory.is_dir():
             parser.error(f'Module directory not found: {directory}')
+    return options
+
+
+def main():
+    options = firmware_options(__doc__)
     generated = subprocess.check_output(['node', '-e', GENERATOR], cwd=ROOT)
     with tempfile.TemporaryDirectory(prefix='zephyr-thread-studio-') as work:
         results = {name: check_project(Path(work), name, files, options)

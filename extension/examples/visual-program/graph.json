@@ -1,0 +1,145 @@
+{
+  "version": 1,
+  "name": "thread_network",
+  "creation": "static",
+  "objects": [
+    {
+      "id": "samples",
+      "name": "samples",
+      "kind": "msgq",
+      "capacity": 4
+    },
+    {
+      "id": "ready",
+      "name": "ready",
+      "kind": "sem",
+      "capacity": 1
+    },
+    {
+      "id": "counter",
+      "name": "counter",
+      "kind": "mutex"
+    }
+  ],
+  "functions": [
+    {
+      "id": "scale",
+      "name": "scale",
+      "steps": [
+        {
+          "id": "threshold",
+          "op": "if",
+          "test": "ge",
+          "value": 40,
+          "steps": [
+            {
+              "id": "double",
+              "op": "multiply",
+              "value": 2
+            }
+          ],
+          "elseSteps": [
+            {
+              "id": "offset",
+              "op": "add",
+              "value": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "mainSteps": [
+    {
+      "id": "startup",
+      "op": "set",
+      "value": 1
+    },
+    {
+      "id": "boot_output",
+      "op": "print"
+    },
+    {
+      "id": "twice",
+      "op": "repeat",
+      "count": 2,
+      "steps": [
+        {
+          "id": "pause",
+          "op": "delay",
+          "value": 1
+        },
+        {
+          "id": "each",
+          "op": "add",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "boot_result",
+      "op": "print"
+    }
+  ],
+  "threads": [
+    {
+      "id": "sensor",
+      "name": "sensor",
+      "stack": 1024,
+      "priority": 2,
+      "initialValue": 42,
+      "steps": [
+        {
+          "id": "publish",
+          "op": "send",
+          "object": "samples"
+        }
+      ]
+    },
+    {
+      "id": "relay",
+      "name": "relay",
+      "stack": 1024,
+      "priority": 3,
+      "steps": [
+        {
+          "id": "read",
+          "op": "receive",
+          "object": "samples"
+        },
+        {
+          "id": "process",
+          "op": "call",
+          "function": "scale"
+        },
+        {
+          "id": "result",
+          "op": "print"
+        },
+        {
+          "id": "notify",
+          "op": "give",
+          "object": "ready"
+        },
+        {
+          "id": "count",
+          "op": "increment",
+          "object": "counter"
+        }
+      ]
+    },
+    {
+      "id": "logger",
+      "name": "logger",
+      "stack": 1024,
+      "priority": 4,
+      "steps": [
+        {
+          "id": "await_ready",
+          "op": "take",
+          "object": "ready"
+        }
+      ]
+    }
+  ]
+}
