@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080"><title>模块 · Zephyr Extension</title><defs><pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#cdd8d6"/></pattern></defs>
+<rect x="0" y="0" width="1920" height="1080" rx="0" fill="rgb(23, 32, 36)"/>
+<rect x="0" y="0" width="1920" height="62" rx="0" fill="rgb(32, 44, 48)"/>
+<rect x="0" y="61" width="1920" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" fill="rgb(0, 0, 0)" stroke="none" stroke-width="1px" stroke-linecap="butt" stroke-linejoin="miter" font-size="17px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400" x="63.36" y="14.5"><rect width="32" height="32" rx="8" fill="rgb(18, 117, 108)" stroke="none" stroke-width="1px" stroke-linecap="butt" stroke-linejoin="miter" font-size="17px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400"/><path d="m6 20 8-11 3 4-7 10m5 0 8-12 3 3-7 9" fill="none" stroke="rgb(255, 255, 255)" stroke-width="2.4px" stroke-linejoin="round" stroke-linecap="butt" font-size="17px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400"/></svg>
+<text x="105.36" y="36.75" fill="rgb(226, 238, 238)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="17" font-weight="700" xml:space="preserve">Zephyr Extension</text>
+<svg xmlns="http://www.w3.org/2000/svg" class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400" x="287.31" y="22" width="17" height="17"><path d="M3 6h18 M3 12h18 M3 18h18 M8 3v6 M16 9v6 M9 15v6" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400"/></svg>
+<text x="311.31" y="36.5" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">环境搭建</text>
+<svg xmlns="http://www.w3.org/2000/svg" class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400" x="410.31" y="22" width="17" height="17"><path d="M2 6h8l2 3h10v11H2z" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400"/></svg>
+<text x="434.31" y="36.5" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">工作区</text>
+<svg xmlns="http://www.w3.org/2000/svg" class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400" x="517.31" y="22" width="17" height="17"><path d="M3 5h18v13H3z M8 22h8 M9 9l3 3-3 3" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400"/></svg>
+<text x="541.31" y="36.5" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">构建</text>
+<svg xmlns="http://www.w3.org/2000/svg" class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400" x="608.31" y="22" width="17" height="17"><path d="M3 9h5v5H3z M16 3h5v5h-5z M16 16h5v5h-5z M8 12h4V5h4 M12 12v6h4" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400"/></svg>
+<text x="632.31" y="36.5" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">工程配置</text>
+<rect x="715.31" y="39.5" width="88" height="3" rx="0" fill="rgb(131, 217, 195)"/>
+<svg xmlns="http://www.w3.org/2000/svg" class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="rgb(131, 217, 195)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="650" x="731.31" y="22" width="17" height="17"><path d="m12 2 9 5v10l-9 5-9-5V7z M3 7l9 5 9-5 M12 12v10" fill="none" stroke="rgb(131, 217, 195)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="650"/></svg>
+<text x="755.31" y="36.5" fill="rgb(131, 217, 195)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="650" xml:space="preserve">模块</text>
+<rect x="1679.78" y="13.5" width="103.86" height="34" rx="20" fill="rgb(36, 69, 63)"/>
+<rect x="1680.28" y="14" width="102.86" height="33" rx="20" fill="none" stroke="rgb(64, 81, 87)"/>
+<text x="1692.78" y="36.5" fill="rgb(131, 217, 195)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="600" xml:space="preserve">构建 · west</text>
+<rect x="1817.64" y="17" width="39" height="27" rx="5" fill="rgb(38, 51, 55)"/>
+<svg xmlns="http://www.w3.org/2000/svg" class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="rgb(226, 238, 238)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400" x="1828.64" y="22" width="17" height="17"><path d="M12 3a9 9 0 100 18 9 9 0 000-18z M12 3v18" fill="none" stroke="rgb(226, 238, 238)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="13px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400" x="203.36" y="111.25" width="17" height="17"><path d="M2 6h8l2 3h10v11H2z" fill="none" stroke="rgb(170, 192, 194)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="13px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="400"/></svg>
+<text x="228.36" y="125" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13" font-weight="400" xml:space="preserve">zephyr-lab</text>
+<text x="203.36" y="177.5" fill="rgb(226, 238, 238)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="40" font-weight="700" xml:space="preserve">模块</text>
+<text x="203.36" y="207.5" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="14" font-weight="400" xml:space="preserve">有效清单提供工作区项目版本，额外模块可单独指定。</text>
+<rect x="1585.64" y="160.75" width="131" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1585.64" y="189.25" width="131" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1585.64" y="160.75" width="1" height="29.5" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<text x="1592.64" y="180.75" fill="rgb(131, 217, 195)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13" font-weight="400" xml:space="preserve">来源策略：允许联网</text>
+<rect x="203.36" y="234.5" width="1513.28" height="134.98" rx="9" fill="rgb(32, 44, 48)"/>
+<rect x="203.86" y="235" width="1512.28" height="133.98" rx="9" fill="none" stroke="rgb(64, 81, 87)"/>
+<rect x="204.36" y="303.5" width="1511.28" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<text x="226.36" y="275.3" fill="rgb(226, 238, 238)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="700" xml:space="preserve">已选模块 · 1</text>
+<rect x="1581.64" y="251.5" width="112" height="36" rx="5" fill="rgb(131, 217, 195)"/>
+<rect x="1582.14" y="252" width="111" height="35" rx="5" fill="none" stroke="rgb(131, 217, 195)"/>
+<svg xmlns="http://www.w3.org/2000/svg" class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="rgb(32, 44, 48)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="600" x="1593.64" y="261" width="17" height="17"><path d="M20 9a8 8 0 10.1 6 M20 4v5h-5" fill="none" stroke="rgb(32, 44, 48)" stroke-width="1.65px" stroke-linecap="round" stroke-linejoin="round" font-size="16px" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-weight="600"/></svg>
+<text x="1617.64" y="275.5" fill="rgb(32, 44, 48)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="600" xml:space="preserve">同步所选</text>
+<rect x="204.36" y="304.5" width="1511.28" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<rect x="225.36" y="330.48" width="13" height="13" rx="2" fill="#19756e"/>
+<text x="226.36" y="340.98" fill="#fff" font-family="sans-serif" font-size="12" font-weight="600" xml:space="preserve">✓</text>
+<text x="253.36" y="332.5" fill="rgb(226, 238, 238)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="700" xml:space="preserve">cmsis_6</text>
+<text x="253.36" y="354.5" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13.3333" font-weight="400" xml:space="preserve">构建记录 · 示例</text>
+<text x="956.41" y="341" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="13.3333" font-weight="400" xml:space="preserve">1c1840af7a</text>
+<rect x="1596.64" y="325.98" width="50" height="22" rx="4" fill="rgb(36, 69, 63)"/>
+<text x="1603.64" y="341.98" fill="rgb(131, 217, 195)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="12" font-weight="400" xml:space="preserve">已同步</text>
+<rect x="1658.64" y="322.23" width="40" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1658.64" y="350.73" width="40" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1658.64" y="322.23" width="1" height="29.5" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<text x="1665.64" y="342.23" fill="rgb(131, 217, 195)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13" font-weight="400" xml:space="preserve">同步</text>
+<rect x="203.36" y="385.48" width="1513.28" height="347.34" rx="9" fill="rgb(32, 44, 48)"/>
+<rect x="203.86" y="385.98" width="1512.28" height="346.34" rx="9" fill="none" stroke="rgb(64, 81, 87)"/>
+<rect x="204.36" y="440.88" width="1511.28" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<text x="226.36" y="419.48" fill="rgb(226, 238, 238)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="700" xml:space="preserve">待选模块</text>
+<rect x="204.36" y="499.88" width="1511.28" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<rect x="218.36" y="451.88" width="1291.28" height="38" rx="5" fill="rgb(32, 44, 48)"/>
+<rect x="218.86" y="452.38" width="1290.28" height="37" rx="5" fill="none" stroke="rgb(64, 81, 87)"/>
+<text x="227.36" y="477.38" fill="rgb(226, 238, 238)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">搜索工作区模块，或粘贴仓库链接、本地路径</text>
+<rect x="1517.64" y="452.88" width="88" height="36" rx="5" fill="rgb(32, 44, 48)"/>
+<rect x="1518.14" y="453.38" width="87" height="35" rx="5" fill="none" stroke="rgb(64, 81, 87)"/>
+<text x="1529.64" y="476.88" fill="rgb(226, 238, 238)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">在线搜索</text>
+<rect x="1613.64" y="452.88" width="88" height="36" rx="5" fill="rgb(32, 44, 48)"/>
+<rect x="1614.14" y="453.38" width="87" height="35" rx="5" fill="none" stroke="rgb(64, 81, 87)"/>
+<text x="1625.64" y="476.88" fill="rgb(226, 238, 238)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">选择目录</text>
+<rect x="204.36" y="500.88" width="1511.28" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<rect x="225.36" y="526.86" width="13" height="13" rx="2" fill="#8ca2a3"/>
+<text x="253.36" y="528.88" fill="rgb(226, 238, 238)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="700" xml:space="preserve">cmsis</text>
+<text x="253.36" y="550.88" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13.3333" font-weight="400" xml:space="preserve">工作区清单</text>
+<text x="956.41" y="537.38" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="13.3333" font-weight="400" xml:space="preserve">512cc7e895</text>
+<rect x="1596.64" y="522.36" width="50" height="22" rx="4" fill="rgb(38, 51, 55)"/>
+<text x="1603.64" y="538.36" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="12" font-weight="400" xml:space="preserve">未下载</text>
+<rect x="1658.64" y="518.61" width="40" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1658.64" y="547.11" width="40" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1658.64" y="518.61" width="1" height="29.5" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<text x="1665.64" y="538.61" fill="rgb(131, 217, 195)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13" font-weight="400" xml:space="preserve">下载</text>
+<rect x="204.36" y="564.86" width="1511.28" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<rect x="225.36" y="590.84" width="13" height="13" rx="2" fill="#8ca2a3"/>
+<text x="253.36" y="592.86" fill="rgb(226, 238, 238)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="700" xml:space="preserve">mbedtls</text>
+<text x="253.36" y="614.86" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13.3333" font-weight="400" xml:space="preserve">工作区清单</text>
+<text x="950.13" y="601.36" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="13.3333" font-weight="400" xml:space="preserve">c43f34b937</text>
+<rect x="1584.64" y="586.34" width="62" height="22" rx="4" fill="rgb(67, 56, 33)"/>
+<text x="1591.64" y="602.34" fill="rgb(240, 186, 112)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="12" font-weight="400" xml:space="preserve">版本不同</text>
+<rect x="1658.64" y="582.59" width="40" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1658.64" y="611.09" width="40" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1658.64" y="582.59" width="1" height="29.5" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<text x="1665.64" y="602.59" fill="rgb(131, 217, 195)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13" font-weight="400" xml:space="preserve">同步</text>
+<rect x="204.36" y="628.84" width="1511.28" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<rect x="225.36" y="654.83" width="13" height="13" rx="2" fill="#8ca2a3"/>
+<text x="253.36" y="656.84" fill="rgb(226, 238, 238)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="700" xml:space="preserve">lvgl</text>
+<text x="253.36" y="678.84" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13.3333" font-weight="400" xml:space="preserve">工作区清单</text>
+<text x="956.41" y="665.34" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="13.3333" font-weight="400" xml:space="preserve">d1fe35d350</text>
+<rect x="1596.64" y="650.33" width="50" height="22" rx="4" fill="rgb(36, 69, 63)"/>
+<text x="1603.64" y="666.33" fill="rgb(131, 217, 195)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="12" font-weight="400" xml:space="preserve">已同步</text>
+<rect x="1658.64" y="646.58" width="40" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1658.64" y="675.08" width="40" height="1" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<rect x="1658.64" y="646.58" width="1" height="29.5" rx="0" fill="rgba(0, 0, 0, 0)"/>
+<text x="1665.64" y="666.58" fill="rgb(131, 217, 195)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="13" font-weight="400" xml:space="preserve">同步</text>
+<rect x="204.36" y="692.83" width="1511.28" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<text x="235.3" y="718.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">新手指导</text>
+<text x="240.75" y="758.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">工作区已有的模块可直接选择，版本取自当前 west 清单。在线模块按名称搜索 Zephyr 官方组织；个人仓库可以粘贴 GitHub 或 Gitee 的仓库首页、分支目录或模块描述文件链接，也可以用 HTTPS、SSH 克隆</text>
+<text x="240.75" y="782.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">地址。链接中的分支或标签会自动识别。</text>
+<text x="240.75" y="812.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">使用本地模块时，请选仓库根目录，例如 </text>
+<text x="533.14" y="812.83" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="400" xml:space="preserve">my_driver/</text>
+<text x="621.11" y="812.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">。扩展会读其中的 </text>
+<text x="753.5" y="812.83" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="400" xml:space="preserve">zephyr/module.yml</text>
+<text x="903.05" y="812.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve"> 或 </text>
+<text x="927.81" y="812.83" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="400" xml:space="preserve">zephyr/module.yaml</text>
+<text x="1086.16" y="812.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">，优先采用文件声明的 </text>
+<text x="1250.55" y="812.83" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="400" xml:space="preserve">name</text>
+<text x="1285.73" y="812.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">。</text>
+<text x="240.75" y="843.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">旧式模块需要同时有 </text>
+<text x="389.14" y="843.83" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="400" xml:space="preserve">zephyr/CMakeLists.txt</text>
+<text x="573.88" y="843.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve"> 和 </text>
+<text x="598.64" y="843.83" fill="rgb(170, 192, 194)" font-family="Consolas, &quot;Cascadia Mono&quot;, monospace" font-size="16" font-weight="400" xml:space="preserve">zephyr/Kconfig</text>
+<text x="721.8" y="843.83" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="16" font-weight="400" xml:space="preserve">。识别失败时，检查目录层级、所选版本、仓库权限。离线时使用已有检出目录。</text>
+<rect x="0" y="1047" width="1920" height="33" rx="0" fill="rgb(32, 44, 48)"/>
+<rect x="0" y="1047" width="1920" height="1" rx="0" fill="rgb(64, 81, 87)"/>
+<rect x="63.36" y="1062" width="7" height="7" rx="50" fill="rgb(131, 217, 195)"/>
+<text x="70.36" y="1069" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="12" font-weight="400" xml:space="preserve"> 本地工作区</text>
+<text x="1739.45" y="1069" fill="rgb(170, 192, 194)" font-family="&quot;Segoe UI&quot;, &quot;Microsoft YaHei UI&quot;, sans-serif" font-size="12" font-weight="400" xml:space="preserve">交互设计稿 · 示例数据</text>
+</svg>
