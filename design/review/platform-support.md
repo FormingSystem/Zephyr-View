@@ -1,5 +1,7 @@
 # 0.5.17 环境搭建与平台验收
 
+**简体中文** | [English](platform-support.en.md)
+
 从 VS Code 活动栏打开 Zephyr Extension，在「工作区 → 环境搭建」点击「补齐缺失组件」。换一台电脑时，可以把同一个 VSIX 复制过去并从任意目录安装。编译器、SDK 和 Python 环境应适配新的宿主系统。[当前发行包](https://github.com/FormingSystem/zephyr-extension/releases/latest) · [中英文使用手册](../../extension/README.md)
 
 ## 首次使用
@@ -35,8 +37,6 @@ SDK 按工程源码的 `SDK_VERSION` 推荐版本，再按该发布实际提供�
 
 复测时，先安装扩展和原生测试的 npm 依赖，再运行 `python tests/native/check_host.py`。在 Windows 桌面分别加 `--windows-desktop 10` 或 `--windows-desktop 11`。用 `python tests/native/archive_paths.py <VSIX>` 检查发布包，再用 `node tests/native/workbench.cjs <VSIX>` 验证实际安装；Linux 无显示器时可使用 `xvfb-run -a`。[原生测试工作流](../../.github/workflows/native-platforms.yml) · [测试环境准备](../../.github/actions/check-extension/action.yml)
 
-## English
+工具目录在项目内时保存为相对路径。在工具目录选择器中选定的外部目录保存在本机工作区状态。上述 Windows 和 Ubuntu 的 ARM 固件构建使用 Zephyr 的 `hello_world` 应用。
 
-Open **Workspace → Environment setup → Set up missing components**. The extension checks the selected build method, local checkout and tools before offering installation. Choose the host package manager for the defaults, or select an existing executable, local installer, wheel directory or SDK bundle. Each selection is checked again before the guide advances. Tool directories within the project are saved relative to it. External directories selected through the tool-directory picker stay in the local workspace state.
-
-The same VSIX was installed and activated on Windows 11 x64 and Ubuntu 24.04.5 x86-64. Both hosts built the Zephyr `hello_world` ARM firmware with CMake and without west. Native jobs for Windows 10 x64, Windows 11 ARM64, Ubuntu 22.04 and macOS Intel and Apple Silicon are provided for further validation. [Installation guide](../../extension/README.md) · [Native platform checks](../../.github/workflows/native-platforms.yml)
+**简体中文** | [English](platform-support.en.md)

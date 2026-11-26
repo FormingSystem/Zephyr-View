@@ -1,5 +1,7 @@
 # 工程配置与模块逐项评审
 
+**简体中文** | [English](configuration-modules.en.md)
+
 工程配置页回答“这个应用针对哪块板、哪些文件生效、我改了什么”。模块页回答“从哪里取得、谁需要、需要哪一版、本地是否满足”。同一份清单可能列出几十个仓库，只有部分会参与当前构建。图、表和操作按钮都需要说明它们作用于哪个应用、工作区和构建目录。
 
 本次按原型、扩展实际消息处理、Zephyr 官方接口三方核对。下表中的“已接入”表示存在从界面到宿主的实现，实机验证范围另列。“部分”指可以操作但尚有明确缺口。“待实现”为交付设计和验收条件。交互总图见[工作台交互设计](../interaction.md)。
@@ -94,3 +96,5 @@ Windows 的 `hello_world` 实测中，在首次运行配置前选择 `qemu_corte
 在 1920 × 1080 显示器上连续九次进入“全屏配置”并按 Esc，均返回原编辑器组。独立窗口中将 `CONFIG_MAIN_STACK_SIZE=3072` 加入草稿并另存副本，已核对副本中的值以及原 `prj.conf` 的文件内容。
 
 [全屏配置实机截图](installed/configuration-map-fullscreen-0.5.13.png) · [独立窗口编辑 Kconfig 实机截图](installed/configuration-map-detached-0.5.13.png)
+
+**简体中文** | [English](configuration-modules.en.md)

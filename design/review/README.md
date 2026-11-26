@@ -1,5 +1,7 @@
 # Zephyr Extension 逐项设计与评审
 
+**简体中文** | [English](README.en.md)
+
 [工程分析设计评审：从应用入口到线程、函数和数据流](thread-analysis.md) · [双线程交互样例](thread-analysis-preview.html)
 
 [0.5.17 缺失组件安装向导、跨平台适配和安装包搬迁验证](platform-support.md)
@@ -69,7 +71,7 @@
 - **语言、平台与路径**。安装包内有中英文使用说明、命令名和部分界面翻译。模块页及其错误信息仍需补齐英文。配置中的示例路径、用户选择的运行时路径与可移植工程数据分别审。Windows 真机结果和 Linux 待验项分别记入专项表。
 - **烧录、调试和测试**。支持能力由所选构建目录、镜像、运行器和调试配置共同决定。无硬件环境不能签收烧录或探针调试。Twister 测试计划和 sysbuild 域选择作为独立项审查。[Zephyr sysbuild](https://docs.zephyrproject.org/latest/build/sysbuild/index.html) · [Zephyr 测试工具](https://docs.zephyrproject.org/latest/develop/test/twister.html)
 - **视觉与教学**。四页功能区在所有宽度逐块纵排。长路径和命令可换行，状态用文字和颜色共同表达。教程的实际操作截图使用 1920×1080，鼠标动作指明具体控件。当前版真机画面见[工作区](installed/workspace.png)、[构建](installed/build.png)、[工程配置](installed/configuration.png)、[模块](installed/modules.png)。
-- **原型、实现与来源**。原型用示例数据，VSIX 读取本机工作区；原型的初始化按钮不能充当真实安装证据。工作台为独立工程；当前目录没有 Git 元数据，无法据此确认与历史上游分叉的提交。第三方 YAML 组件使用其随附的[许可证](../vendor/js-yaml/LICENSE)。项目自身的权利人及对外发行许可需由所有者明确。
+- **原型、实现与来源**。原型用示例数据，VSIX 读取本机工作区；原型的初始化按钮不能充当真实安装证据。工作台为独立工程。最初评审时，该目录没有 Git 元数据，因此无法确认与历史上游的分叉提交，对外发行条款也有待所有者确定。现公开仓库采用 [Apache-2.0](../../LICENSE)，第三方 YAML 组件使用其随附的[许可证](../vendor/js-yaml/LICENSE)。
 - **变更同步**。每次变更先对应到功能编号；同步修改共享设计、原生宿主或视图、使用手册与该行的验收结果。保留旧版验收作为历史记录。带截图的安装验证与纯代码验证分别记录。
 
 ## 0.5.3 安装验收
@@ -88,3 +90,9 @@
 | 构建、配置与主题 | west 与 CMake 的真实 Zephyr 编译、生成器继承、目标切换和文件范围见[构建评审](environment-workspace-build.md)。配置片段回归见[工程配置评审](configuration-modules.md)。明暗主题文字对比度数据见[显示评审](workbench-debug.md)。 |
 
 本次没有执行 Linux 真机、硬件探针调试或远端私有仓库端到端验收。文档中的人工勾选项保留待评状态。
+
+## 维护双语文档
+
+修改正文时，一起更新同目录的 `.md` 和 `.en.md`。逐项对照两种语言后运行 `python tests/test_bilingual_docs.py --record design/review/README.md`，将末尾路径替换为刚审核的中文页。运行 `python tests/test_bilingual_docs.py` 验证所有配对、链接和锚点。
+
+**简体中文** | [English](README.en.md)

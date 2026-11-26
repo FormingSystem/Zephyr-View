@@ -1,5 +1,7 @@
 # 开发板、架构与样例的全库识别验收
 
+**简体中文** | [English](catalog-coverage.en.md)
+
 2026-11-26 在 Windows 上检查本地 Zephyr 4.5.0-rc1，源码提交为 `25c8f4a23988dd3b2cfb463613622738298c2d6c`。同一份源码分别以独立源码目录和当前 west 工作区作为发现范围，两次结果相同。以下数字描述选择器能展示哪些目标，以及配置前能知道哪些信息。实际生成固件的案例见[与原生构建的对照](adaptive-builds.md)和[上一版的多架构构建验收](multi-board-build.md)。
 
 | 检查项 | 本次结果 | 核对依据 |
@@ -33,3 +35,5 @@ node tests/integration/catalog-coverage.cjs --workspace
 ```
 
 加 `--details` 可输出各个未发现标准 DTS 的目标。检查程序逐项对照实际 checkout 的硬件描述、Twister 架构和 CMake 设备树输入解析函数，用临时目录存放核对数据。构建矩阵另行验证配置、编译、链接和构建产物。
+
+**简体中文** | [English](catalog-coverage.en.md)

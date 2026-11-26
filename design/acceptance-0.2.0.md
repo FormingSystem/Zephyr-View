@@ -1,5 +1,7 @@
 # Zephyr Workbench 0.2.0 设计验收核对
 
+**简体中文** | [English](acceptance-0.2.0.en.md)
+
 这是旧版验收记录。当前四入口工作台见[逐项评审](review/README.md)。
 
 
@@ -37,3 +39,5 @@ Windows VS Code 在两个全新的构建目录中分别验证了同一份 Zephyr
 | CMake | 独立应用目录，Python 环境和 PATH 都没有 west，通过 ZEPHYR_MODULES 指向本地 cmsis_6 | 缓存记录 WEST-NOTFOUND，配置并构建成功，生成 ARM ELF |
 
 [查看 1920×1080 实际运行截图](vscode-build-0.3.0.png)。这次验收使用已有的本机工具和 SDK。完整环境安装、通用模块依赖推导及下载、图形化 Kconfig / 设备树草稿保存、Linux 和真板验证继续沿用上面的验收条件。
+
+**简体中文** | [English](acceptance-0.2.0.en.md)

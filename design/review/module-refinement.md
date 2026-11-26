@@ -1,5 +1,7 @@
 # 构建页之后的模块评审
 
+**简体中文** | [English](module-refinement.en.md)
+
 第一项交付是构建页。第二项处理了工作区与调试侧栏的目标归属（W1、D1），在 Windows 的独立 VS Code 开发宿主完成了双根实测。两项模块同步问题仍保留初次评审的离线复现记录。以下各项分别列出完成范围与待测条件。
 
 ## 整改次序
@@ -61,3 +63,5 @@ W1、D1 的自动回归可在项目根目录运行 `node --test tests/debugTarge
 每项变更记录执行平台、语言、输入工程、板名、构建目录、实际动作和结果。桌面截图使用 1920×1080，同一张图同时看得见目标与操作结果。安装态以真实 VSIX 运行；纯数据回归和原型截图另记。真机探针、Linux 安装包流程及私有远端凭据仍需各自环境验收。完成某一项时更新对应专项页、用户手册与本表，不提前关闭其他项。
 
 **English summary.** The build screen was followed by the workspace and sidebar target fixes. A Windows VS Code 1.147.0 development host with two workspace folders retained the selected project across webview and terminal focus. An actual debug session selected its owning folder and left it active after termination. A real `mps2/an386` build reported its generated `pyocd` runner until a different board was selected. The appearance dialog can restore VS Code theme tracking. Module error localization, imported project visibility and recovery from partial synchronization remain open.
+
+**简体中文** | [English](module-refinement.en.md)

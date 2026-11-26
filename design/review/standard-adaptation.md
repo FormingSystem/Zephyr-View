@@ -1,5 +1,7 @@
 # Zephyr 自适配检查清单
 
+**简体中文** | [English](standard-adaptation.en.md)
+
 本次以 Zephyr 4.5.0-rc1 的源码、板库和官方样例为基准。验收分三步：选择器能否发现目标，构建命令是否保留工程和用户的选择，产物是否反映这些选择。每次更新 Zephyr 或调整识别规则，都可以分别复验这三步。
 
 | 标准输入或行为 | 查出的缺口 | 0.5.15 的处理与复验 |
@@ -35,3 +37,5 @@ Windows 中文版 VS Code 1.147.0 在独立用户配置中安装了 0.5.15 VSIX�
 本轮静态核对覆盖该源码的全部 2,014 个板目标。实际编译、链接覆盖验收报告列出的代表工程。其余板与应用组合、硬件外设行为、实板烧录以及不同发行版须分别验证。含动态 CMake、外部模块和自定义硬件描述的工程，在生成构建记录前可显示待确认；保留此状态能避免把猜测写回工程。
 
 官方参考：[板、修订与限定目标](https://docs.zephyrproject.org/latest/hardware/porting/board_porting.html) · [Kconfig 应用配置](https://docs.zephyrproject.org/latest/build/kconfig/setting.html) · [设备树与 overlay](https://docs.zephyrproject.org/latest/build/dts/howtos.html) · [sysbuild 及各镜像的命名空间](https://docs.zephyrproject.org/latest/build/sysbuild/index.html)
+
+**简体中文** | [English](standard-adaptation.en.md)

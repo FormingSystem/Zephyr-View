@@ -1,0 +1,41 @@
+# Zephyr compatibility checklist
+
+[简体中文](standard-adaptation.md) | **English**
+
+This review uses the source tree, board catalog and official samples from Zephyr 4.5.0-rc1. Check compatibility at three points: can the selector discover the target, does the build command preserve the project’s and user’s choices, and do the resulting artifacts reflect those choices? Repeat each check when upgrading Zephyr or changing discovery rules.
+
+| Standard input or behavior | Gap found | Change and verification in 0.5.15 |
+| --- | --- | --- |
+| Application entry points and samples under modules | Search skipped samples in paths named `modules` and could miss child applications with only a CMake entry point. | Scan sample descriptors and CMake entry points in the selected checkout and workspace; exclude actual build outputs. All 677 official samples appeared along with 42 further application entry points. |
+| `BOARD[@revision][/qualifiers]`, aliases and project defaults | The selector rejected targets outside the catalog and required a board before the project could supply one during configuration. | Inherit the project setting by default. Search and select a board inline or explicitly use a typed alias. The workbench retains the argument, environment and cache sources, then reads the resolved target from Zephyr after configuration. |
+| `BOARD_ROOT`, `SOC_ROOT`, `ARCH_ROOT` and multicore boards | Discovery could miss extension roots, revisions and CPU variants. Compiler recommendations had missed Twister board metadata. | Combine project and environment roots. Check architecture per revision and variant, then use `CONFIG_ARCH` after configuration. The 155 targets lacking metadata remain selectable. |
+| Out-of-tree boards provided by modules | Running only `west boards` in a west workspace could miss modules supplied through project arguments or list boards outside an explicit module set. | Read each module’s `build.settings.board_root` from the selected source. Tests covered an appended module, the legacy variable name, UI selection, and explicit replacement of the entire set. The selector showed the additional boards or, with replacement, only boards from the specified modules plus Zephyr’s built-ins. [Module board selector tests](../../tests/integration/module-board-selection.cjs) |
+| `CONF_FILE`, `APPLICATION_CONFIG_DIR`, `FILE_SUFFIX` | A single nonstandard `.conf` file in a directory could override a project declaration. Empty values or relative paths had been lost. | Show standard files according to project rules; offer an isolated file as an optional candidate. Preserve an explicit empty list and resolve recorded inputs relative to the project configuration directory. Users may select files outside the project in order. |
+| `DTS_SOURCE`, `DTC_OVERLAY_FILE`, shields and extra fragments | Missing or ambiguous board DTS candidates could block configuration. A pre-build scan cannot predict all files a shield will contribute. | Let the current Zephyr configuration resolve the inputs. Users may select a base DTS and multiple overlays. Check the merged inputs against generated `build_info.yml`. Across the catalog, the official selection function chose the shared `stub.dts` for 93 targets with no additional inputs. |
+| Manual selection, changes and reset | UI selection and CMake cache could diverge, particularly when the project supplies the board during the first configuration. | Store choices by application, build directory and board-selection method. Reorder selected files or restore project settings. The x86 test restored the original stack size and device model in the same build directory. |
+| Sysbuild and multiple domains | The workbench had treated the top-level template as the application. The build root does not contain each CPU’s `.config` and `zephyr.dts`. | Build and reconfigure at the root, and obtain application configuration and hardware evidence from the default domain. Both west and CMake built the nRF5340 application and network cores. |
+| Restoring project settings for the sysbuild main image | After top-level file selections were cleared, the main image’s child cache could still retain them. | Remove only file selections the workbench had set for that image. Resetting restored the project Kconfig stack size from 1536 to 2048; changing the project default then produced 2816. The devicetree `model` also followed all three inputs. [Reset in the same build directory](../../tests/integration/sysbuild-file-reset.cjs) |
+| Parallel compilation | Limiting only the top-level job could leave sysbuild child builds with different parallelism. | Display the host’s available logical processor count, inherit `CMAKE_BUILD_PARALLEL_LEVEL` or accept a manual job count, and propagate that setting to sysbuild children. Configure host compilation jobs separately from target CPUs. [Parallelism regression tests](../../tests/buildParallelism.test.js) |
+| Standalone CMake and local modules | A successful CMake build on a host with west installed could conceal a dependency on west. | Linked ARM firmware with the local SDK and an explicit `cmsis_6` module in an environment lacking both the west command and its Python package. Checked the generated cache and actual module list. [Build without west](../../tests/integration/no-west-build.cjs) |
+
+[Full catalog and reproduction commands](catalog-coverage.en.md) · [Actual builds, file order and output comparison](adaptive-builds.en.md) · [User guide](../../extension/README.en.md)
+
+## Installed release verification
+
+All 123 JavaScript and five Python regression tests passed. The local VS Code extensions list reported 0.5.15.
+
+Chinese VS Code 1.147.0 on Windows installed the 0.5.15 VSIX in an isolated user profile. From the Activity Bar, the reviewer opened Build, searched for the project-defined board alias `lab_controller` and selected **Use this BOARD**. The CMake preview included the target. Selecting **Use project settings** removed the explicit `BOARD`. In the same application, `bringup.conf` first appeared as a candidate, entered `CONF_FILE` when selected, then disappeared from the command after reset. [1920 × 1080 screenshot](installed/adaptive-board-0.5.15.png)
+
+After switching to the official `samples/sysbuild/hello_world` and its nRF5340 build directory, Build showed Sysbuild enabled. It listed `hello_world` as the main image and `remote` as the second image. Switching to Workspace and back preserved the image list and checkbox state.
+
+## Acceptance criteria
+
+1. Record the Zephyr version and source commit. Generate candidates from that same source through both a west workspace and a standalone CMake source directory. Compare the results with that version’s hardware model, Twister data and CMake resolution.
+2. Run the project’s original build command in a clean directory, then build through the workbench in another directory. Compare the board, qualifiers, Kconfig files and devicetree inputs in `build_info.yml`. Inspect `.config`, the merged devicetree and the actual ELF architecture.
+3. Select multiple files in the same workbench build directory, restore the project settings and rebuild. Check the input order, final values and original project files. For a multi-image build, inspect each domain’s target and ELF.
+
+The static catalog check covered all 2,014 board targets in this checkout. The build report lists the representative projects that were compiled and linked. Other board/application combinations, peripherals, physical flashing and different Zephyr releases require separate verification. For dynamic CMake, external modules and custom hardware descriptions, the UI may keep a candidate pending until the build supplies evidence; this avoids writing a guess back into the project.
+
+Official references: [Boards, revisions and qualified targets](https://docs.zephyrproject.org/latest/hardware/porting/board_porting.html) · [Kconfig application settings](https://docs.zephyrproject.org/latest/build/kconfig/setting.html) · [Devicetree and overlays](https://docs.zephyrproject.org/latest/build/dts/howtos.html) · [Sysbuild and per-image namespaces](https://docs.zephyrproject.org/latest/build/sysbuild/index.html)
+
+[简体中文](standard-adaptation.md) | **English**

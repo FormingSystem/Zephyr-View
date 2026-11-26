@@ -1,5 +1,7 @@
 # Zephyr Extension 交互原型
 
+**简体中文** | [English](README.en.md)
+
 [当前设计与逐项验收](review/README.md) · [构建页之后的模块评审与整改顺序](review/module-refinement.md) · [本机文件选择与初始识别](review/local-selection.md) · [打开可操作原型](index.html#workspace) · [原生插件使用手册](../extension/README.md) · [交互细节](interaction.md)
 
 顶栏依次为「构建」「工作区」「工程配置」「模块」。首次打开进入「工作区」，上部是主机工具与环境变量，下部是可选的 west 工作区。浏览器使用示例工程，安装版读取当前工程和本机工具。安装方案、初始化和烧录演示的接入进度见逐项验收表。
@@ -97,3 +99,5 @@ Zephyr 的构建由应用发起。`CMakeLists.txt` 定义应用，`prj.conf` 配
 浏览器原型默认并排展示调试目标和工作区，可在左上角切换侧栏。启动调试演示后，选择栈帧查看示例源码，或打开工程配置，同时观察左侧会话。小屏可按需展开，独立配置窗口使用完整画布。[1920×1080 预览](debug-sidebar.png)
 
 [原生扩展预览](../extension/README.md) 为 VS Code 的「运行和调试」增加 Zephyr 调试目标。变量、监视、调用堆栈和断点直接使用当前调试适配器提供的数据。
+
+**简体中文** | [English](README.en.md)

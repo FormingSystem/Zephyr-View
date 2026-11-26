@@ -1,5 +1,7 @@
 # 从安装工具到烧写固件：工作台全量评审
 
+**简体中文** | [English](installation-and-flashing.en.md)
+
 基线是独立扩展的 `v0.5.15`（`4f0d558`）。评审检查了正式扩展的四个页面、活动栏与调试侧栏、宿主命令、文件与任务的实际调用，以及浏览器设计稿。下表记录基线缺口；已交付项与尚待实机验证的项目分别在文末登记。
 
 | 页面 / 模块 | 0.5.15 可以做什么 | 需要优化的操作及归属 |
@@ -52,3 +54,5 @@
 以下截图来自已安装的 VS Code 扩展，原图均为 1920 × 1080。[主机工具安装选项](installed/install-options-0.5.16.png) · [探针检测与官方驱动](installed/probe-diagnostics-0.5.16.png) · [中文烧写预览](installed/firmware-flashing-0.5.16.png) · [英文深色主题与键盘焦点](installed/firmware-keyboard-dark-0.5.16.png)
 
 安装后可按中英文手册复核同一流程。[使用手册](../../extension/README.md) · 验收版本 0.5.16
+
+**简体中文** | [English](installation-and-flashing.en.md)

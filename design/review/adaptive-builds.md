@@ -1,5 +1,7 @@
 # 工程自识别与原生构建对照
 
+**简体中文** | [English](adaptive-builds.en.md)
+
 2026-11-26，在 Windows x64、Zephyr 4.5.0-rc1（`25c8f4a23988`）、SDK 1.0.1、west 1.5.0、CMake 4.4.4 上验证。
 
 ## 五组配置能否照常编译
@@ -46,3 +48,5 @@ node tests/integration/sysbuild-file-reset.cjs --dual
 第一条命令接受场景名 `app-owned`、`empty-alias`、`stub`、`shield`、`manual`。前两条命令实际编译并链接固件，每个构建使用四个并行任务。第三条在同一目录重新配置并读取两个核的生成文件，省略 `--dual` 可运行 MPS2 单镜像样例。各命令都打印日志与产物的位置。烧录、板上运行及其余板与应用组合需另外验证。
 
 测试机已有的 Python 环境安装了不同版本的 `python-devicetree`。x86 原生与扩展两侧均在生成页表时遇到 `_LocalProps` 缺失。复验时仅在测试进程内将当前源码中的 `scripts/dts/python-devicetree/src` 加入 `PYTHONPATH`，随后两侧成功。Windows 上此版 west 与 CMake 的 sysbuild 默认传入带反斜杠的 `APP_DIR`，可能在展开 Kconfig 目标时产生 CMake 转义错误，两条扩展入口均验证了转换为 CMake 路径后的完整构建。
+
+**简体中文** | [English](adaptive-builds.en.md)

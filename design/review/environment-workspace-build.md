@@ -1,5 +1,7 @@
 # 工作区、环境搭建与构建评审
 
+**简体中文** | [English](environment-workspace-build.en.md)
+
 在**工作区**内按纵向顺序操作。先确认打开的文件夹，选择主机工具、Python、Zephyr 源码和工具链，核对传给构建进程的值。同页下方列出可选的 west 工作区和清单。**构建**页负责选择应用、开发板与 CPU、构建目录和构建方式。配置项旁边显示实际来源，修改、恢复继承和重新检测都在该项所在处完成。已有工程可以从构建页直接开始。
 
 本页将已接通的宿主行为、浏览器设计稿的示例操作和需要补齐的能力分别标明。表格中的验收条件用于逐项复核，实际执行过的结果见末节。工程文件和命令均以用户当前 checkout 为准。
@@ -124,3 +126,5 @@ west 与 CMake 各用一个空构建目录。两次都由缺板提示进入搜�
 | 切换应用或构建目录 | 回归覆盖其他应用、开发板、复制和缺少标识的缓存。缓存中的默认板和变量只随对应目标生效。 |
 
 可复查 [1920×1080 工作区截图](installed/variables-environment-0.5.4.png) 和 [1920×1080 构建截图](installed/variables-build-0.5.4.png)。在工程根目录运行 `node --test tests/buildVariables.test.js tests/environmentValues.test.js` 可复验变量识别规则。
+
+**简体中文** | [English](environment-workspace-build.en.md)

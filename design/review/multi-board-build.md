@@ -1,5 +1,7 @@
 # 多架构构建与配置文件识别验收
 
+**简体中文** | [English](multi-board-build.en.md)
+
 本文记录 0.5.14 的行为。自 0.5.15 起，唯一的非标准 `.conf` 由用户确认采用，完整规则与新构建结果见[标准适配检查清单](standard-adaptation.md)。
 
 2026-11-26，Windows x64，Zephyr SDK 1.0.1，west 1.5.0。通用目标使用 Zephyr 4.5.0-rc1。HC32F4A0PITB 使用提供该板的 4.4.99 源码和本地 `cmsis_6`、`hal_xhsc` 模块。应用、SDK 和模块均从本机读取。
@@ -61,3 +63,5 @@ node tests/integration/build-file-selection.cjs mps2/an386
 ```
 
 实测 `mps2/an386` 在同一构建目录依次得到 1536（默认）、3072（`first.conf;last.conf`）、2048（颠倒顺序）、1536（恢复默认）。随后指定替代主设备树和覆盖文件，最终硬件型号变成 `selected-overlay`。恢复自动选择后，设备树输入重新指向 `mps2_an386.dts`，型号恢复原值。另一个只有 `application.conf` 的应用自动编译出 2304 的栈。七次均检查了 `build_info.yml` 中的实际输入顺序、最终 `.config`、ELF 和源文件内容。更换命令末尾的板目标，可用本机已安装的其他工具链重复验证。[验证脚本](../../tests/integration/build-file-selection.cjs)
+
+**简体中文** | [English](multi-board-build.en.md)

@@ -1,5 +1,7 @@
 # 功能、响应与独立实现边界
 
+**简体中文** | [English](interaction.en.md)
+
 [当前逐项评审](review/README.md) · [返回设计总览](README.md) · [试用原型](index.html) · [工具环境 SVG](environment.svg)
 
 [资源管理器、手输路径与工作区识别的交互和验收](review/local-selection.md)
@@ -132,3 +134,5 @@ CMake 使用 `ZEPHYR_MODULES` 显式指定工程的本地模块目录列表。we
 ## 环境页排版
 
 工具分组位于配置区上方。当前分组与构建进程环境上下排列，变量名称、完整值、来源依次显示。路径按可用宽度换行。VS Code 使用活动栏 Z 图标控制左侧边栏，独立浏览器预览使用页内开关。
+
+**简体中文** | [English](interaction.en.md)

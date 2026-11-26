@@ -32,6 +32,7 @@
     code, .node strong { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
     header, .pane, .inspector { margin-bottom: 14px; }
     header p { margin-top: 6px; }
+    header a[hreflang] { float: inline-end; }
     [role="tablist"] { display: flex; gap: 4px; padding: 0 2px; border-bottom: 1px solid var(--line); }
     [role="tab"] { padding: 9px 17px; border: 0; border-bottom: 3px solid transparent; background: transparent; }
     [role="tab"][aria-selected="true"] { color: var(--accent); border-bottom-color: currentColor; font-weight: 650; }
@@ -73,20 +74,21 @@
 <body>
   <main>
     <header>
-      <h1>线程分析</h1>
+      <a id="language" hreflang="en" lang="en" href="?lang=en">English</a>
+      <h1 data-en="Thread analysis">线程分析</h1>
       <p><strong>Basic Synchronization</strong> · Zephyr v4.2.0</p>
-      <p class="muted">静态源码示例。图中展示调用与同步关系，尚未采集实时调用栈或运行时数据。</p>
+      <p class="muted" data-en="Static source example. Explore calls and semaphore handoffs. No runtime stack or trace was captured.">静态源码示例。图中展示调用与同步关系，尚未采集实时调用栈或运行时数据。</p>
     </header>
     <nav role="tablist" aria-label="分析视图">
-      <button role="tab" id="tab-overview" aria-controls="graph" aria-selected="true">总览</button>
-      <button role="tab" id="tab-a" aria-controls="graph" aria-selected="false" tabindex="-1">线程 A</button>
-      <button role="tab" id="tab-b" aria-controls="graph" aria-selected="false" tabindex="-1">线程 B</button>
+      <button role="tab" id="tab-overview" aria-controls="graph" aria-selected="true" data-en="Overview">总览</button>
+      <button role="tab" id="tab-a" aria-controls="graph" aria-selected="false" tabindex="-1" data-en="Thread A">线程 A</button>
+      <button role="tab" id="tab-b" aria-controls="graph" aria-selected="false" tabindex="-1" data-en="Thread B">线程 B</button>
     </nav>
     <section role="tabpanel" class="pane" id="graph" aria-labelledby="tab-overview"></section>
     <section class="inspector" id="details" aria-label="节点详情" aria-live="polite"></section>
     <footer>
-      <a href="https://docs.zephyrproject.org/4.2.0/samples/synchronization/README.html">官方例程与控制台输出</a>
-      · <a href="https://github.com/zephyrproject-rtos/zephyr/blob/v4.2.0/samples/synchronization/src/main.c">完整源码</a>
+      <a href="https://docs.zephyrproject.org/4.2.0/samples/synchronization/README.html" data-en="Official sample and console output">官方例程与控制台输出</a>
+      · <a href="https://github.com/zephyrproject-rtos/zephyr/blob/v4.2.0/samples/synchronization/src/main.c" data-en="Full source">完整源码</a>
     </footer>
   </main>
   <script>
@@ -96,8 +98,21 @@
     const tabs = [...document.querySelectorAll('[role="tab"]')];
     const source = 'https://github.com/zephyrproject-rtos/zephyr/blob/v4.2.0/samples/synchronization/src/main.c';
     const views = ['overview', 'a', 'b'];
+    const params = new URLSearchParams(location.search);
+    const english = params.get('lang') === 'en';
+    const label = (zh, en) => english ? en : zh;
+    const languageLink = document.getElementById('language');
     let objects = new Map();
 
+    if (english) {
+      document.documentElement.lang = 'en';
+      document.title = 'Thread analysis · Basic Synchronization';
+      for (const item of document.querySelectorAll('[data-en]')) item.textContent = item.dataset.en;
+      document.querySelector('[role="tablist"]').setAttribute('aria-label', 'Analysis views');
+      details.setAttribute('aria-label', 'Node details');
+      languageLink.textContent = '简体中文';
+      languageLink.lang = languageLink.hreflang = 'zh-CN';
+    }
     function object(id, title, caption, input, output, lines) {
       objects.set(id, {title, input, output, lines});
       return '<button class="node" data-id="' + id + '" aria-pressed="false" aria-controls="details">' +
@@ -105,52 +120,58 @@
     }
     function entry(id) {
       const other = id === 'a' ? 'b' : 'a';
-      return object(id, 'thread_' + id + '_entry_point', '线程 ' + id.toUpperCase() + ' 入口',
-        '三个启动参数均未使用。传给 hello_loop 的参数为函数名、&thread_' + id + '_sem 和 &thread_' + other + '_sem。',
-        '进入交替打印循环，等待本线程的信号量，结束本轮后释放对方的信号量。', id === 'a' ? [75, 83] : [88, 96]);
+      const name = id.toUpperCase();
+      return object(id, 'thread_' + id + '_entry_point', label('线程 ' + name + ' 入口', 'Thread ' + name + ' entry'),
+        label('三个启动参数均未使用。传给 hello_loop 的参数为函数名、&thread_' + id + '_sem 和 &thread_' + other + '_sem。',
+          'The three entry arguments are unused. hello_loop receives the function name, &thread_' + id + '_sem and &thread_' + other + '_sem.'),
+        label('进入交替打印循环，等待本线程的信号量，结束本轮后释放对方的信号量。', 'Enter the greeting loop, take this thread’s semaphore, then give the other thread’s semaphore.'), id === 'a' ? [75, 83] : [88, 96]);
     }
     function semaphore(id) {
       const other = id === 'a' ? 'B' : 'A';
-      return object('sem-' + id, 'thread_' + id + '_sem', '初值 ' + (id === 'a' ? 1 : 0) + ' · 上限 1',
-        '线程 ' + other + ' 调用 k_sem_give，交出下一次打印的许可。',
-        '线程 ' + id.toUpperCase() + ' 可通过 k_sem_take 获得一次许可。线程之间只传递轮次，控制台消息由各线程自行产生。',
+      const count = id === 'a' ? 1 : 0, name = id.toUpperCase();
+      return object('sem-' + id, 'thread_' + id + '_sem', label('初值 ' + count + ' · 上限 1', 'Initial count ' + count + ' · limit 1'),
+        label('线程 ' + other + ' 调用 k_sem_give，交出下一次打印的许可。', 'Thread ' + other + ' calls k_sem_give to hand over the next turn.'),
+        label('线程 ' + name + ' 可通过 k_sem_take 获得一次许可。线程之间只传递轮次，控制台消息由各线程自行产生。', 'Thread ' + name + ' can obtain one turn with k_sem_take. Each thread produces its own console text.'),
         id === 'a' ? [71, 71] : [72, 72]);
     }
     function wire(label) { return '<span class="wire">' + label + '</span>'; }
     function overview() {
       const a = entry('a'), b = entry('b');
-      const lane = (sender, token, receiver) => '<div class="lane">' + sender + wire('释放') + token + wire('取得') + receiver + '</div>';
-      return '<h2>信号量交接</h2><p class="hint">线程 A 的信号量初值为 1，因此由 A 发出第一条问候。选择节点查看输入、输出和源码。</p>' +
+      const lane = (sender, token, receiver) => '<div class="lane">' + sender + wire(label('释放', 'give')) + token + wire(label('取得', 'take')) + receiver + '</div>';
+      return '<h2>' + label('信号量交接','Semaphore handoff') + '</h2><p class="hint">' +
+        label('线程 A 的信号量初值为 1，因此由 A 发出第一条问候。选择节点查看输入、输出和源码。','A’s semaphore starts at 1, so A prints first. Select a node to inspect its inputs, outputs and source.') + '</p>' +
         lane(a, semaphore('b'), b) + lane(b, semaphore('a'), a);
     }
     function thread(id) {
       const name = id.toUpperCase(), own = 'thread_' + id + '_sem', other = 'thread_' + (id === 'a' ? 'b' : 'a') + '_sem';
       const start = id === 'a'
-        ? object('start', 'main()', '创建后显式启动', '线程对象 thread_a_data、栈 thread_a_stack_area、入口和优先级 7。',
-          'k_thread_create 以 K_FOREVER 创建线程；k_thread_start 将 A 置为可运行。', [102, 127])
-        : object('start', 'K_THREAD_DEFINE', '静态线程 · 无启动延迟', '线程标识 thread_b、入口、栈大小 1024、优先级 7、延迟 0。',
-          '线程 B 可参与调度。若它第一次取信号量时 A 尚未释放许可，B 会阻塞等待。', [97, 99]);
-      const loop = object('loop', 'hello_loop()', '两线程共用的函数', '名称及两个信号量指针；当前线程先取 ' + own + '。',
-        '持续打印问候并向 ' + other + ' 交接许可。', [36, 68]);
+        ? object('start', 'main()', label('创建后显式启动','Created, then explicitly started'), label('线程对象 thread_a_data、栈 thread_a_stack_area、入口和优先级 7。','Thread object thread_a_data, stack thread_a_stack_area, entry point and priority 7.'),
+          label('k_thread_create 以 K_FOREVER 创建线程；k_thread_start 将 A 置为可运行。','k_thread_create uses K_FOREVER as the start delay. k_thread_start makes A eligible to run.'), [102, 127])
+        : object('start', 'K_THREAD_DEFINE', label('静态线程 · 无启动延迟','Static thread · no start delay'), label('线程标识 thread_b、入口、栈大小 1024、优先级 7、延迟 0。','Thread ID thread_b, entry point, stack size 1024, priority 7 and delay 0.'),
+          label('线程 B 可参与调度。若它第一次取信号量时 A 尚未释放许可，B 会阻塞等待。','B is eligible to run. Its first take blocks if A has not yet given the semaphore.'), [97, 99]);
+      const loop = object('loop', 'hello_loop()', label('两线程共用的函数','Shared by both threads'), label('名称及两个信号量指针；当前线程先取 ' + own + '。','A name and two semaphore pointers. This thread first takes ' + own + '.'),
+        label('持续打印问候并向 ' + other + ' 交接许可。','Print a greeting each iteration and hand the turn to ' + other + '.'), [36, 68]);
       const operations = [
-        object('take', 'k_sem_take', '等待自己的许可', own + '、K_FOREVER。', '获得一个许可后才继续；计数为零时阻塞等待。', [45, 45]),
-        object('print', 'printk', '向控制台输出问候', '取当前线程名，缺省时使用入口函数名；读取 CPU 编号和 CONFIG_BOARD。', '输出一行问候，包含线程名、CPU 编号和板名。', [47, 61]),
-        object('busy', 'k_busy_wait', '忙等 100 ms', '100000 微秒。', '忙等结束后继续执行。', [64, 64]),
-        object('sleep', 'k_msleep', '休眠 500 ms', 'SLEEPTIME 定义为 500 毫秒。', '线程休眠，之后由调度器决定何时恢复运行。', [65, 65]),
-        object('give', 'k_sem_give', '交给另一线程', other + '。', '对方可取得许可；当前线程回到循环开头。', [66, 66])
+        object('take', 'k_sem_take', label('等待自己的许可','Wait for this thread’s turn'), own + ', K_FOREVER', label('获得一个许可后才继续；计数为零时阻塞等待。','Proceed after taking a token. Block if the count is zero.'), [45, 45]),
+        object('print', 'printk', label('向控制台输出问候','Print a greeting'), label('取当前线程名，缺省时使用入口函数名；读取 CPU 编号和 CONFIG_BOARD。','Read the thread name (falling back to the entry function name), CPU number and CONFIG_BOARD.'), label('输出一行问候，包含线程名、CPU 编号和板名。','Write a console line with the thread name, CPU number and board name.'), [47, 61]),
+        object('busy', 'k_busy_wait', label('忙等 100 ms','Busy-wait for 100 ms'), label('100000 微秒。','100000 microseconds.'), label('忙等结束后继续执行。','Continue after the busy wait.'), [64, 64]),
+        object('sleep', 'k_msleep', label('休眠 500 ms','Sleep for 500 ms'), label('SLEEPTIME 定义为 500 毫秒。','SLEEPTIME is 500 milliseconds.'), label('线程休眠，之后由调度器决定何时恢复运行。','The thread sleeps. The scheduler determines when it resumes.'), [65, 65]),
+        object('give', 'k_sem_give', label('交给另一线程','Hand over the turn'), other, label('对方可取得许可；当前线程回到循环开头。','The other thread can take the token. This thread returns to the start of the loop.'), [66, 66])
       ];
-      return '<h2>线程 ' + name + ' 的调用路径</h2><p class="hint">选择调用可查看作用及实际参数。</p><div class="calls">' +
-        start + entry(id) + loop + '</div><h3>每轮执行顺序</h3><ol>' + operations.map(node => '<li>' + node + '</li>').join('') + '</ol>';
+      return '<h2>' + label('线程 ' + name + ' 的调用路径','Call path for thread ' + name) + '</h2><p class="hint">' + label('选择调用可查看作用及实际参数。','Select a call to see its arguments and effects.') + '</p><div class="calls">' +
+        start + entry(id) + loop + '</div><h3>' + label('每轮执行顺序','One loop iteration') + '</h3><ol>' + operations.map(node => '<li>' + node + '</li>').join('') + '</ol>';
     }
     function inspect(id) {
       const item = objects.get(id);
       const [from, to] = item.lines;
       for (const node of graph.querySelectorAll('[data-id]')) node.setAttribute('aria-pressed', String(node.dataset.id === id));
       const range = from === to ? 'L' + from : 'L' + from + '-L' + to;
-      details.innerHTML = '<h2>' + item.title + '</h2><dl><div><dt>输入</dt><dd></dd></div><div><dt>输出</dt><dd></dd></div>' +
-        '<div><dt>源码</dt><dd><a href="' + source + '#' + range + '">src/main.c · ' + range + '</a></dd></div></dl>';
+      details.innerHTML = '<h2>' + item.title + '</h2><dl><div><dt>' + label('输入','Input') + '</dt><dd></dd></div><div><dt>' + label('输出','Output') + '</dt><dd></dd></div>' +
+        '<div><dt>' + label('源码','Source') + '</dt><dd><a href="' + source + '#' + range + '">src/main.c · ' + range + '</a></dd></div></dl>';
       details.querySelectorAll('dd')[0].textContent = item.input;
       details.querySelectorAll('dd')[1].textContent = item.output;
+      const view = views[tabs.findIndex(tab => tab.getAttribute('aria-selected') === 'true')];
+      languageLink.href = '?' + new URLSearchParams({lang: english ? 'zh' : 'en', view, node: id});
     }
     function select(index) {
       for (const [i, tab] of tabs.entries()) {
@@ -176,7 +197,8 @@
         tabs[keys[event.key]].focus();
       });
     }
-    select(0);
+    select(Math.max(0, views.indexOf(params.get('view'))));
+    if (objects.has(params.get('node'))) inspect(params.get('node'));
   </script>
 </body>
 </html>

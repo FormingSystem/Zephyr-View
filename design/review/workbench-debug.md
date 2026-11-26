@@ -1,5 +1,7 @@
 # 工作台、显示与调试侧栏设计评审
 
+**简体中文** | [English](workbench-debug.en.md)
+
 在 VS Code 中，使用者要能从左侧 Z 入口打开一个工作台，确认当前工程和构建方式，在当前功能区完成配置，并在调试时看到与本次构建对应的目标和调试器。以下项目以这个操作过程为验收单位。最新版设计将环境并入「工作区」，同页各功能区上下排列。旧版截图中的五项导航和左右面板仅用于定位已有问题。
 
 ## 配置面板的宽度与构建入口
@@ -45,3 +47,5 @@ VS Code 建议活动栏入口承载侧栏视图，并明确建议避免用它直
 | DBG-05 核对不同调试能力 | 按当前 Zephyr 构建、板和 runner 实际支持显示烧录、调试、attach 等动作。CMake 用户也可以使用现有调试适配器与已生成的 ELF。 | 当前可查看元数据并选择启动配置，无法据此证明支持所有 runner 命令或多镜像会话。要核对命令、runner 查询结果、域名及生成文件，并分别记录无硬件与真机测试。[Zephyr 构建、烧录与调试](https://docs.zephyrproject.org/latest/develop/west/build-flash-debug.html) |
 
 调试回归建议采用同一个可运行的测试应用，先配置并生成 ELF，再从侧栏选择启动配置，在入口函数断点处检查源文件、目标 ELF、变量、调用栈，最后终止会话并确认侧栏回到空闲状态。Windows 与 Linux 均应各记录一次，使用的板、运行器或模拟器应写清楚。目前材料没有覆盖这条完整链路。[VS Code 原生调试界面与操作](https://code.visualstudio.com/docs/debugtest/debugging)
+
+**简体中文** | [English](workbench-debug.en.md)
