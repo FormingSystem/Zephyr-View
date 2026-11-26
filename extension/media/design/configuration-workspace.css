@@ -1,0 +1,105 @@
+/* Keep the map controls and draft entry points within the configuration viewport. */
+.canvas-dock { display: none; }
+.map-page-header [data-canvas-action][hidden],
+.studio-layout > section[hidden] { display: none; }
+
+html[data-studio-expanded],
+html[data-studio-expanded] body { height: 100%; min-height: 0; overflow: hidden; }
+
+[data-studio-expanded] body > :is(header, footer),
+[data-studio-expanded] #debug-side { display: none; }
+
+[data-studio-expanded] .editor-shell {
+  align-items: stretch;
+  min-height: 0;
+  height: 100%;
+}
+
+[data-studio-expanded] .editor-shell > #main {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  inline-size: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+[data-studio-expanded] .map-page-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  gap: .35rem 1rem;
+  padding: .35rem var(--wb-space-inline, .8rem);
+}
+[data-studio-expanded] .map-page-header h1 { font-size: 1rem; }
+[data-studio-expanded] .map-page-header .actions { gap: .35rem; }
+[data-studio-expanded] .map-page-header button { padding: .2rem .5rem; }
+[data-studio-expanded] .map-page-header small { font-size: .85em; }
+
+[data-studio-expanded] #main .studio-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+  gap: 0;
+}
+[data-studio-expanded] .canvas-diagram,
+[data-studio-expanded] .canvas-diagram > .panel,
+[data-studio-expanded] .canvas-diagram .config-map {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+}
+[data-studio-expanded] .canvas-diagram > .panel { border: 0; border-radius: 0; }
+[data-studio-expanded] .canvas-diagram > .panel > .ph { display: none; }
+[data-studio-expanded] .canvas-diagram .config-map-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
+[data-studio-expanded] .map-toolbar { flex-shrink: 0; }
+
+[data-studio-expanded] .canvas-dock {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: .35rem;
+  padding: .25rem var(--wb-space-inline, .8rem);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+.canvas-dock button {
+  padding: .15rem .65rem;
+  border-color: transparent;
+  font-weight: 550;
+  color: var(--muted);
+}
+.canvas-dock button[aria-expanded="true"] {
+  background: var(--accent2);
+  color: var(--accent);
+  box-shadow: inset 0 -2px var(--accent);
+}
+.canvas-dock [data-pending-drafts]:not(:empty) {
+  color: var(--accent);
+  border-radius: 1em;
+  padding-inline: .45em;
+  background: var(--accent2);
+}
+[data-studio-expanded] :is(#canvas-drafts, #canvas-inspector) {
+  flex: 0 1 auto;
+  max-block-size: 45%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--line);
+}
+[data-studio-expanded] :is(#canvas-drafts, #canvas-inspector) .panel { border: 0; border-radius: 0; }
+[data-studio-expanded] #canvas-inspector .panel > .ph { display: none; }
+
+@media (max-width: 50rem) {
+  [data-studio-expanded] .map-page-header button span { display: none; }
+  [data-studio-expanded] .map-page-header button { min-width: 2.25rem; min-height: 2rem; }
+  [data-studio-expanded] .map-page-header > div:first-child { flex: 1 1 0; }
+  [data-studio-expanded] .map-page-header small { text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+}
