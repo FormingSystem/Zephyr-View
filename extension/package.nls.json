@@ -1,5 +1,6 @@
 {
   "visualProgram": "Visual program designer",
+  "liveSource": "Live C source diagram",
   "openVisualFile": "Open visual design file…",
   "threads": "Open Thread Studio",
   "gettingStarted": "Getting Started",

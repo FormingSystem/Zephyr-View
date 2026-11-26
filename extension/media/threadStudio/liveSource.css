@@ -1,0 +1,27 @@
+* { box-sizing:border-box; }
+body { margin:0; padding:clamp(8px,2vw,22px); color:var(--vscode-editor-foreground); background:var(--vscode-editor-background); font:var(--vscode-font-size)/1.4 var(--vscode-font-family); }
+header { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; }
+header strong { overflow-wrap:anywhere; }
+small,.empty { color:var(--vscode-descriptionForeground); }
+.warning { color:var(--vscode-editorWarning-foreground); }
+nav { position:sticky; top:0; z-index:1; display:flex; flex-wrap:wrap; gap:3px; margin:6px 0 10px; padding:5px 0; border-bottom:1px solid var(--vscode-panel-border); background:var(--vscode-editor-background); }
+[hidden] { display:none!important; }
+button { font:inherit; color:inherit; background:transparent; border:1px solid transparent; border-radius:4px; cursor:pointer; }
+button:focus-visible { outline:2px solid var(--vscode-focusBorder); outline-offset:1px; }
+button:not(:disabled):hover { background:var(--vscode-list-hoverBackground); }
+button:disabled { cursor:default; }
+nav button { padding:3px 7px; }
+nav [aria-pressed=true] { background:var(--vscode-list-activeSelectionBackground); color:var(--vscode-list-activeSelectionForeground); }
+main { display:grid; gap:7px; }
+.relation { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr); align-items:center; }
+.node { padding:6px 8px; text-align:start; border:1px solid var(--vscode-widget-border,var(--vscode-panel-border)); background:var(--vscode-textBlockQuote-background); min-width:0; }
+.node strong,.via code { display:block; overflow-wrap:anywhere; font:500 1em var(--vscode-editor-font-family,monospace); }
+.node small { display:block; margin-top:2px; }
+.via { position:relative; min-width:0; padding:2px 8px 6px; border-radius:0; border-bottom:1px solid var(--vscode-textLink-foreground); }
+.via::after { content:''; position:absolute; bottom:-4px; right:0; width:6px; height:6px; border:solid var(--vscode-textLink-foreground); border-width:1px 1px 0 0; transform:rotate(45deg); }
+[data-direction=access] .via { border-bottom-style:dashed; }
+.more { justify-self:center; color:var(--vscode-textLink-foreground); }
+.type { padding:5px 8px; border:1px solid var(--vscode-panel-border); border-radius:4px; }
+.type summary { cursor:pointer; }
+.type[open] .node { margin-block:5px; }
+.member { display:block; max-width:100%; text-align:start; overflow-wrap:anywhere; font-family:var(--vscode-editor-font-family,monospace); }

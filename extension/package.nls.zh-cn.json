@@ -1,5 +1,6 @@
 {
   "visualProgram": "可视化程序设计器",
+  "liveSource": "实时 C 源码图",
   "openVisualFile": "打开可视化设计文件…",
   "threads": "打开线程工作室",
   "gettingStarted": "入门指南",

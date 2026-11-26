@@ -14,7 +14,7 @@
     "baseContentUrl": "https://github.com/FormingSystem/Zephyr-View/blob/main/extension",
     "baseImagesUrl": "https://raw.githubusercontent.com/FormingSystem/Zephyr-View/main/extension"
   },
-  "version": "0.5.28",
+  "version": "0.5.29",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -35,6 +35,7 @@
     }],
     "commands": [
       {"command": "zephyrWorkbench.visualProgram", "title": "%visualProgram%", "category": "Zephyr View"},
+      {"command": "zephyrWorkbench.liveSource", "title": "%liveSource%", "category": "Zephyr View", "icon": "$(open-preview)"},
       {"command": "zephyrWorkbench.openVisualFile", "title": "%openVisualFile%", "category": "Zephyr View"},
       {"command": "zephyrWorkbench.threads", "title": "%threads%", "category": "Zephyr View"},
       {"command": "zephyrWorkbench.gettingStarted", "title": "%gettingStarted%", "category": "Zephyr View"},
@@ -96,6 +97,9 @@
       ]
     },
     "menus": {
+      "editor/title": [
+        {"command": "zephyrWorkbench.liveSource", "when": "editorLangId == c || editorLangId == cpp", "group": "navigation"}
+      ],
       "view/title": [
         {
           "command": "zephyrWorkbench.chooseBuild",

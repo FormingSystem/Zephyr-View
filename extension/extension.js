@@ -3,6 +3,7 @@
 const vscode = require('vscode');
 const {registerWorkbench} = require('./workbench');
 const {registerVisualProgram} = require('./visualProgramEditor');
+const {register_live_source} = require('./liveSourcePreview');
 const {openGuide, copyTutorialExamples} = require('./gettingStarted');
 const {pickDirectory} = require('./fileDialogs');
 const {path: displayPath, directory: directoryLabel} = require('./media/pathDisplay');
@@ -216,6 +217,7 @@ function activate(context) {
   const target = new DebugTarget(context);
   registerWorkbench(context, target);
   registerVisualProgram(context, target);
+  register_live_source(context);
   const register = (name, fn) => context.subscriptions.push(vscode.commands.registerCommand('zephyrWorkbench.' + name, fn));
   for (const view of ['zephyrWorkbench.projectTarget', 'zephyrWorkbench.target']) {
     context.subscriptions.push(vscode.window.registerTreeDataProvider(view, target));

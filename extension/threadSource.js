@@ -1,5 +1,7 @@
 'use strict';
 
+const {source_types} = require('./liveSourceTypes');
+
 const identifier = /^[A-Za-z_]\w*$/;
 const definitions = new Set(['K_SEM_DEFINE','K_MUTEX_DEFINE','K_MSGQ_DEFINE','K_FIFO_DEFINE','K_LIFO_DEFINE',
   'K_EVENT_DEFINE','K_TIMER_DEFINE','K_WORK_DEFINE','K_WORK_DELAYABLE_DEFINE','K_WORK_USER_DEFINE',
@@ -12,9 +14,12 @@ const timeoutArg = new Map(Object.entries({k_sem_take:1,k_mutex_lock:1,k_msgq_pu
 const directObject = value => /^\s*&?\s*([a-zA-Z_]\w*)\s*$/.exec(value || '')?.[1];
 
 // Remove comments and mask all literals without changing source offsets or line numbering.
-function mask(source) {
-  const trivia = /\/\*[\s\S]*?(?:\*\/|$)|\/\/(?:\\\r?\n|[^\n])*|(?:u8|[LuU])?R"([^\s()\\]{0,16})\([\s\S]*?\)\1"|"(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'/g;
-  return source.replace(trivia, text => text.replace(/[^\r\n]/g, text.startsWith('/') ? ' ' : '@'));
+function mask(source, incomplete) {
+  const trivia = /\/\*[\s\S]*?(\*\/|$)|\/\/(?:\\\r?\n|[^\n])*|(?:u8|[LuU])?R"([^\s()\\]{0,16})\([\s\S]*?(\)\2"|$)|"(?:\\(?:\r\n|[\s\S])|[^"\\\r\n])*("|\\?(?=[\r\n]|$))|'(?:\\(?:\r\n|[\s\S])|[^'\\\r\n])*('|\\?(?=[\r\n]|$))/g;
+  return source.replace(trivia, (text, comment, delimiter, raw, string, character, offset) => {
+    if ([comment, raw, string, character].some(end => end === '' || end === '\\')) incomplete?.(offset);
+    return text.replace(/[^\r\n]/g, text.startsWith('/') ? ' ' : '@');
+  });
 }
 
 function expressionValue(expression) {
@@ -39,11 +44,11 @@ function updateCondition(stack, directive) {
   else if (value !== 0 && branch.remaining !== 0) branch.remaining = undefined;
 }
 
-function tokenize(source) {
+function tokenize(source, incomplete) {
   const syntax = /#(?:\\\r?\n|[^\n])*|\s+|[A-Za-z_]\w*|\d[\w.]*|@+|->|::|./g;
   const tokens = [], conditions = [], macros = new Set();
   let line = 1;
-  for (const match of mask(source).matchAll(syntax)) {
+  for (const match of mask(source, incomplete).matchAll(syntax)) {
     const value = match[0], start = line;
     line += (value.match(/\n/g) || []).length;
     if (value.startsWith('#')) {
@@ -60,7 +65,7 @@ function tokenize(source) {
     tokens.push({value,start:match.index,end:match.index+value.length,line:start,
       conditional:conditions.some(branch=>branch.active === undefined)});
   }
-  return {tokens,macros};
+  return {tokens,macros,openConditional:conditions.length > 0};
 }
 
 function delimiters(tokens) {
@@ -159,8 +164,7 @@ function heldMutex(call, index, right, tokens, pairs) {
 }
 
 /** A per-translation-unit lexical index. Unknown preprocessor alternatives are source candidates. */
-function readSource(file, source, english = false, sourceId = file) {
-  const {tokens,macros} = tokenize(source), pairs = delimiters(tokens);
+function extract(file, source, english, sourceId, tokens, macros, pairs) {
   const result = {threads:[], functions:[], objects:[], calls:[], diagnostics:[]};
   const bindings = new Map();
   let owner, ownerEnd = -1, depth = 0;
@@ -210,4 +214,22 @@ function readSource(file, source, english = false, sourceId = file) {
   return result;
 }
 
-module.exports = {readSource};
+function readSource(file, source, english = false, sourceId = file) {
+  const {tokens,macros} = tokenize(source);
+  return extract(file,source,english,sourceId,tokens,macros,delimiters(tokens));
+}
+
+/** Inspect one editable buffer and distinguish unfinished syntax from a valid empty index. */
+function read_source_buffer(file, source, english = false) {
+  let unfinished;
+  const {tokens,macros,openConditional} = tokenize(source, offset => { unfinished ??= offset; });
+  if (unfinished !== undefined) {
+    return {issue:'incomplete',line:source.slice(0,unfinished).split('\n').length};
+  }
+  const pairs = delimiters(tokens);
+  const unpaired = tokens.find((token,index) => ['(',')','[',']','{','}'].includes(token.value) && !pairs.has(index));
+  if (unpaired || openConditional) return {issue:'incomplete',line:unpaired?.line ?? tokens.at(-1)?.line ?? 1};
+  return {records:extract(file,source,english,file,tokens,macros,pairs),types:source_types(source,tokens,pairs)};
+}
+
+module.exports = {readSource,read_source_buffer};
