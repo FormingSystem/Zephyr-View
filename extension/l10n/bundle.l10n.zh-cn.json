@@ -110,6 +110,7 @@
   "Select build inputs · {0}": "选择构建输入文件 · {0}",
   "Search by filename or path": "按文件名或路径搜索",
   "Current directory": "当前目录",
+  "Check the INI syntax and duplicate entries in .west/config.": "请检查 .west/config 的 INI 语法和重复配置项。",
   "The [manifest] section must specify path.": "[manifest] 段需要设置 path。",
   "The manifest file is missing or empty.": "清单文件不存在或内容为空。",
   "Expected a manifest mapping.": "清单的 manifest 字段应为映射。",

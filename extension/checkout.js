@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const {hasWestDirectory} = require('./westWorkspace');
 
 async function localFile(dir, name) {
   try {
@@ -33,7 +34,7 @@ async function containingCheckout(directory) {
   for (let dir = path.resolve(directory);;) {
     if (await isZephyrSource(dir)) return dir;
     const parent = path.dirname(dir);
-    if (parent === dir || await localFile(dir, '.west/config')) return;
+    if (parent === dir || await hasWestDirectory(dir)) return;
     dir = parent;
   }
 }

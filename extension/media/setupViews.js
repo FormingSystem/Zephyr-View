@@ -95,21 +95,25 @@ const setupViews=(()=>{
         group===3?'':processVariables(s.environmentRows,s.environmentCacheStatus)));
   }
   function west(s){
-    const open=b(tr('打开已有工作区','Open existing workspace'),'setup:folder','','folder')+(s.folder?b(tr('输入路径…','Enter path…'),'setup:folder:typed','plain'):'');
+    const open=b(tr('打开已有工作区','Open existing workspace'),'setup:westOpen','','folder')+
+      (s.folder?b(tr('输入路径…','Enter path…'),'setup:westOpen:typed','plain'):'')+
+      b(tr('初始化…','Initialize…'),'setup:westInit','','',!s.trusted)+
+      (s.root?b(tr('重新读取','Reread workspace'),'setup:refresh','plain','refresh'):'');
     let content;
     if(s.root){
-      const details=row('topdir',ZephyrPathDisplay.path(s.root))+row('manifest',ZephyrPathDisplay.path(s.manifest)||'—','setup:manifest',tr('打开','Open'))+
+      const details=row('topdir',ZephyrPathDisplay.path(s.root))+row('manifest',ZephyrPathDisplay.path(s.manifest)||'—',s.manifest&&'setup:manifest',tr('打开','Open'))+
         row(tr('本地配置','Local configuration'),'.west/config','setup:westConfig',tr('打开','Open'));
       const revisions=s.projects.slice(0,5).map(p=>row(esc(p.name),p.revision)).join('');
-      const empty=s.invalid?tr('无法解析清单，请打开文件检查。','The manifest could not be parsed. Open the file to check it.')
+      const empty=s.invalid?tr('请在工作区诊断中查看受影响的文件。','See workspace diagnostics for the affected file.')
         :tr('当前文件未读到直接声明的项目。','No project entries were read directly from this file.');
       const title=s.manifestScope==='effective'?tr('清单项目（含导入）','Resolved manifest projects'):
         tr('当前清单直接声明的项目','Projects declared in this manifest');
       const note=s.manifestScope==='partial'?wrap(tr('导入清单未解析，当前列表只包含直接声明的项目。','Imports are unresolved. Only directly declared projects are listed.')):'';
-      content=panel(esc(s.root.split(/[\\/]/).pop()),wrap(details),b(tr('检查清单','Inspect manifest'),'setup:list','','',!s.tools.west||!s.trusted))+
+      content=panel(esc(s.root.split(/[\\/]/).pop()),wrap(details),(s.invalid?b(tr('修复清单位置…','Repair manifest location…'),'setup:westRepair','primary','',!s.trusted):
+          b(tr('检查清单','Inspect manifest'),'setup:list','','',!s.tools.west||!s.trusted)))+
         panel(title+' · '+s.projects.length,note+wrap(revisions||esc(empty)),b(tr('管理模块','Manage modules'),'page:modules','plain'));
     }else{
-      content=panel(tr('尚未关联 west 工作区','No linked west workspace'),wrap(tr('可打开含 .west/config 的目录。独立应用可直接使用 CMake。','Open a directory containing .west/config, or build a standalone application with CMake.')));
+      content=panel(tr('尚未关联 west 工作区','No linked west workspace'),wrap(tr('打开工作区或其子目录，或从本地、远程清单初始化。','Open a workspace or subdirectory, or initialize one from a local or remote manifest.')));
     }
     return workspaceSection('west-workspace',tr('west 工作区','west workspace'),open,content);
   }

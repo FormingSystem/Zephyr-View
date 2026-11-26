@@ -2,6 +2,7 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const {hasWestDirectory} = require('./westWorkspace');
 const os = require('node:os');
 const {isApplication} = require('./applicationCatalog');
 const {localModule} = require('./modules');
@@ -48,7 +49,7 @@ async function inspectLocalModule(dir,diagnostics,explicit=false) {
 
 async function nearbyRoot(directory) {
   const parent = path.dirname(directory);
-  if ([path.parse(parent).root,os.homedir(),os.tmpdir()].includes(parent) || await file(parent,'.west/config')) return;
+  if ([path.parse(parent).root,os.homedir(),os.tmpdir()].includes(parent) || await hasWestDirectory(parent)) return;
   return parent;
 }
 
@@ -86,7 +87,7 @@ async function scanLocations(folder, westRoot, checkout, moduleSource = checkout
       if (!checkout) records.push(entry);
       return;
     }
-    if (!roots.has(dir) && await file(dir,'.west/config')) {
+    if (!roots.has(dir) && await hasWestDirectory(dir)) {
       if (entry?.kind === 'ZEPHYR_BASE') records.push(entry);
       return;
     }
@@ -115,7 +116,7 @@ async function scanLocations(folder, westRoot, checkout, moduleSource = checkout
     const parent = await nearbyRoot(moduleSource);
     if (parent && !roots.has(parent)) {
       for (const dir of await children(parent)) {
-        if (seen.has(dir) || await file(dir,'.west/config') || await isZephyrSource(dir)) continue;
+        if (seen.has(dir) || await hasWestDirectory(dir) || await isZephyrSource(dir)) continue;
         const name = path.basename(dir);
         if (['modules','components','deps','third_party','bootloader'].includes(name)) {
           await visit(dir,0,name==='modules' ? 2 : 1);

@@ -415,6 +415,27 @@ function registerWorkbench(context, provider) {
     }
     if (m.action === 'studioSaveAs' || m.action === 'studioSave') return save_studio_input(s, m);
     const same_folder = () => Boolean(s.folder && s.folder.uri.toString() === provider.folder()?.uri.toString());
+    if (['westOpen','westInit','westRepair'].includes(m.action) && page === 'workspace') {
+      const actions = require('./westWorkspaceActions');
+      const owner = panel;
+      const current = () => owner === panel && page === 'workspace' &&
+        provider.folder()?.uri.toString() === s.folder?.uri.toString() &&
+        (m.action === 'westOpen' || vscode.workspace.isTrusted);
+      if (!current()) return;
+      if (m.action === 'westRepair') {
+        await actions.repair(s,current);
+        if (current()) {resetDiscovery(s.folder);return refresh();}
+        return;
+      }
+      const root = m.action === 'westOpen' ? await actions.openExisting(s,m.id === 'typed',current) :
+        await actions.initialize(s,current);
+      if (root && current()) {
+        if (!s.folder || path.relative(root,s.folder.uri.fsPath)) return vscode.commands.executeCommand('vscode.openFolder',Uri.file(root));
+        resetDiscovery(s.folder);
+        return refresh();
+      }
+      return;
+    }
     if (m.action === 'openDiscoveryFile' && same_folder() && vscode.workspace.isTrusted) {
       const issues = [...(s.discoveryIssues || []), ...(s.boardIssues || [])];
       if (typeof m.id !== 'string' || !path.isAbsolute(m.id) || !issues.some(issue => issue.path === m.id)) return;

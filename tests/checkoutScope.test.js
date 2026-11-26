@@ -208,3 +208,22 @@ test('broken manifest and module files name their source alongside valid candida
   assert.ok(explicit.locations.diagnostics.some(d=>d.path===externalMetadata));
   assert.ok(explicit.locations.diagnostics.some(d=>d.path===path.join(missing,'zephyr','module.yml')));
 });
+
+test('missing west config stays attached to its own topdir and rereads the repaired custom manifest',async t=>{
+  const {root,b,open,prefs} = await fixture(t);
+  const workspace = path.join(root,'device-workspace');
+  const app = path.join(workspace,'app');
+  await fs.mkdir(path.join(workspace,'.west'),{recursive:true});
+  await fs.mkdir(app);
+  prefs.set(app,{locations:{ZEPHYR_BASE:b.source}});
+  const missing = await open(app);
+  assert.equal(missing.manifest.root.fsPath,workspace);
+  assert.equal(missing.manifest.invalid,true);
+  assert.equal(missing.manifest.diagnostics[0].path,path.join(workspace,'.west','config'));
+  await write(workspace,'.west/config','[manifest]\npath = product\nfile = config/product.yml\n');
+  await write(workspace,'product/config/product.yml','manifest:\n  projects: []\n');
+  const repaired = await open(app);
+  assert.equal(repaired.manifest.root.fsPath,workspace);
+  assert.equal(repaired.manifest.uri.fsPath,path.join(workspace,'product','config','product.yml'));
+  assert.equal(repaired.manifest.invalid,false);
+});

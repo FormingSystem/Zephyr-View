@@ -10,28 +10,20 @@ const {importsProjects, manifestInputs} = require('./effectiveManifest');
 const {containingCheckout, manifestCheckout, sameCheckout} = require('./checkout');
 const {hasCurrentBuild, hasFile, readText, readTarget, resolvePath} = require('./target');
 
+const {westTopdir, inspectConfig} = require('./westWorkspace');
+
 async function findWestRoot(folder) {
-  let directory = folder;
-  while (true) {
-    if (await hasFile(vscode.Uri.joinPath(directory, '.west', 'config'))) return directory;
-    const parent = vscode.Uri.joinPath(directory, '..');
-    if (parent.toString() === directory.toString()) return undefined;
-    directory = parent;
-  }
+  const root = await westTopdir(folder.fsPath);
+  return root && vscode.Uri.joinPath(folder, path.relative(folder.fsPath,root).split(path.sep).join('/'));
 }
 
 function manifestLocation(root, config) {
-  const fields = {};
-  let section;
-  for (const line of config.split(/\r?\n/)) {
-    const header = /^\s*\[([^\]]+)\]/.exec(line);
-    if (header) section = header[1].toLowerCase();
-    const entry = /^\s*(path|file)\s*[=:]\s*(.+?)\s*$/i.exec(line);
-    if (section === 'manifest' && entry) fields[entry[1].toLowerCase()] = entry[2];
-  }
-  if (fields.path) {
-    const repository = vscode.Uri.joinPath(root, fields.path);
-    return {repository, uri:vscode.Uri.joinPath(repository, fields.file || 'west.yml')};
+  const parsed = inspectConfig(config);
+  if (!parsed) throw Error(vscode.l10n.t('Check the INI syntax and duplicate entries in .west/config.'));
+  const repositoryPath = parsed.fields.path?.value;
+  if (repositoryPath) {
+    const repository = vscode.Uri.joinPath(root,repositoryPath);
+    return {repository, uri:vscode.Uri.joinPath(repository, parsed.fields.file?.value || 'west.yml')};
   }
 }
 
@@ -94,6 +86,7 @@ function explicitSource(folder, context) {
 async function workspaceManifest(folder, checkout, explicit, method) {
   const root = await findWestRoot(folder.uri);
   let manifest = await readManifest(folder.uri, root);
+  if (root && manifest.invalid) return manifest;
   if (checkout && ((!manifest.uri && !root) || (manifest.checkout && !await sameCheckout(checkout,manifest.checkout)))) {
     // A separate source tree can live beside the manifest repository under the same west topdir.
     manifest = await readManifest(vscode.Uri.file(checkout));
