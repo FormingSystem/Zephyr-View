@@ -5,7 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const {isApplication} = require('./applicationCatalog');
 const {localModule} = require('./modules');
-const {localFile: file, isZephyrSource} = require('./checkout');
+const {localFile: file, isZephyrSource, sameCheckout} = require('./checkout');
 const {l10n} = require('vscode');
 
 const containers = new Set(['applications','apps','modules','sdk','sdks','toolchains','components','bootloader','deps','third_party']);
@@ -46,15 +46,21 @@ async function inspectLocalModule(dir,diagnostics,explicit=false) {
   }
 }
 
-async function scanLocations(folder, westRoot, checkout) {
+async function nearbyRoot(directory) {
+  const parent = path.dirname(directory);
+  if ([path.parse(parent).root,os.homedir(),os.tmpdir()].includes(parent) || await file(parent,'.west/config')) return;
+  return parent;
+}
+
+async function scanLocations(folder, westRoot, checkout, moduleSource = checkout) {
   const own = await classify(folder);
   const roots = new Set([folder]);
   if (checkout) roots.add(checkout);
   if (westRoot) roots.add(westRoot);
   else if (own?.kind === 'application' || own?.kind === 'ZEPHYR_BASE') {
     const parent = path.dirname(folder);
-    const enclosing = ['apps','applications'].includes(path.basename(parent)) ? path.dirname(parent) : parent;
-    if (enclosing !== path.parse(enclosing).root && enclosing !== os.homedir() && enclosing !== os.tmpdir()) roots.add(enclosing);
+    const enclosing = await nearbyRoot(['apps','applications'].includes(path.basename(parent)) ? parent : folder);
+    if (enclosing) roots.add(enclosing);
   }
   const records = [];
   const diagnostics = [];
@@ -64,13 +70,16 @@ async function scanLocations(folder, westRoot, checkout) {
     seen.add(dir);
     const entry = dir===folder ? own : await classify(dir);
     // A peer checkout never supplies this checkout's applications or modules.
-    if (checkout && entry?.kind === 'ZEPHYR_BASE' && path.relative(checkout,dir)) return;
+    if (moduleSource && entry?.kind === 'ZEPHYR_BASE' && !await sameCheckout(moduleSource,dir)) {
+      if (!checkout) records.push(entry);
+      return;
+    }
     if (!roots.has(dir) && await file(dir,'.west/config')) {
       if (entry?.kind === 'ZEPHYR_BASE') records.push(entry);
       return;
     }
     if (entry) records.push(entry);
-    const moduleDir=entry ? undefined : await fs.lstat(path.join(dir,'zephyr')).catch(()=>undefined);
+    const moduleDir=entry && entry.kind!=='application' ? undefined : await fs.lstat(path.join(dir,'zephyr')).catch(()=>undefined);
     const local=moduleDir?.isDirectory() && await inspectLocalModule(dir,diagnostics);
     if (local) records.push({...local,kind:'modules'});
     if ((entry?.kind==='ZEPHYR_BASE' || entry?.kind==='ZEPHYR_SDK_INSTALL_DIR' || local) && !roots.has(dir)) return;
@@ -89,8 +98,25 @@ async function scanLocations(folder, westRoot, checkout) {
   }
   // Start with the broadest enclosing root, so shared directories are visited once.
   for (const dir of [...roots].sort((a,b)=>a.length-b.length)) await visit(dir,1);
+  // A sample may be several directories below its checkout. Its offline modules can live beside that checkout.
+  if (moduleSource && !westRoot) {
+    const parent = await nearbyRoot(moduleSource);
+    if (parent && !roots.has(parent)) {
+      for (const dir of await children(parent)) {
+        if (seen.has(dir) || await file(dir,'.west/config') || await isZephyrSource(dir)) continue;
+        const name = path.basename(dir);
+        if (['modules','components','deps','third_party','bootloader'].includes(name)) {
+          await visit(dir,0,name==='modules' ? 2 : 1);
+        } else if (await fs.stat(path.join(dir,'zephyr')).then(s=>s.isDirectory(),()=>false)) {
+          const local = await inspectLocalModule(dir,diagnostics);
+          if (local) records.push({...local,kind:'modules'});
+        }
+      }
+    }
+  }
   const byPath = (a,b) => a.path.localeCompare(b.path);
-  return {records:records.sort(byPath),diagnostics:diagnostics.sort(byPath)};
+  const unique=new Map(records.map(entry=>[entry.kind+'\0'+entry.path,entry]));
+  return {records:[...unique.values()].sort(byPath),diagnostics:diagnostics.sort(byPath)};
 }
 
 module.exports = {scanLocations, isZephyrSource, inspectLocalModule};

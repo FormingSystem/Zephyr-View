@@ -12,14 +12,14 @@ from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 
 
-def prepare(destination):
+def prepare(destination, extra_packages=()):
     venv.EnvBuilder(with_pip=False).create(destination)
     child = destination / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
     site = Path(subprocess.check_output(
         [child, "-I", "-c", "import sysconfig; print(sysconfig.get_path('purelib'))"], text=True
     ).strip())
     source = Path(sysconfig.get_path("purelib")).resolve()
-    pending = ["PyYAML", "jsonschema", "pyelftools", "packaging", "intelhex"]
+    pending = ["PyYAML", "jsonschema", "pyelftools", "packaging", "intelhex", *extra_packages]
     installed = set()
     while pending:
         name = canonicalize_name(pending.pop())
@@ -46,4 +46,4 @@ if __name__ == "__main__":
     directory = Path(sys.argv[1]).resolve()
     if directory.exists():
         raise SystemExit("Choose a new temporary directory for the isolated interpreter")
-    prepare(directory)
+    prepare(directory, sys.argv[2:])

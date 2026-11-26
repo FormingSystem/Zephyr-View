@@ -1,7 +1,7 @@
 'use strict';
 const vscode = require('vscode');
 const path = require('node:path');
-const modules=require('./modules');
+const {moduleArguments}=require('./moduleBuild');
 const {buildVariables, cacheSourceConflict, cacheStatus, parseDefinition} = require('./buildVariables');
 const {build_parallelism, build_arguments, job_count} = require('./buildParallelism');
 const {compiler_request, definition_matches, forget_changed_choices} = require('./compiler_selection');
@@ -204,12 +204,8 @@ async function describe(context,s,method) {
   try {extra=definitions(argsText,projectBoard ? undefined : board);} catch(e) {error=e.message;}
   const compiler=compiler_request(context,s,target,extra);
   extra=compiler.args;
-  const record=modules.selectedState(context,{...s,setup:{app}},method);
-  const paths=modules.entries(s,record).filter(e=>record.selected.includes(e.name)&&(method==='CMake'||e.kind!=='workspace'))
-    .map(e=>path.resolve(modules.rootOf(s),e.path||e.name));
-  const flag=method==='west'?'EXTRA_ZEPHYR_MODULES':'ZEPHYR_MODULES';
-  if(paths.length&&!extra.some(v=>v.split('=')[0].split(':')[0]==='-D'+flag))extra.push('-D'+flag+'='+paths.join(';'));
   const env = taskEnvironment(context,s);
+  extra=await moduleArguments(context,s,target,method,extra,env);
   const mode=await buildMode({target:s.target,method,preference:context.workspaceState.get(systemKey(s,app)),
     westDefault:()=>readWestOption(context,s,'build.sysbuild')});
   const files = await filePlan(context,s,{...target,system:mode.enabled},extra,env);

@@ -4,6 +4,8 @@ const path=require('node:path');
 const vscode=require('vscode');
 const yaml=require('js-yaml');
 const {execFile}=require('node:child_process');
+const {sameCheckout}=require('./checkout');
+const {hasCurrentBuild,readText}=require('./target');
 const exec=require('node:util').promisify(execFile);
 const sha=value=>/^[0-9a-f]{40}$/i.test(value||'');
 function repositoryURL(url) {
@@ -34,8 +36,8 @@ async function localModule(dir,contained=false) {
   const meta=record.file ? yaml.load(record.yaml,{schema:yaml.JSON_SCHEMA}) : {};
   if (!meta || typeof meta!=='object' || Array.isArray(meta)) return;
   const name=meta.name??path.basename(dir);
-  if (typeof name!=='string' || !/^[\w.-]+$/.test(name) || ['.','..'].includes(name)) return;
-  return {name,path:dir,evidence:record.file||'zephyr/CMakeLists.txt + zephyr/Kconfig'};
+  if (typeof name!=='string' || !name.trim() || /[\r\n\x00]/.test(name)) return;
+  return {name,path:await fs.realpath(dir),evidence:record.file||'zephyr/CMakeLists.txt + zephyr/Kconfig'};
 }
 function git(s,cwd,args){return exec(s.tools.git||'git',['-c','core.hooksPath='+ (process.platform==='win32'?'NUL':'/dev/null'),...args],
   {cwd,windowsHide:true,maxBuffer:8*1024*1024,timeout:120000,env:{...process.env,GIT_TERMINAL_PROMPT:'0'}}).then(r=>r.stdout.trim());}
@@ -43,15 +45,35 @@ function rootOf(s){return (s.manifest.root||s.folder.uri).fsPath;}
 function scope(s,method){return 'modules.v1:'+method+':'+(method==='west'?rootOf(s):s.setup.app);}
 function selectedState(context,s,method){return context.workspaceState.get(scope(s,method),{selected:[],extras:[]});}
 function entries(s,record){
-  const all=[...s.manifest.projects.map(p=>({...p,kind:'workspace'})),...record.extras];
-  const names=new Set(all.map(entry=>entry.name));
-  const locations=new Set(all.map(entry=>path.resolve(rootOf(s),entry.path||entry.name)));
-  for(const local of s.localModules||[]){
-    if(!names.has(local.name) && !locations.has(local.path)){
-      all.push({...local,kind:'local'});names.add(local.name);locations.add(local.path);
-    }
+  const manifest=s.manifest.projects.map(project=>({...project,kind:'workspace'}));
+  const local=(s.localModules||[]).map(module=>({...module,kind:'local'}));
+  const candidates=s.manifest.root ? [...manifest,...record.extras,...local] : [...record.extras,...local,...manifest];
+  const all=[],names=new Set(),locations=new Set();
+  for(const entry of candidates){
+    const dir=path.resolve(rootOf(s),entry.path||entry.name);
+    const key=process.platform==='win32'?dir.toLowerCase():dir;
+    if(names.has(entry.name)||locations.has(key))continue;
+    names.add(entry.name);locations.add(key);all.push(entry);
   }
   return all;
+}
+
+/** This is Zephyr's module list for a generated image, including modules supplied by the application itself. */
+async function resolvedModules(s){
+  if(!s.setup || !hasCurrentBuild(s))return [];
+  const build=s.target.buildDir||s.build;
+  if(!build)return [];
+  const kconfig=s.target.cache?.get('KCONFIG_BINARY_DIR') || path.join(build.fsPath,'Kconfig');
+  const [contents,moduleKconfig]=await Promise.all([readText(vscode.Uri.joinPath(build,'zephyr_modules.txt')),
+    readText(vscode.Uri.file(path.resolve(build.fsPath,kconfig,'Kconfig.modules')))]);
+  // In this branch Zephyr rewrites Kconfig.modules but can leave an older zephyr_modules.txt behind.
+  if(moduleKconfig.trim()==='# No west and no Zephyr modules')return [];
+  const modules=[];
+  for(const line of contents.split(/\r?\n/)){
+    const match=/^"([^"]+)":"([^"]+)":"[^"]*"$/.exec(line);
+    if(match)modules.push({name:match[1],path:path.resolve(s.target.zephyrBase||s.environment?.ZEPHYR_BASE||build.fsPath,match[2]),evidence:'zephyr_modules.txt'});
+  }
+  return modules;
 }
 function managedDirectory(root,relative){
   if(typeof relative!=='string'||!relative||path.isAbsolute(relative)||relative.split(/[\\/]/).some(v=>v==='..'||v.startsWith('.')))throw Error('检出目录必须在当前工程内。');
@@ -69,7 +91,8 @@ async function checkout(s,entry){
   const root=rootOf(s);
   const dir=entry.kind==='local'?entry.path:path.resolve(root,entry.checkout||entry.path||entry.name);
   if(entry.kind==='local') {
-    try {await metadata(dir);return {status:'本地已识别'};}catch{return {status:'待本机验证'};}
+    try {if(await localModule(dir))return {status:'本地已识别'};}catch{}
+    return {status:'待本机验证'};
   }
   if(!await stat(dir))return {status:'未下载'};
   if(!vscode.workspace.isTrusted||!await stat(path.join(dir,'.git')))return {status:'待本机验证'};
@@ -83,9 +106,13 @@ async function checkout(s,entry){
 }
 async function rows(context,s,method){
   if(!s.folder)return [];
-  const record=selectedState(context,s,method),all=entries(s,record),result=[];
+  const configured=await resolvedModules(s);
+  const record=selectedState(context,s,method);
+  const all=entries({...s,localModules:[...(s.localModules||[]),...configured]},record),result=[];
   for(let i=0;i<all.length;i+=6)result.push(...await Promise.all(all.slice(i,i+6).map(async entry=>{
     const state=await checkout(s,entry);
+    const applied=configured.find(module=>module.name===entry.name);
+    state.configured=Boolean(applied && await sameCheckout(applied.path,path.resolve(rootOf(s),entry.path||entry.name)));
     return [entry.name,({workspace:'工作区清单',local:'本地模块',official:'Zephyr 官方仓库',git:'个人仓库'})[entry.kind],
       entry.revision||'本地检出',state.status,record.selected.includes(entry.name),entry,state];
   })));
@@ -154,25 +181,35 @@ async function operate(context,s,method,request){
     });
   }
   if(op==='select'){
-    find(value.name);record.selected=record.selected.filter(n=>n!==value.name);
+    if(!all.some(entry=>entry.name===value.name) && value.checked){
+      const applied=(await resolvedModules(s)).find(module=>module.name===value.name);
+      if(!applied)throw Error('模块已变更，请刷新。');
+      record.extras.push({...applied,kind:'local'});
+    }
+    record.selected=record.selected.filter(n=>n!==value.name);
     if(value.checked)record.selected.push(value.name);
   }else if(op==='add'){
     const {name,path:location,kind,revision,url,checkout:checkoutDir,subdir}=value;
     if(typeof location!=='string'||/[;"\r\n]/.test(location))throw Error('模块路径包含不可用的字符。');
-    if(!/^[\w.-]+$/.test(name)||['.','..'].includes(name)||all.some(p=>p.name===name))throw Error('无效或重复的模块名。');
+    let imported;
     if(kind==='local'){
-      const dir=path.resolve(s.folder.uri.fsPath,location),record=await metadata(dir);
-      const identity=record.file?yaml.load(record.yaml,{schema:yaml.JSON_SCHEMA})?.name:undefined;
-      if((identity||path.basename(dir))!==name)throw Error('模块名称已变更。');
+      imported=await localModule(path.resolve(s.folder.uri.fsPath,location));
+      if(!imported || imported.name!==name)throw Error('模块名称已变更。');
     }else{
+      if(!/^[\w.-]+$/.test(name)||['.','..'].includes(name))throw Error('无效的模块名。');
       if(!['git','official'].includes(kind)||!repositoryURL(url)||!revision)throw Error('无效的模块来源。');
       const dir=managedDirectory(rootOf(s),checkoutDir||location);
       managedDirectory(rootOf(s),location);
       if(all.some(e=>path.relative(dir,path.resolve(rootOf(s),e.checkout||e.path||e.name))===''))throw Error('此目录已由其他模块使用。');
     }
-    record.extras.push({name,path:kind==='local'?path.resolve(s.folder.uri.fsPath,location):location,kind,revision,url,checkout:checkoutDir,subdir});
-    record.selected.push(name);
+    const existing=all.find(entry=>entry.name===name);
+    const detached=existing?.kind==='workspace' && !s.manifest.root && imported;
+    if(existing && !detached && !(imported && await sameCheckout(imported.path,path.resolve(rootOf(s),existing.path||existing.name))))
+      throw Error('该模块名已由其他目录使用。');
+    if(!existing || detached || (existing.kind==='local'&&!record.extras.some(entry=>entry.name===name)))
+      record.extras.push({name,path:imported?.path||location,kind,revision,url,checkout:checkoutDir,subdir});
+    if(!record.selected.includes(name))record.selected.push(name);
   }else throw Error('未知模块操作。');
   await context.workspaceState.update(scope(s,method),record);
 }
-module.exports={rows,operate,selectedState,entries,rootOf,scope,localModule};
+module.exports={rows,operate,selectedState,entries,rootOf,scope,localModule,resolvedModules};

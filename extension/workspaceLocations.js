@@ -74,14 +74,16 @@ function createDiscovery(){
     if(variant && !/^zephyr(?:\/|$)/.test(variant))skip.add('ZEPHYR_SDK_INSTALL_DIR');
     if(Array.isArray(saved.modules))skip.add('modules');
     const westRoot=s.manifest.root?.fsPath;
-    const searchSource=chosenSource(folder) ? undefined : s.checkout;
-    const scope=JSON.stringify([westRoot,searchSource]);
-    if(scans.get(id)?.scope!==scope)scans.set(id,{scope,records:scanLocations(root,westRoot,searchSource)});
+    const selectedSource=chosenSource(folder) || source;
+    const searchSource=chosenSource(folder) ? undefined : source;
+    const scope=JSON.stringify([westRoot,searchSource,selectedSource]);
+    if(scans.get(id)?.scope!==scope)scans.set(id,{scope,records:scanLocations(root,westRoot,searchSource,selectedSource)});
     const scan=scans.get(id);
     let records,diagnostics;
     try{({records,diagnostics}=await scan.records);}
     catch(error){if(scans.get(id)===scan)scans.delete(id);throw error;}
-    const manifest=new Map(s.manifest.projects.map(p=>[p.name,path.resolve(s.manifest.root?.fsPath||root,p.path||p.name)]));
+    // Manifest paths are relative to a west topdir. A detached west.yml is not a map of local checkouts.
+    const manifest=new Map(westRoot ? s.manifest.projects.map(p=>[p.name,path.resolve(westRoot,p.path||p.name)]) : []);
     const conflicts=records.filter(r=>r.kind==='modules'&&manifest.has(r.name)&&!same(manifest.get(r.name),r.path))
       .map(r=>({name:r.name,path:relative(root,manifest.get(r.name)),other:relative(root,r.path)}));
     const available=records.filter(r=>r.kind!=='modules'||!manifest.has(r.name));
@@ -97,8 +99,9 @@ function createDiscovery(){
     const paths=Array.isArray(saved.modules)?saved.modules.map(v=>absolute(root,v)).filter(Boolean):selectedModules;
     const discovered=new Map(records.filter(x=>x.kind==='modules').map(x=>[x.path,x]));
     diagnostics=[...diagnostics];
-    s.localModules=(await Promise.all([...new Set(paths)].map(dir=>discovered.get(dir)||
+    const local=(await Promise.all([...new Set(paths)].map(dir=>discovered.get(dir)||
       inspectLocalModule(dir,diagnostics,true)))).filter(Boolean);
+    s.localModules=[...new Map(local.map(module=>[module.path,module])).values()];
     const signature=JSON.stringify(groups);
     s.locations={groups,origins,conflicts,diagnostics,signature,hidden:dismissed.get(id)===signature};
   }

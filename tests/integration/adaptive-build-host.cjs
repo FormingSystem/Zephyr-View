@@ -35,7 +35,8 @@ function load_host() {
       return name === 'vscode' ? vscode : original.call(this, name, ...args);
     };
     return {...extension('./buildSetup'), ...extension('./target'), ...extension('./boardCatalog'), ...extension('./flashMetadata'),
-      ...extension('./configurationFiles'), ...extension('./configurationFilePicker')};
+      ...extension('./configurationFiles'), ...extension('./configurationFilePicker'),
+      ...extension('./workspaceLocations'), ...extension('./workspace'), moduleCatalog:extension('./modules')};
   } finally { Module._load = original; }
 }
 
