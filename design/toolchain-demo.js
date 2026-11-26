@@ -39,14 +39,17 @@ function demo_compiler_catalog() {
   }
   for (const [id, option] of Object.entries(model.demoExternalGcc || {})) options.push({...option,id});
   const chosen = model.demoCompilerSelection?.[scope];
-  for (const option of options) option.selected = option.id === chosen;
   const configured = matchingExampleCache()?.values.CMAKE_C_COMPILER?.value;
+  for (const option of options) {
+    option.selected = option.id === chosen;
+    if (ZephyrPathDisplay.path(option.path)===ZephyrPathDisplay.path(configured)) option.compatibility='configured';
+  }
   const requestedDefinitions = exampleArguments().split(/\r?\n/).map(line=>line.trim().replace(/^-D/,''))
     .filter(line=>demo_compiler_definition(line.split(/[=:]/,1)[0]));
   const requested = requestedDefinitions[0];
   return {scope, options, architecture, architecture_source:architecture ? 'board metadata' : undefined,
     mode:cross?'cross':'sdk', variant:activeVariant(), configured, requested, requestedDefinitions, overridden:Boolean(chosen),
-    recommendedId:requested && !chosen ? undefined : options.find(option=>option.compatibility==='sdk')?.id,
+    recommendedId:cross || (requested && !chosen) ? undefined : options.find(option=>option.source==='sdk')?.id,
     reason:!model.board?'selectBoard':requested && !chosen?'explicit':!architecture?'architecture':!options.length?'unavailable':undefined};
 }
 

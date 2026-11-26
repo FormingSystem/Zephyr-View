@@ -172,6 +172,10 @@
 .compiler-caption,.compiler-controls,.toolchain-reading {display:flex;align-items:baseline;flex-wrap:wrap;gap:.25em .8em}
 .compiler-controls {align-items:center}
 .compiler-controls select {flex:0 1 32em;min-inline-size:0;max-inline-size:100%;text-overflow:ellipsis}
+.compiler-reading {min-inline-size:0;padding-block:.15em;display:grid;gap:.12em}
+.compiler-reading > div {display:flex;align-items:baseline;flex-wrap:wrap;gap:.12em .65em}
+.compiler-reading :is(strong,code) {font-family:var(--vscode-editor-font-family,monospace);overflow-wrap:anywhere}
+.compiler-reading code {width:fit-content;max-width:100%;white-space:normal}
 .toolchain-reading span,.toolchain-details p {color:var(--muted)}
 .toolchain-reading span {font-size:.9em}
 .toolchain-reading code,.toolchain-details code {min-inline-size:0;overflow-wrap:anywhere}

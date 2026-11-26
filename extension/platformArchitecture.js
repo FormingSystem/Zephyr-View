@@ -11,6 +11,7 @@ function platformTarget(identifier, board) {
   const [, name, revision, qualifiers = ''] = match;
   const parts = qualifiers.split('/');
   if (name !== board.name || (revision && !board.revisions?.includes(revision))) return;
+  if (!board.socs.length && !board.qualifiers?.length && !revision && !qualifiers) return name;
   if (!parts[0] && board.socs.length === 1) parts[0] = board.socs[0];
   if (board.qualifiers && !board.qualifiers.includes(parts.join('/'))) return;
   const effective = revision || board.defaultRevision;

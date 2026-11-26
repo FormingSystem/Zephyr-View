@@ -4,6 +4,7 @@ const path = require('node:path');
 const vscode = require('vscode');
 const {parseDefinition} = require('./buildVariables');
 const {hasCurrentBuild} = require('./target');
+const {boardCatalogBase} = require('./boardCatalog');
 const {registered_sdk} = require('./sdkRegistry');
 const {board_facts,sdk_directory,sdk_catalog,cross_catalog,cross_prefix,executable} = require('./compiler_catalog');
 
@@ -145,7 +146,12 @@ function default_variant(s, cache) {
 function recommendation(options, variant, configured, env_prefix) {
   if(mode(variant)==='sdk')return options.find(row=>row.source==='sdk' && row.family===(variant.split('/')[1] || 'gnu'))?.id;
   if(mode(variant)==='cross'){
-    const known=options.find(row=>row.prefix && (same_file(row.prefix,env_prefix) || same_file(row.path,configured)));
+    if(env_prefix){
+      const matching=options.filter(row=>row.prefix && (path.isAbsolute(env_prefix) ? same_file(row.prefix,env_prefix) :
+        path.basename(env_prefix)===env_prefix && same_file(path.basename(row.prefix),env_prefix)));
+      return matching.length===1 ? matching[0].id : undefined;
+    }
+    const known=options.find(row=>row.prefix && same_file(row.path,configured));
     const matching=options.filter(row=>row.prefix && row.compatibility==='architecture');
     return known?.id || (matching.length===1 ? matching[0].id : undefined);
   }
@@ -166,11 +172,14 @@ async function compiler_choices(context,s) {
   const resetting=record?.reset_build && same_file(record.reset_build,s.build.fsPath);
   const variant=saved?.variant || defs.get(variant_key) || default_variant(s,resetting?undefined:cache);
   const result={scope:scope(s),target,mode:mode(variant),variant,requested,requestedDefinitions,overridden:Boolean(saved),options:[]};
-  const actual=cache?.get(compiler_key);
-  if(actual && !actual.endsWith('-NOTFOUND'))result.configured=actual;
+  const recorded=s.setup.cacheStatus==='current' && s.target.cache.get(compiler_key);
+  if(recorded && !/(^|-)NOTFOUND$/.test(recorded)) {
+    if(cache)result.configured=recorded;
+    else result.incompleteCompiler=recorded;
+  }
   if(!vscode.workspace.isTrusted)return {...result,reason:'trust'};
   if(!s.setup.board)return {...result,reason:'selectBoard'};
-  const base=defs.get('ZEPHYR_BASE') || env.ZEPHYR_BASE || cache?.get('ZEPHYR_BASE');
+  const base=await boardCatalogBase(s,env);
   const hint=defs.get('ZEPHYR_SDK_INSTALL_DIR') || env.ZEPHYR_SDK_INSTALL_DIR || cache?.get('ZEPHYR_SDK_INSTALL_DIR');
   let sdk=await sdk_directory(hint && path.resolve(s.setup.app,hint),cache?.get('Zephyr-sdk_DIR'));
   if (!sdk && !hint) sdk=await sdk_directory(await registered_sdk(base,s.tools?.cmake,env));

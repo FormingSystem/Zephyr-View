@@ -45,7 +45,7 @@ test('choosing a target compiler is explicit and original CMake definitions rema
   select.value = 'auto';
   picker.change(form);
   assert.equal(apply.disabled, false);
-  assert.equal(path.innerHTML, '');
+  assert.doesNotMatch(path.innerHTML, /\/local\/bin\/gcc|Configured by CMake/);
   listeners.click({target:{closest:key=>key==='[data-apply-compiler]'?{closest:()=>form}:null}});
   assert.deepEqual(submitted.at(-1), ['target-a','auto']);
 });
@@ -58,12 +58,29 @@ test('CMake readback shares a path only when the host confirms the displayed can
   const state = {trusted:true, folder:'app', compilerChoices:{scope:'A', configured:old.path, recommendedId:old.id, options:[old,other]}};
   const confirmed = picker.render(state);
   assert.equal(confirmed.split(old.path).length-1, 1);
-  assert.match(confirmed, /Matches last configuration · CMAKE_C_COMPILER/);
+  assert.match(confirmed, /<strong>gcc<\/strong><small>Configured by CMake · CMakeCache.txt · CMAKE_C_COMPILER/);
   const draft = picker.path('other');
-  assert.match(draft, /\/other\/gcc.*Last configured · CMAKE_C_COMPILER.*\/sdk\/gcc/);
+  assert.match(draft, /Configured by CMake.*\/sdk\/gcc.*Pending selection.*\/other\/gcc/);
   // Matching text without the host's configured evidence cannot merge a candidate and a readback.
   other.path=old.path;
   assert.equal(picker.path('other').split(old.path).length-1, 2);
+});
+
+test('compiler identity is visible before the picker, including different cached and recommended executables',()=>{
+  const {compiler_selection}=controls(),picker=new compiler_selection();
+  const candidate={id:'sdk',source:'sdk',compatibility:'sdk',label:'GNU',path:'D:\\SDK tools\\bin\\arm-zephyr-eabi-gcc.exe'};
+  const model={scope:'target',options:[candidate],recommendedId:candidate.id};
+  const render=extra=>picker.render({page:'build',folder:'app',trusted:true,compilerChoices:{...model,...extra}});
+  const fresh=render({});
+  assert.match(fresh, /<strong>arm-zephyr-eabi-gcc\.exe<\/strong><small>Local recommendation · Zephyr SDK/);
+  assert.ok(fresh.indexOf('D:/SDK tools/bin/arm-zephyr-eabi-gcc.exe') < fresh.indexOf('<select'));
+  assert.doesNotMatch(fresh, /Configured by CMake/);
+  const changed=render({configured:'/opt/llvm/bin/clang'});
+  assert.match(changed, /<strong>clang<\/strong>.*CMakeCache.txt · CMAKE_C_COMPILER.*\/opt\/llvm\/bin\/clang.*arm-zephyr-eabi-gcc\.exe/);
+  const partial=render({incompleteCompiler:'/opt/llvm/bin/clang'});
+  assert.match(partial,/Cache entry from incomplete configuration/);
+  assert.doesNotMatch(partial,/Configured by CMake/);
+  assert.doesNotMatch(render({options:[],reason:'architecture'}), /arm-zephyr-eabi-gcc|Configured by CMake/);
 });
 
 test('optional roots and historical tool prefixes stay discoverable without requiring either', () => {

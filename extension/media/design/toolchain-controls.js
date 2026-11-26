@@ -25,6 +25,22 @@ function toolchain_reading(label, value) {
   return '<div class="toolchain-reading"><span>'+esc(label)+'</span><code>'+esc(display)+'</code></div>';
 }
 
+function compiler_reading(file, status, source) {
+  if (!file) return '';
+  const fullPath = ZephyrPathDisplay.path(file);
+  const name = fullPath.slice(fullPath.lastIndexOf('/')+1);
+  return '<div class="compiler-reading"><div><strong>'+esc(name)+'</strong><small>'+esc(status)+
+    (source?' · '+esc(source):'')+'</small></div>'+(name===fullPath?'':'<code>'+esc(fullPath)+'</code>')+'</div>';
+}
+
+function candidate_source(candidate) {
+  const origin = {sdk:'Zephyr SDK',path:tr('本机扫描','Local scan'),workspace:tr('工作区目录','Workspace directory'),prefix:'CROSS_COMPILE'};
+  const evidence = {sdk:tr('SDK 架构组件','SDK architecture component'),
+    architecture:tr('架构匹配，待配置验证','Architecture matches, pending configuration'),
+    unverified:tr('兼容性待配置验证','Compatibility unverified')};
+  return [origin[candidate.source] || candidate.source, evidence[candidate.compatibility]].filter(Boolean).join(' · ');
+}
+
 function environment_value_origin(origin) {
   const names = {
     workspace:tr('工作区设置','Workspace settings'), override:tr('工作区覆盖','Workspace override'),
@@ -91,8 +107,8 @@ class compiler_selection {
     const architecture = [state.page==='workspace'?state.board:'',model.architecture, source].filter(Boolean).join(' · ');
     const reason = compiler_reason(model);
     return '<div class="target-compiler" data-compiler-form><div class="compiler-caption"><strong>'+tr('目标编译器','Target compiler')+
-      '</strong>'+(architecture?'<small>'+esc(architecture)+'</small>':'')+'</div><div class="compiler-controls">'+select+button+'</div>'+
-      '<div data-compiler-path>'+this.path(choice)+'</div>'+
+      '</strong>'+(architecture?'<small>'+esc(architecture)+'</small>':'')+'</div><div data-compiler-path aria-live="polite">'+this.path(choice)+
+      '</div><div class="compiler-controls">'+select+button+'</div>'+
       project_compiler_readings(model)+(reason ? '<small>'+esc(reason)+'</small>' : '')+this.external_tools(disabled)+'</div>';
   }
 
@@ -107,25 +123,22 @@ class compiler_selection {
 
   path(id) {
     const auto = id === 'auto';
-    const inferred = !(auto && this.model.requested);
-    const candidate = inferred && this.model.options.find(option => option.id === (auto ? this.model.recommendedId : id));
-    const configured = toolchain_reading(tr('上次配置 · CMAKE_C_COMPILER','Last configured · CMAKE_C_COMPILER'),ZephyrPathDisplay.path(this.model.configured));
-    if (!candidate) return configured;
-    const source = {sdk:'Zephyr SDK', path:tr('本机扫描','Local scan'),workspace:tr('工作区目录','Workspace directory'), prefix:'CROSS_COMPILE'}[candidate.source] || candidate.source;
-    const evidence = {
-      configured:tr('与上次配置一致 · CMAKE_C_COMPILER','Matches last configuration · CMAKE_C_COMPILER'),
-      sdk:tr('SDK 架构组件','SDK architecture component'),
-      architecture:tr('架构匹配，待配置验证','Architecture matches; verify by configuring'),
-      unverified:tr('兼容性待配置验证','Compatibility unverified')
-    };
-    const selected = this.model.overridden && candidate.selected;
-    const origin = [auto ? tr('本机推荐','Local recommendation') : selected ? tr('当前目标已选','Selected for this target') : tr('本机候选','Local candidate'),
-      source, evidence[candidate.compatibility]].filter(Boolean).join(' · ');
+    const model = this.model;
+    const candidate = !(auto && model.requested) && model.options.find(option => option.id === (auto ? model.recommendedId : id));
+    const cacheSource = 'CMakeCache.txt · CMAKE_C_COMPILER';
+    const confirmed = tr('CMake 已选用','Configured by CMake');
+    const configured = compiler_reading(model.configured, confirmed, cacheSource) ||
+      compiler_reading(model.incompleteCompiler, tr('缓存记录，尚未完成配置','Cache entry from incomplete configuration'), cacheSource);
+    if (!candidate) return configured || (model.reason ? '' : '<small>'+tr('完成配置后将显示 CMake 选用的编译器。','Configure to see the compiler selected by CMake.')+'</small>');
+    const status = auto ? tr('自动推荐','Local recommendation') : candidate.selected ? tr('当前目标已选','Selected for this target') : tr('待应用','Pending selection');
+    const source = candidate_source(candidate);
+    const matches = candidate.compatibility==='configured' && model.configured;
+    const reading = matches ? compiler_reading(model.configured,confirmed,[cacheSource,status,source].filter(Boolean).join(' · ')) :
+      configured+compiler_reading(candidate.path,status,source);
     const hint = auto && this.model.mode==='cross' && candidate.compatibility==='architecture' ?
       tr('若尚未指定外部前缀，请选中该候选并应用。','If no external prefix is set, select and apply this candidate.') : '';
     const detail = auto ? hint : candidate.setting;
-    return toolchain_reading(origin, ZephyrPathDisplay.path(candidate.path))+(detail ? '<small>'+esc(detail)+'</small>' : '')+
-      (candidate.compatibility==='configured' ? '' : configured);
+    return reading+(detail ? '<small>'+esc(detail)+'</small>' : '');
   }
 
   change(form) {

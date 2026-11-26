@@ -53,7 +53,7 @@ async function fixture(t) {
     put(sdk,'cmake/zephyr/llvm/target.cmake','if("${ARCH}" STREQUAL "arm")\nset(triple arm-none-eabi)\nendif()'),
     put(base,'cmake/toolchain/zephyr/generic.cmake','if(TOOLCHAIN_VARIANT_COMPILER STREQUAL "llvm")\ninclude(${ZEPHYR_SDK_INSTALL_DIR}/cmake/zephyr/llvm/generic.cmake)\nendif()'),
     put(base,'cmake/modules/FindHostTools.cmake','set(TOOLCHAIN_VARIANT_COMPILER ${_compiler})'),
-    put(base,'arch/arm64/Kconfig','# arm64'),
+    put(base,'scripts/list_boards.py','# board catalog'),put(base,'arch/arm64/Kconfig','# arm64'),
     put(board,'cpu.yaml','identifier: example/soc/cpu\narch: arm\n'),put(board,'other.yaml','identifier: example/soc/radio\narch: riscv\n')
   ]);
   const gcc=await put(sdk,'gnu/arm-zephyr-eabi/bin/arm-zephyr-eabi-gcc'+exe,host_image);
@@ -89,6 +89,40 @@ test('qualified board metadata recommends only the installed SDK architecture an
   assert.ok(!radio.options.some(row=>row.source==='sdk'));
 });
 
+test('legacy board identifiers and a detected source checkout resolve an installed compiler before configuration', async t=>{
+  const {s,context,gcc,base}=await fixture(t);
+  delete s.environment.ZEPHYR_BASE;
+  s.checkout=base;
+  s.setup.board='legacy_board';
+  s.board_record={...s.board_record,name:'legacy_board',socs:[],qualifiers:[],revisions:[]};
+  await put(s.board_record.directories[0],'legacy_board.yaml','identifier: legacy_board\narch: arm\n');
+  const choices=await selection.compiler_choices(context,s);
+  assert.equal(choices.target,'legacy_board');
+  assert.equal(choices.architecture,'arm');
+  assert.equal(choices.options.find(item=>item.id===choices.recommendedId)?.path,gcc);
+  s.setup.board='legacy_board/unknown';
+  assert.equal((await selection.compiler_choices(context,s)).recommendedId,undefined);
+});
+
+test('an incomplete cache for this target is identified separately; foreign and unresolved entries are suppressed',async t=>{
+  const {s,context,cross}=await fixture(t);
+  s.target.cache.set('CMAKE_C_COMPILER',cross);
+  s.setup.cacheStatus='current';
+  let choices=await selection.compiler_choices(context,s);
+  assert.equal(choices.incompleteCompiler,cross);
+  assert.equal(choices.configured,undefined);
+  s.setup.cacheStatus='conflict';
+  choices=await selection.compiler_choices(context,s);
+  assert.equal(choices.incompleteCompiler,undefined);
+  assert.equal(choices.configured,undefined);
+  s.setup.cacheStatus='current';
+  s.target.generated=true;
+  s.target.cache.set('CMAKE_C_COMPILER','CMAKE_C_COMPILER-NOTFOUND');
+  choices=await selection.compiler_choices(context,s);
+  assert.equal(choices.configured,undefined);
+  assert.equal(choices.incompleteCompiler,undefined);
+});
+
 test('Twister board defaults and external variant overrides follow the exact revision and CPU', async t => {
   const {s, root} = await fixture(t);
   const board = s.board_record;
@@ -103,6 +137,16 @@ test('Twister board defaults and external variant overrides follow the exact rev
     ['example/soc/other', undefined]]) {
     assert.equal(await catalog.platform_architecture(board, target), arch, target);
   }
+});
+
+test('an unresolved requested GNU prefix cannot recommend another compiler simply because its architecture matches', async t=>{
+  const {s,context,cross}=await fixture(t);
+  s.environment.ZEPHYR_TOOLCHAIN_VARIANT='cross-compile';
+  s.environment.CROSS_COMPILE='not-installed-';
+  assert.equal((await selection.compiler_choices(context,s)).recommendedId,undefined);
+  s.environment.CROSS_COMPILE=path.basename(catalog.cross_prefix(cross));
+  const resolved=await selection.compiler_choices(context,s);
+  assert.equal(resolved.options.find(item=>item.id===resolved.recommendedId)?.path,cross);
 });
 
 test('official SDK family and external prefix travel with the selected app/board into a fresh build',async t=>{
