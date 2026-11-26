@@ -221,7 +221,8 @@ test('a native Save As exports the draft after an external edit and never replac
   await assert.rejects(studio.save({...s, inputs:await studio.inputs(s)}, edit), /changed/);
   const copy = path.join(path.dirname(f.app), 'copy.conf');
   const dialog = t.mock.method(vscode.window, 'showSaveDialog', async () => uri(copy));
-  assert.equal(await studio.save_copy(s, edit, () => true), copy);
+  const saved = await studio.save_copy(s, edit, () => true);
+  assert.equal(saved, await fs.realpath(copy));
   assert.equal(await fs.readFile(copy, 'utf8'), '\uFEFF' + edit.text);
   await assert.rejects(studio.save_copy(s, {...edit, text:'bad'}, () => true), /existing file/);
   dialog.mock.mockImplementation(async () => uri(file));
