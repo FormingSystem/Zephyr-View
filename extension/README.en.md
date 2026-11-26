@@ -10,7 +10,9 @@ Download the `.vsix` file under **Assets** on the GitHub release page. In the VS
 
 Local paths in the workbench and debug sidebar use `/`, as in `samples/hello_world`. On Windows, the path entry fields also accept `\` when pasting from File Explorer.
 
-Open **Zephyr View** in the VS Code Activity Bar. The workbench opens on Workspace. Its tabs are Build, Workspace, Project configuration and Modules. The build method in the header applies to the active project.
+Open **Zephyr View** in the VS Code Activity Bar. The workbench opens on Workspace. Its tabs are Build, Workspace, Project configuration, Modules and Threads. The build method in the header applies to the active project.
+
+In **Threads**, choose a concurrency component and how to create its threads. Select a node to inspect the generated C. Use **Source analysis** on an existing application and **Paused stack** to inspect variables at a breakpoint. [Follow a value between two threads](guides/threads.en.md)
 
 **Workspace folders and debugging.** Click **Workspace folder** in the target sidebar to switch projects. Opening a file in a workspace folder or activating a debug session scoped to it also selects that folder. Moving to the workbench or terminal keeps the selection. The sidebar reads the debug runner from the current app and board’s generated `zephyr/runners.yaml` and shows the reason when it is unavailable. Use **Refresh debug target** at the bottom of the list to reread the target.
 

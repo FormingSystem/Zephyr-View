@@ -1,0 +1,9 @@
+:root { color-scheme:light dark; --ground:#f5f7f8;--surface:#fff;--sub:#f6f8f9;--text:#1e3239;--muted:#50656e;--line:#ccd8da;--accent:#087361;--accent2:#e4f3ef;--focus:#137cba;--warn:#964c0c;--radius:8px; font:15px/1.48 'Segoe UI','Microsoft YaHei UI',system-ui,sans-serif; }
+@media(prefers-color-scheme:dark){ :root {--ground:#182227;--surface:#202d33;--sub:#27363c;--text:#e5edee;--muted:#acbfc4;--line:#42565c;--accent:#7bd7bb;--accent2:#1d453c;--focus:#8ecff4;--warn:#f0b571;} }
+*{box-sizing:border-box;} body{margin:0;background:var(--ground);color:var(--text);}
+body>header{display:flex;align-items:center;justify-content:space-between;gap:1em;border-block-end:1px solid var(--line);background:var(--surface);padding:.55em clamp(.8rem,3.2vw,3.4rem);}
+body>header div{display:flex;align-items:center;gap:.55em;} a{color:var(--accent);text-underline-offset:.16em;}
+main,footer{max-width:1440px;margin:0 auto;padding:clamp(.8rem,2.6vw,2rem);}
+footer{padding-top:0;font-size:.85em;}
+
+body>header img { padding:4px; box-sizing:content-box; background:#116a62; border-radius:6px; }

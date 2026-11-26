@@ -10,7 +10,7 @@ Expand **Assets** on the release page and download the `.vsix` file. In the VS C
 
 Start with [Getting started](extension/GETTING_STARTED.en.md) for step-by-step animations, a buildable application and local module, and an out-of-tree board and SoC example.
 
-Open **Zephyr View** in the Activity Bar. The workbench opens on **Workspace**. Its tabs are **Build**, **Workspace**, **Project configuration** and **Modules**. Workspace shows the environment available to the build process. Build shows the inputs for the next configure alongside the last values recorded by CMake. Select a board to see the detected board DTS. In Project configuration, expand the application's graph and double-click a Kconfig symbol or hardware node to edit it in place. Drag the canvas to pan, use Ctrl + wheel to zoom, then save a copy or write the reviewed changes to the application configuration.
+Open **Zephyr View** in the Activity Bar. The workbench opens on **Workspace**. Its tabs are **Build**, **Workspace**, **Project configuration**, **Modules** and **Threads**. Workspace shows the environment available to the build process. Build shows the inputs for the next configure alongside the last values recorded by CMake. Select a board to see the detected board DTS. In Project configuration, expand the application's graph and double-click a Kconfig symbol or hardware node to edit it in place. Drag the canvas to pan, use Ctrl + wheel to zoom, then save a copy or write the reviewed changes to the application configuration.
 
 Open **Workspace → Environment setup → Probes and drivers** to see local tool paths and connected devices. Select an existing tool folder or deploy the tool and its supported drivers from the same row.
 
@@ -25,7 +25,7 @@ After selecting a board and CPU on **Build**, use the recommended SDK compiler o
 - [Component installation, firmware flashing and workbench review](design/review/installation-and-flashing.en.md)
 - [Review and acceptance criteria by module](design/review/module-refinement.en.md)
 
-The installed workbench reads your active project and environment. The design prototypes use sample data. To try them, download the repository and open the HTML file in a browser. The proposed function and thread views are currently under design review. [Design review](design/review/thread-analysis.en.md) · [Interactive two-thread example](design/review/thread-analysis-preview.html?lang=en)
+In **Threads**, generate a two-thread application using a message queue, semaphore or mutex. Explore calls in your own application and inspect frames and variables at a breakpoint. The generated applications build with west or CMake. [Thread tutorial](extension/guides/threads.en.md) · [Detailed design and verification](design/review/thread-studio.en.md) · [Offline interactive prototype](design/review/thread-studio-preview.html?lang=en)
 
 ## Commercial use and licensing
 

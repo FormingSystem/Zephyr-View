@@ -10,7 +10,7 @@
 
 首次使用可从[入门指南](extension/GETTING_STARTED.md)开始。随包提供操作动图、可编译的应用和本地模块，以及一套树外板与 SoC 示例。
 
-在 VS Code 活动栏打开 **Zephyr View**。默认进入工作区。导航依次为构建、工作区、工程配置和模块。在工作区查看构建进程使用的环境变量；在构建页核对配置输入和 CMake 上次记录的值。工作台支持 west 和 CMake。选板后可以在同一行组查看识别到的 DTS。在「工程配置」展开当前应用的配置图，双击软件符号或实际硬件节点，在节点旁修改。支持空白处拖动、Ctrl + 滚轮缩放、另存副本和写回应用配置。
+在 VS Code 活动栏打开 **Zephyr View**。默认进入工作区。导航依次为构建、工作区、工程配置、模块和线程。在工作区查看构建进程使用的环境变量；在构建页核对配置输入和 CMake 上次记录的值。工作台支持 west 和 CMake。选板后可以在同一行组查看识别到的 DTS。在「工程配置」展开当前应用的配置图，双击软件符号或实际硬件节点，在节点旁修改。支持空白处拖动、Ctrl + 滚轮缩放、另存副本和写回应用配置。
 
 在「工作区 → 环境搭建 → 探针与驱动」逐项查看本机工具路径和已连接的设备，选择已有工具目录，或从该行部署工具与驱动。
 
@@ -25,7 +25,7 @@
 - [组件安装、固件烧写和工作台全量评审](design/review/installation-and-flashing.md)
 - [逐模块评审和验收条件](design/review/module-refinement.md)
 
-工作台读取当前工程和环境。交互设计稿使用示例数据；可将仓库下载到本地，在浏览器中打开对应的 HTML 文件。函数调用与线程视图目前处于设计评审阶段。[设计说明](design/review/thread-analysis.md) · [双线程交互样例](design/review/thread-analysis-preview.html)
+在「线程」页可以生成消息队列、信号量或互斥量的双线程工程，分析当前应用的调用关系，也可以在断点处核对栈帧与变量。示例工程可用 west 或 CMake 构建。[线程入门](extension/guides/threads.md) · [详细设计与验证](design/review/thread-studio.md) · [离线交互稿](design/review/thread-studio-preview.html)
 
 ## 商业使用与许可
 

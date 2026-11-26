@@ -4,6 +4,8 @@
 
 [Engineering analysis design: application entry points, threads, functions and data flow](thread-analysis.en.md) · [Interactive two-thread example](thread-analysis-preview.html?lang=en)
 
+[Thread studio interaction draft](thread-studio-draft.en.md) · [Detailed design and acceptance matrix](thread-studio.en.md) · [Debug adapter verification](thread-debug-protocol.en.md)
+
 [Beginner workflows, layout and module responsibilities](onboarding.en.md)
 
 [0.5.17 missing-component setup guide, platform support and VSIX relocation checks](platform-support.en.md)

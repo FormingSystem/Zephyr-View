@@ -4,6 +4,8 @@
 
 [工程分析设计评审：从应用入口到线程、函数和数据流](thread-analysis.md) · [双线程交互样例](thread-analysis-preview.html)
 
+[线程工作室交互初稿](thread-studio-draft.md) · [详细设计和验收矩阵](thread-studio.md) · [调试适配器验证](thread-debug-protocol.md)
+
 [新手工作流、布局与模块职责评审](onboarding.md)
 
 [0.5.17 缺失组件安装向导、跨平台适配和安装包搬迁验证](platform-support.md)

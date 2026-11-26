@@ -27,7 +27,7 @@ async function verify_cmake(tools, directory) {
 async function verify_tutorial(extension, folder) {
   const guide = vscode.env.language.toLowerCase().startsWith('zh') ? 'GETTING_STARTED.md' : 'GETTING_STARTED.en.md';
   await fs.access(path.join(extension.extensionPath, guide));
-  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port']) {
+  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio']) {
     const file = await fs.open(path.join(extension.extensionPath, 'guides', 'media', name + '.gif'));
     try {
       const header = Buffer.alloc(10);
@@ -44,6 +44,24 @@ async function verify_tutorial(extension, folder) {
   await fs.writeFile(config, 'CONFIG_PRINTK=n');
   await assert.rejects(() => copyExamplesTo(extension.extensionUri, folder.uri));
   assert.equal(await fs.readFile(config, 'utf8'), 'CONFIG_PRINTK=n');
+}
+
+async function verify_thread_studio(extension, folder) {
+  const {exportDraft} = require(path.join(extension.extensionPath, 'threadStudioHost'));
+  const {defaults} = require(path.join(extension.extensionPath, 'media', 'threadStudio', 'model'));
+  const {analyzeApplication} = require(path.join(extension.extensionPath, 'threadAnalysis'));
+  const draft = {...defaults('msgq'), creation:'dynamic'};
+  const sample = await exportDraft(folder.uri.fsPath, draft);
+  const result = await analyzeApplication(sample);
+  assert.ok(result.data.threads.some(row => row.entry === 'consumer_entry' && row.api === 'k_thread_create'));
+  assert.ok(result.data.objects.some(row => row.name === 'samples'));
+  assert.ok(result.data.calls.some(row => row.name === 'k_msgq_get' && row.object === 'samples'));
+  const source = path.join(sample, 'src', 'main.c');
+  await fs.appendFile(source, '\n/* Local edit */\n');
+  await assert.rejects(() => exportDraft(folder.uri.fsPath, draft), {code:'EEXIST'});
+  assert.ok((await fs.readFile(source, 'utf8')).endsWith('/* Local edit */\n'));
+  await fs.access(path.join(extension.extensionPath, 'guides', 'threads.en.md'));
+  await vscode.commands.executeCommand('zephyrWorkbench.threads');
 }
 
 exports.run = async function run() {
@@ -64,6 +82,7 @@ exports.run = async function run() {
   const {inspectWorkspace} = require(path.join(extension.extensionPath, 'workspace.js'));
   const {tools} = await inspectWorkspace(target);
   await verify_tutorial(extension, target.folder());
+  await verify_thread_studio(extension, target.folder());
   const cmake = await verify_cmake(tools, target.folder().uri.fsPath);
   await vscode.commands.executeCommand('zephyrWorkbench.show', 'workspace');
   await vscode.commands.executeCommand('zephyrWorkbench.probeSupport', 'jlink');
@@ -73,7 +92,7 @@ exports.run = async function run() {
     assert.ok(workbenchTabs.length <= 1, 'Probe support should open inside the same workbench');
     if (workbenchTabs.length === 1) {
       const result = {extension: extension.packageJSON.version, vscode: vscode.version,
-        platform: process.platform, arch: process.arch, cmake, hostBuild: 'passed'};
+        platform: process.platform, arch: process.arch, cmake, hostBuild: 'passed', threadStudioExportAndAnalysis: 'passed'};
       await fs.writeFile(process.env.ZEPHYR_TEST_EVIDENCE, JSON.stringify(result));
       return;
     }
