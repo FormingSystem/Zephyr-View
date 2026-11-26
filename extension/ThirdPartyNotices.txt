@@ -1,0 +1,26 @@
+Zephyr Extension
+Copyright 2026 Zephyr Extension contributors
+
+The original code, documentation and design assets of this independent
+extension are licensed under the Apache License, Version 2.0 (LICENSE).
+Zephyr Extension is an independent integration for the Zephyr RTOS and
+Visual Studio Code. References to those projects and to Zephyr IDE
+identify the respective products. Their names and marks belong to their
+respective owners.
+
+Third-party software distributed in the VSIX
+
+js-yaml 4.1.1 (webview) and 4.3.2 (extension host)
+    https://github.com/nodeca/js-yaml
+    MIT License. Copyright (C) 2011-2015 by Vitaly Puzrin.
+    The license texts are included in media/design/vendor/js-yaml/LICENSE
+    and node_modules/js-yaml/LICENSE. The source repository also includes
+    the webview library and its license in design/vendor/js-yaml/.
+
+argparse 2.0.1 (dependency of js-yaml)
+    https://github.com/nodeca/argparse
+    Python-2.0, as declared by the npm package. Its complete upstream
+    license and copyright notices are included in node_modules/argparse/LICENSE.
+
+Zephyr sources, SDKs, host tools and probe drivers selected through the
+workbench are obtained separately and keep their respective licenses.
