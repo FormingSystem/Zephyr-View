@@ -6,6 +6,7 @@ const fs = require('node:fs/promises');
 const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
 const host = require('./hostExecutables');
+const {windowsProbeInventory} = require('./windowsProbeInventory');
 const exec = promisify(execFile);
 const powershell = () => path.join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
 
@@ -107,7 +108,7 @@ function macUsbDevices(output) {
   }));
 }
 
-async function windowsUsbDevices(run) {
+async function legacyWindowsUsbDevices(run) {
   const script = [
     "$ErrorActionPreference = 'Stop'",
     '[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)',
@@ -122,7 +123,7 @@ async function windowsUsbDevices(run) {
 
 async function usbMatcher(platform,run) {
   if (platform==='win32') {
-    const rows=await windowsUsbDevices(run);
+    const rows=await windowsProbeInventory(run,legacyWindowsUsbDevices);
     return profile=>windowsDevices(rows,profile);
   }
   const rows=platform==='linux' ? await linuxUsbDevices() :

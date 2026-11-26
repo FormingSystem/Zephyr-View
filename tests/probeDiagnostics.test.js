@@ -5,6 +5,7 @@ const fs=require('node:fs/promises');
 const path=require('node:path');
 const os=require('node:os');
 const {profiles,windowsDevices,findProgram,inspectDevices,inspectDeviceGroups,serialDevices,vendorDirectories}=require('../extension/probeDiagnostics');
+const {readInventory}=require('../extension/windowsProbeInventory');
 
 test('matches interfaces independently and reports only driver evidence supplied by the OS',()=>{
   const rows=[
@@ -33,23 +34,43 @@ test('USB serial ports exclude Bluetooth and virtual COM devices; ST hardware ID
 test('Windows shares one native read and reports a failed scan separately from an empty bus',
   {skip:process.platform!=='win32'},async()=>{
     const {pyocd,serial}=profiles;
+    const header='InstanceId,DeviceDescription,Status,ProblemCode\r\n';
     let queries=0;
-    const run=async(_program,_args,options)=>{
+    const run=async(program,args)=>{
       queries++;
-      await fs.access(options.env.ZEPHYR_PROBE_READER);
-      return {stdout:JSON.stringify([
-        {Name:'CMSIS-DAP',PNPDeviceID:'HID\\probe',ConfigManagerErrorCode:0},
-        {Name:'USB UART (COM7)',PNPDeviceID:'USB\\port',ConfigManagerErrorCode:null}
-      ])};
+      assert.equal(path.basename(program),'pnputil.exe');
+      await fs.writeFile(args.at(-1),header+'HID\\probe,CMSIS-DAP,Started,\r\nUSB\\port,USB UART (COM7),Unknown,','utf16le');
     };
     const matched=await inspectDeviceGroups({pyocd,serial},'win32',run);
     assert.equal(queries,1);
     assert.equal(matched.pyocd.devices[0].status,'present');
     assert.equal(matched.serial.devices[0].status,'unknown');
-    const vacant=await inspectDeviceGroups({pyocd},'win32',async()=>({stdout:'[]'}));
+    const vacant=await inspectDeviceGroups({pyocd},'win32',async(_program,args)=>fs.writeFile(args.at(-1),header,'utf16le'));
     assert.deepEqual(vacant.pyocd,{devices:[]});
     const failed=await inspectDeviceGroups({pyocd},'win32',async()=>{throw Error('device provider unavailable');});
     assert.deepEqual(failed.pyocd,{problem:'device provider unavailable'});
+});
+
+test('PnPUtil keeps Unicode names, COM ports and numeric driver codes in its CSV report',()=>{
+  const text='\uFEFFStatus,InstanceId,DeviceDescription,ProblemCode\r\n'+
+    '"Problem","USB\\VID_0483&PID_374B","探针, ""串口""\r\n(COM3)","28"\r\n'+
+    '"Started","PCI\\other","not a probe",""\r\n';
+  assert.deepEqual(readInventory(text),[{Name:'探针, "串口"\r\n(COM3)',PNPDeviceID:'USB\\VID_0483&PID_374B',ConfigManagerErrorCode:28}]);
+  assert.throws(()=>readInventory('unrecognized output'),/inventory columns/);
+});
+
+test('older Windows uses the Configuration Manager adapter when PnPUtil rejects CSV',
+  {skip:process.platform!=='win32'},async()=>{
+    const commands=[];
+    const run=async(program,_args,options)=>{
+      commands.push(path.basename(program));
+      if (commands.length===1) throw Object.assign(Error('Unsupported argument'),{code:87});
+      await fs.access(options.env.ZEPHYR_PROBE_READER);
+      return {stdout:'[]'};
+    };
+    const result=await inspectDeviceGroups({pyocd:profiles.pyocd},'win32',run);
+    assert.deepEqual(commands,['pnputil.exe','powershell.exe']);
+    assert.deepEqual(result.pyocd,{devices:[]});
 });
 
 test('resolves existing local tools in user selection, virtual environment, then PATH order',async t=>{
@@ -114,7 +135,7 @@ test('macOS offers serial callout devices and Linux offers ttyUSB and ttyACM nod
   }
 });
 
-test('the host can enumerate CMSIS-DAP and serial interfaces without a connected probe',
+test('the host can enumerate devices for every probe profile without a connected probe',
   {skip:!['win32','darwin','linux'].includes(process.platform)},async()=>{
     const reports = await inspectDeviceGroups();
     for (const id of Object.keys(profiles)) {
