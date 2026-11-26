@@ -86,6 +86,10 @@
 
 **找回节点与全屏编辑**　在配置图搜索框右侧点「定位选中节点」，可将当前节点移回画布中央。点「适应全图」可查看所有已展开的分支。「全屏配置」使用整个显示器；有第二块屏幕时，可点「在新窗口配置」并将窗口拖过去。两种窗口底部都可展开配置检查器和草稿，核对差异、另存副本或写回工程。用右上角按钮返回原编辑器组时，草稿会一起带回。
 
+## 商业使用与许可
+
+Zephyr View 与 Zephyr RTOS 的项目主许可证均为 Apache-2.0。你可以在商业产品中使用、修改和分发本项目的原创代码、文档和设计资源。再分发时须随附许可证，保留适用的版权和归属声明，并在修改过的文件中注明改动。随包分发的第三方组件按各自的许可证使用。[许可全文](https://www.apache.org/licenses/LICENSE-2.0) · [第三方声明](https://github.com/FormingSystem/zephyr-extension/blob/main/extension/ThirdPartyNotices.txt)
+
 <a id="english"></a>
 
 **简体中文** | [English](README.en.md)

@@ -25,4 +25,8 @@ After selecting a board and CPU on **Build**, use the recommended SDK compiler o
 
 The installed workbench reads your active project and environment. The design prototypes use sample data. To try them, download the repository and open the HTML file in a browser. The proposed function and thread views are currently under design review. [Design review](design/review/thread-analysis.en.md) · [Interactive two-thread example](design/review/thread-analysis-preview.html?lang=en)
 
+## Commercial use and licensing
+
+Zephyr View uses Apache-2.0, the same primary license as Zephyr RTOS. You may use, modify and distribute the project's original code, documentation and design assets in commercial products. When redistributing, include the license, preserve applicable copyright and attribution notices, and mark files you have modified. Bundled third-party components retain their own licenses. [Full license](LICENSE) · [Third-party notices](extension/ThirdPartyNotices.txt)
+
 [简体中文](README.md) | **English**

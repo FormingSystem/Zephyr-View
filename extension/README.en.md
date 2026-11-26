@@ -85,4 +85,8 @@ Use **Choose from list…** to search by filename or path, or **Browse…** to s
 
 [Configuration map walkthrough](media/guide/configuration-map.gif) · [Board selection walkthrough](media/guide/board-picker.gif). Full Kconfig dependency inspection, binding-driven devicetree forms and automatic downloading of all board dependencies remain under review.
 
+## Commercial use and licensing
+
+Zephyr View uses Apache-2.0, the same primary license as Zephyr RTOS. You may use, modify and distribute the project's original code, documentation and design assets in commercial products. When redistributing, include the license, preserve applicable copyright and attribution notices, and mark files you have modified. Bundled third-party components retain their own licenses. [Full license](https://www.apache.org/licenses/LICENSE-2.0) · [Third-party notices](https://github.com/FormingSystem/zephyr-extension/blob/main/extension/ThirdPartyNotices.txt)
+
 [简体中文](README.md) | **English**

@@ -25,4 +25,8 @@
 
 工作台读取当前工程和环境。交互设计稿使用示例数据；可将仓库下载到本地，在浏览器中打开对应的 HTML 文件。函数调用与线程视图目前处于设计评审阶段。[设计说明](design/review/thread-analysis.md) · [双线程交互样例](design/review/thread-analysis-preview.html)
 
+## 商业使用与许可
+
+Zephyr View 与 Zephyr RTOS 的项目主许可证均为 Apache-2.0。你可以在商业产品中使用、修改和分发本项目的原创代码、文档和设计资源。再分发时须随附许可证，保留适用的版权和归属声明，并在修改过的文件中注明改动。随包分发的第三方组件按各自的许可证使用。[许可全文](LICENSE) · [第三方声明](extension/ThirdPartyNotices.txt)
+
 **简体中文** | [English](README.en.md)
