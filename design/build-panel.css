@@ -1,0 +1,191 @@
+/* Build page shared by the interactive design and the VS Code workbench. Values follow the workbench density preference. */
+.build-page {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: var(--wb-gap, .8rem);
+  min-inline-size: 0;
+}
+.build-page h1 {
+  margin: 0;
+  font-size: clamp(1.3rem, 2vw, 1.85rem);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.build-page .body {padding: 0 var(--wb-space-inline, 1rem)}
+.build-page .ph {padding: var(--wb-space-block, .65rem) var(--wb-space-inline, 1rem)}
+.build-page .target-field {padding-block: var(--wb-space-block, .45rem)}
+.build-page .target-label {font-weight: 550}
+.build-page .target-flag {white-space: nowrap; display: inline-block}
+.build-page .target-controls button {padding-inline: clamp(.3em, 1%, .8em); white-space: nowrap}
+.build-method-choice {
+  margin: var(--wb-gap, .65rem) 0 0;
+  border: 0;
+  border-block-end: 1px solid var(--line);
+  padding: 0 0 var(--wb-space-block, .65rem);
+  min-inline-size: 0;
+}
+.build-method-choice legend {
+  padding: 0 0 .25em;
+  color: var(--muted);
+  font-weight: 550;
+}
+.build-options {
+  display: inline-flex;
+  margin-inline-end: .9em;
+  padding: .15em;
+  border-radius: 999px;
+  background: var(--sub);
+  vertical-align: middle;
+}
+.build-options label {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+.build-options input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.build-options span {
+  min-inline-size: 4.5em;
+  padding: .25em .8em;
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+}
+.build-options input:enabled:not(:checked):hover + span {background: var(--accent2); color: var(--accent)}
+.build-options input:checked + span {background: var(--accent); color: var(--surface)}
+.build-options input:focus-visible + span {outline: 2px solid var(--focus); outline-offset: 2px}
+.build-options label:has(input:disabled) {opacity: .6; cursor: default}
+.build-parallel-field, .build-parallel-field .custom-jobs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .35em .65em;
+}
+.build-parallel-field {
+  margin: 0;
+  padding-block: var(--wb-space-block, .45rem);
+  border-block-start: 1px solid var(--line);
+}
+.build-parallel-field label {font-weight: 550}
+.build-parallel-field small {color: var(--muted)}
+.build-parallel-field input[type=number] {width: 7em}
+.build-parallel-field select {max-inline-size: 100%}
+.build-parallel-field .custom-jobs[hidden] {display: none}
+@media (forced-colors: active) {
+  .build-options input:checked + span {forced-color-adjust: none; background: Highlight; color: HighlightText}
+  .build-options input:focus-visible + span {outline-color: Highlight}
+}
+.build-method-choice small {display: inline-block; min-inline-size: 0; margin-block-start: .25em}
+.build-workflow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .3rem var(--wb-gap, .8rem);
+  padding-block: var(--wb-space-block, .65rem);
+  border-block-start: 1px solid var(--line);
+}
+.build-workflow .actions {gap: .3rem}
+.build-workflow [role="status"], .build-section small {color: var(--muted); font-size: .9em}
+.build-feedback:not(:empty) {padding: 0 0 var(--wb-space-block, .65rem)}
+.build-feedback summary {cursor: pointer; color: var(--warn)}
+.build-feedback ul {padding-inline-start: 1.3em; margin: .35em 0 0}
+.build-feedback li {overflow-wrap: anywhere}
+.build-feedback li button {margin-inline-start: .6em}
+.build-inspection {border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface)}
+.build-section + .build-section {border-block-start: 1px solid var(--line)}
+.build-section > summary {
+  cursor: pointer;
+  min-inline-size: 0;
+  padding: var(--wb-space-block, .65rem) var(--wb-space-inline, 1rem);
+  overflow-wrap: anywhere;
+}
+.build-section > summary:hover {background: var(--sub)}
+.build-section > summary small {margin-inline-start: .75em}
+.build-section-body {
+  display: grid;
+  gap: .35rem;
+  min-inline-size: 0;
+  padding: .2em var(--wb-space-inline, 1rem) var(--wb-space-block, .65rem);
+  overflow-wrap: anywhere;
+}
+.build-section-body > button {justify-self: start}
+#build-arguments {
+  min-inline-size: 0;
+  resize: vertical;
+  padding: .45rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: .25em;
+  font: inherit;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+.build-file {display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; border-block-start: 1px solid var(--line)}
+.build-file:first-child {border-block-start: 0}
+.build-file code {min-inline-size: 0}
+.build-file button {flex: none}
+.config-input-value,.config-input-actions {display:flex;align-items:baseline;flex-wrap:wrap;gap:.25em .5em;min-inline-size:0}
+.config-input-value small {color:var(--muted)}
+.config-input-value .input-path,.config-input-value code {font-family:var(--vscode-editor-font-family,monospace);overflow-wrap:anywhere;text-align:start}
+.config-input-value .input-path {padding:.1em .25em}
+.config-input-value .missing-input {color:var(--vscode-errorForeground,var(--warn))}
+.config-input-value details {min-inline-size:0}
+.config-input-value summary {cursor:pointer}
+.config-input-value ol {margin:.2em 0;padding-inline-start:1.65em}
+.config-input-actions {grid-column:2;align-items:center}
+.config-input-actions button {font-size:inherit}
+.map-node-editor .config-input {display:flex;flex-direction:column;align-items:start}
+@container build-target (min-width:52em) { .config-input-actions {grid-column:3} }
+@container build-target (max-width:34em) { .config-input-actions {grid-column:1} }
+.build-variable > div > code, .build-invocation code {white-space: pre-wrap; overflow-wrap: anywhere}
+.build-invocation {display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem; min-inline-size: 0}
+.build-invocation code {border-radius: .2em; background: var(--sub); padding: .12em .35em}
+.build-invocation [data-empty]::before {content: '""'; color: var(--muted)}
+/* Reserve room for readable paths; the action column stops growing on wide monitors. */
+@container build-target (min-width: 52em) {
+  .build-page .target-fields {
+    --target-columns: minmax(7em, 14%) minmax(0, 1fr) min(34%, 21em);
+    --target-actions: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container build-target (max-width: 42em) {
+  .build-method-choice small {display: block}
+}
+
+
+.target-compiler,.toolchain-details {
+  min-inline-size:0;
+  overflow-wrap:anywhere;
+  border-block-start:1px solid var(--line);
+}
+.target-compiler {display:grid;gap:.35em;padding-block:var(--wb-space-block,.6rem)}
+#environment .target-compiler,#environment .toolchain-details {padding-inline:var(--wb-space-inline,1rem)}
+.compiler-caption,.compiler-controls,.toolchain-reading {display:flex;align-items:baseline;flex-wrap:wrap;gap:.25em .8em}
+.compiler-controls {align-items:center}
+.compiler-controls select {flex:0 1 32em;min-inline-size:0;max-inline-size:100%;text-overflow:ellipsis}
+.toolchain-reading span,.toolchain-details p {color:var(--muted)}
+.toolchain-reading span {font-size:.9em}
+.toolchain-reading code,.toolchain-details code {min-inline-size:0;overflow-wrap:anywhere}
+.toolchain-reading code {white-space:pre-wrap}
+.toolchain-details summary {padding-block:.4em;cursor:pointer;color:var(--accent)}
+.toolchain-details > div {display:grid;gap:.35em;padding-block-end:.45em}
+.target-compiler .toolchain-details {border:0}
+.toolchain-details ul {padding-inline-start:1.25em;margin:0}
+.toolchain-details li button {margin-inline-start:.4em}
+.toolchain-details .actions {gap:.3em}
+
+.flash-panel {display:grid;gap:.6rem;padding:.5rem 0;min-inline-size:0}
+.flash-choices,.flash-choices label {display:flex;align-items:center;flex-wrap:wrap;gap:.4rem}
+.flash-choices {column-gap:.8rem}
+.flash-choices input,.flash-choices select {max-inline-size:100%;min-inline-size:0}
+.flash-preview,.flash-panel small {white-space:normal;overflow-wrap:anywhere}
+
