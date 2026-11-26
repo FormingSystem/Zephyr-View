@@ -2,11 +2,13 @@
 
 [简体中文](README.md) | **English**
 
-Build Zephyr firmware with west or CMake, inspect board targets, manage modules, and edit Kconfig and devicetree in VS Code. Open **Zephyr View** in the Activity Bar to set up a workspace.
+Build Zephyr firmware with west or CMake, inspect board targets, manage modules, and edit Kconfig and devicetree in VS Code. You can use local tools, offline SDKs and existing west workspaces.
+
+Download the `.vsix` file under **Assets** on the GitHub release page. In the VS Code Extensions view, choose **… → Install from VSIX…** and select the file. [Download the current preview](https://github.com/FormingSystem/zephyr-extension/releases)
 
 Local paths in the workbench and debug sidebar use `/`, as in `samples/hello_world`. On Windows, the path entry fields also accept `\` when pasting from File Explorer.
 
-Open the **Z chip** in the VS Code Activity Bar. The workbench opens on Workspace. Its tabs are Build, Workspace, Project configuration and Modules. The build method in the header applies to the active project.
+Open **Zephyr View** in the VS Code Activity Bar. The workbench opens on Workspace. Its tabs are Build, Workspace, Project configuration and Modules. The build method in the header applies to the active project.
 
 **Workspace folders and debugging.** Click **Workspace folder** in the target sidebar to switch projects. Opening a file in a workspace folder or activating a debug session scoped to it also selects that folder. Moving to the workbench or terminal keeps the selection. The sidebar reads the debug runner from the current app and board’s generated `zephyr/runners.yaml` and shows the reason when it is unavailable. Use **Refresh debug target** at the bottom of the list to reread the target.
 

@@ -2,7 +2,7 @@
 
 **简体中文** | [English](platform-support.en.md)
 
-从 VS Code 活动栏打开 Zephyr View，在「工作区 → 环境搭建」点击「补齐缺失组件」。换一台电脑时，可以把同一个 VSIX 复制过去并从任意目录安装。编译器、SDK 和 Python 环境应适配新的宿主系统。[当前发行包](https://github.com/FormingSystem/zephyr-extension/releases/latest) · [中英文使用手册](../../extension/README.md)
+从 VS Code 活动栏打开 Zephyr View，在「工作区 → 环境搭建」点击「补齐缺失组件」。换一台电脑时，可以把同一个 VSIX 复制过去并从任意目录安装。编译器、SDK 和 Python 环境应适配新的宿主系统。[下载当前预发布版 VSIX](https://github.com/FormingSystem/zephyr-extension/releases) · [中英文使用手册](../../extension/README.md)
 
 ## 首次使用
 
@@ -34,6 +34,14 @@ python tools/release_notes.py --zh notes.zh.md --en notes.en.md --output release
 ```
 
 把生成的 `release.md` 内容粘贴到 GitHub 发布编辑器，在 **Preview** 中分别展开两种语言检查排版。使用 GitHub CLI 时，通过 `--notes-file release.md` 将同一份说明传给 `gh release create` 或 `gh release edit`。
+
+## 更新开发期预发布版
+
+开发期间，GitHub Releases 保留一个已经过验证的预发布版及其 Git 版本标签。
+
+1. 将新版本打包为 VSIX，本地安装验证后，将同一文件附加到新版本的 GitHub Release 草稿。确认版本号、源码提交和双语说明后，勾选 **Set as a pre-release** 并发布。
+2. 发布会触发 **Native platform checks**，下载实际发布的 VSIX，核验包的版本和 SHA-256 并运行跨平台安装测试。检查期间，上一个已验证的版本仍可下载。
+3. 最新的预发布版通过检查后，工作流会清理旧的预发布版和对应的 Git 版本标签，源码提交保留在 Git 历史中。若验证失败，修复并重新验证后再替换。仓库有正式版时，工作流会跳过这一步清理。
 
 ## 发布包验证
 

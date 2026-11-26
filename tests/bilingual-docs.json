@@ -1,5 +1,5 @@
 {
-  "README.md": "efe53b70f882d951d73030471c66323ba78bdb3dec30bfacedd5615003b00d3a",
+  "README.md": "43588037c4d43bff0489512f1b5eb23f9a31401f107453bcbcfa43336f329230",
   "design/README.md": "de72bfca10b95d7ef811fd051a78e899975010cd7d4afaf18ae580016455f44b",
   "design/acceptance-0.2.0.md": "751a07079270856c708ce1709ef38a32d458697ea7dfbb437e0fac33e906b1cb",
   "design/interaction.md": "3b53f4d1bd9d1f06d0be6766c1207f59a1e8f51375768434a0c87dc0c9562cc3",
@@ -13,10 +13,10 @@
   "design/review/local-selection.md": "14a8535fe25467716180f435f2cf5e739b47d6c65dc6658c385204913af4847a",
   "design/review/module-refinement.md": "ac9239ec4f9fca713f7dbec0ad570d77ec13d152bb1fab04e39da19b8a0d7610",
   "design/review/multi-board-build.md": "ef5921ef7153999ceace47d682dd7aecd04ca2da5827a02f4b5cfd13dfc6f5c5",
-  "design/review/platform-support.md": "4c29905a1a36c759926899721a511f4f812fbb5c48a71151ac70b68f400901e9",
+  "design/review/platform-support.md": "5ef6882931774804897c52c60e373f8db3ca1747840bbedfeb21a02c32491e2b",
   "design/review/prototype-layout.md": "91cc57d1fde074cb97d30a693f5d2b2bf3aefa3e06e6ce4543cb434d26bf2577",
   "design/review/standard-adaptation.md": "6f47e67f4bd54d9208e7b2e602a54238005d18c30f0288621769cf512cf55351",
   "design/review/thread-analysis.md": "b8a4c7ace6336893534873a0b9cfdd1a6bb8da8ffb05a1c806b6ae1b5940d446",
   "design/review/workbench-debug.md": "66ad90696ea4dcf2a8cd5021f1ecea4d0298187de4010ba3d857c243d72e4fe9",
-  "extension/README.md": "0cda926e00d0ac1379a863e7a1d4b77df86084daf26c4427b7fed5218c6cb2f6"
+  "extension/README.md": "a64cbb56e4ff1e4fe5cd761bfdce2cb01e8feba498f579393c8bd625380ad0ad"
 }

@@ -4,9 +4,9 @@
 
 Configure, build and debug Zephyr applications in VS Code. Use a west workspace or a standalone CMake project with existing sources, modules, SDKs and offline installers.
 
-[Download the latest VSIX](https://github.com/FormingSystem/zephyr-extension/releases/latest) · [User guide](extension/README.en.md) · [Apache-2.0](LICENSE) · [Third-party notices](extension/ThirdPartyNotices.txt)
+[Download the current preview VSIX](https://github.com/FormingSystem/zephyr-extension/releases) · [User guide](extension/README.en.md) · [Apache-2.0](LICENSE) · [Third-party notices](extension/ThirdPartyNotices.txt)
 
-Download the `.vsix` file from the release. In the VS Code Extensions view, choose **… → Install from VSIX…** and select the file.
+Expand **Assets** on the release page and download the `.vsix` file. In the VS Code Extensions view, choose **… → Install from VSIX…** and select the file.
 
 Open **Zephyr View** in the Activity Bar. The workbench opens on **Workspace**. Its tabs are **Build**, **Workspace**, **Project configuration** and **Modules**. Workspace shows the environment available to the build process. Build shows the inputs for the next configure alongside the last values recorded by CMake. Select a board to see the detected board DTS. In Project configuration, expand the application's graph and double-click a Kconfig symbol or hardware node to edit it in place. Drag the canvas to pan, use Ctrl + wheel to zoom, then save a copy or write the reviewed changes to the application configuration.
 

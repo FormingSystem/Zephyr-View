@@ -2,11 +2,13 @@
 
 **简体中文** | [English](README.en.md)
 
-在 VS Code 中使用 west 或 CMake 构建固件，查看开发板、管理模块，编辑 Kconfig 与设备树。在 VS Code 的活动栏打开 **Zephyr View** 即可开始配置工程。支持本地工具、离线 SDK 和已有的 west 工作区。
+在 VS Code 中使用 west 或 CMake 构建固件，查看开发板、管理模块，编辑 Kconfig 与设备树。支持本地工具、离线 SDK 和已有的 west 工作区。
+
+在 GitHub 发布页的 **Assets** 下下载 `.vsix` 文件，打开 VS Code 的「扩展 → … → 从 VSIX 安装…」并选择它。[下载当前预发布版](https://github.com/FormingSystem/zephyr-extension/releases)
 
 工作台和调试侧栏中的本地路径统一使用 `/`，例如 `samples/hello_world`。Windows 的「输入路径」也接受从资源管理器复制的 `\` 写法。
 
-点击 VS Code 活动栏的 **Z 形芯片** 打开工作台。工作台默认打开「工作区」。顶部从左到右依次为构建、工作区、工程配置和模块，右上角显示当前使用的 west 或 CMake。调试目标在 VS Code 左栏，变量、栈帧和断点在原生「运行和调试」中。
+在 VS Code 活动栏点击 **Zephyr View**。工作台默认打开「工作区」。顶部从左到右依次为构建、工作区、工程配置和模块，右上角显示当前使用的 west 或 CMake。调试目标在 VS Code 左栏，变量、栈帧和断点在原生「运行和调试」中。
 
 **多个工程文件夹**　在调试目标侧栏点击「工作区文件夹」可切换工程。打开工程内的文件，或激活归属于该工程的调试会话，也会切换。转到工作台或终端会保留当前工程。「调试运行器」取自当前应用和板生成的 `zephyr/runners.yaml`。换板、配置失败或未指定运行器时，侧栏显示原因；点击列表末尾的「刷新调试目标」可重新读取。
 

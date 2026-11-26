@@ -47,3 +47,21 @@ jobs:
       - uses: ./.github/actions/check-extension
         with:
           windows-desktop: ${{ inputs.desktop == 'windows-10' && '10' || '11' }}
+
+  retain-preview:
+    needs: hosted
+    if: github.event_name == 'release' && github.event.release.prerelease
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    concurrency:
+      group: retain-tested-preview
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Retire superseded previews and their tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/retain_preview.py

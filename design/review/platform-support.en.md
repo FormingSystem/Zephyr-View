@@ -2,7 +2,7 @@
 
 [简体中文](platform-support.md) | **English**
 
-Open Zephyr View from the VS Code Activity Bar, then choose **Workspace → Environment setup → Set up missing components**. To move to another computer, copy the same VSIX and install it from any directory. Choose a compiler, SDK and Python environment compatible with the new host. [Latest release](https://github.com/FormingSystem/zephyr-extension/releases/latest) · [User guide](../../extension/README.en.md)
+Open Zephyr View from the VS Code Activity Bar, then choose **Workspace → Environment setup → Set up missing components**. To move to another computer, copy the same VSIX and install it from any directory. Choose a compiler, SDK and Python environment compatible with the new host. [Download the current preview VSIX](https://github.com/FormingSystem/zephyr-extension/releases) · [User guide](../../extension/README.en.md)
 
 ## First use
 
@@ -34,6 +34,14 @@ python tools/release_notes.py --zh notes.zh.md --en notes.en.md --output release
 ```
 
 Paste the contents of `release.md` into the GitHub release editor. In **Preview**, expand each language and check the formatting. With the GitHub CLI, pass the same file to `gh release create` or `gh release edit` using `--notes-file release.md`.
+
+## Replacing a development preview
+
+During development, GitHub Releases keeps one verified preview and its Git version tag.
+
+1. Package the new version as a VSIX, install and test it locally, then attach that same file to a draft GitHub release. Check the version, source commit and bilingual notes, select **Set as a pre-release** and publish.
+2. Publishing starts **Native platform checks**. It downloads the published VSIX, verifies its version and SHA-256 digest, and runs the cross-platform installation tests. The previous verified preview stays available during these checks.
+3. Once the newest preview passes, the workflow removes superseded previews and their Git version tags. The source commits remain in Git history. If verification fails, fix the issue and verify the replacement before retiring the previous preview. The workflow skips cleanup when the repository has a stable release.
 
 ## Release package verification
 

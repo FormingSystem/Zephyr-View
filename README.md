@@ -4,9 +4,9 @@
 
 在 VS Code 中配置、构建和调试 Zephyr 应用。支持 west 工作区和独立 CMake 工程，可使用已有源码、模块、SDK 与离线安装包。
 
-[下载最新 VSIX 安装包](https://github.com/FormingSystem/zephyr-extension/releases/latest) · [使用手册](extension/README.md) · [Apache-2.0](LICENSE) · [第三方声明](extension/ThirdPartyNotices.txt)
+[下载当前预发布版 VSIX](https://github.com/FormingSystem/zephyr-extension/releases) · [使用手册](extension/README.md) · [Apache-2.0](LICENSE) · [第三方声明](extension/ThirdPartyNotices.txt)
 
-下载发行版中的 `.vsix` 文件，在 VS Code 的「扩展 → … → 从 VSIX 安装…」中选择它。
+在发布页展开 **Assets**，下载 `.vsix` 文件，然后在 VS Code 的「扩展 → … → 从 VSIX 安装…」中选择它。
 
 在 VS Code 活动栏打开 **Zephyr View**。默认进入工作区。导航依次为构建、工作区、工程配置和模块。在工作区查看构建进程使用的环境变量；在构建页核对配置输入和 CMake 上次记录的值。工作台支持 west 和 CMake。选板后可以在同一行组查看识别到的 DTS。在「工程配置」展开当前应用的配置图，双击软件符号或实际硬件节点，在节点旁修改。支持空白处拖动、Ctrl + 滚轮缩放、另存副本和写回应用配置。
 
