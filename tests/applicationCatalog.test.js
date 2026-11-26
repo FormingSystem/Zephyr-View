@@ -27,5 +27,6 @@ test('the chooser includes module samples, metadata-only test projects and marke
   await project('external/generated/nested', findZephyr);
   await project('external/support', '# find_package(Zephyr)\n#[[find_package(Zephyr)]]');
   await project('external/sdk-helper', 'find_package(Zephyr-sdk REQUIRED)');
+  await project('zephyr/doc', 'find_package(Zephyr REQUIRED HINTS "${ZEPHYR_BASE}" .. COMPONENTS doc)');
   assert.deepEqual(await discoverApplications([root, check, remote], check), [legacy, moduleSample, remote].sort());
 });

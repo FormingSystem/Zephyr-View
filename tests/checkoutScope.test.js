@@ -92,6 +92,30 @@ test('west uses its manifest checkout, while a sibling source keeps its own tool
   assert.equal(sibling.tools.python,b.python);
 });
 
+test('workspace discovery selects its own firmware; the external checkout still supplies explicitly searchable samples',async t=>{
+  const {root,b,open,prefs,discovery}=await fixture(t);
+  const workspace=path.join(root,'product'),app=path.join(workspace,'apps','sensor');
+  await write(app,'CMakeLists.txt','find_package(Zephyr REQUIRED)');
+  await write(b.source,'doc/CMakeLists.txt','project(Zephyr-Kernel-Doc LANGUAGES)\nfind_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE} .. COMPONENTS doc)');
+  const external=path.join(b.source,'example');
+  await write(external,'CMakeLists.txt','find_package(Zephyr REQUIRED)');
+  prefs.set(workspace,{locations:{ZEPHYR_BASE:b.source}});
+  let s=await open(workspace);
+  assert.equal(s.application,app);
+  assert.deepEqual(s.locations.groups.find(g=>g.key==='application').options.map(o=>o.path),['apps/sensor']);
+  assert.deepEqual(await discoverApplications([b.source],b.source),[external,b.app].sort());
+  await write(workspace,'apps/display/CMakeLists.txt','find_package(Zephyr REQUIRED)');
+  discovery.reset({uri:uri(workspace)});
+  s=await open(workspace);
+  assert.equal(s.application,undefined);
+  const group=s.locations.groups.find(g=>g.key==='application');
+  assert.deepEqual(group.options.map(o=>o.path),['apps/display','apps/sensor']);
+  assert.equal(group.selected,'');
+  const empty=path.join(root,'unconfigured');
+  await fs.mkdir(empty);prefs.set(empty,{locations:{ZEPHYR_BASE:b.source}});
+  assert.equal((await open(empty)).locations.groups.some(g=>g.key==='application'),false);
+});
+
 test('a manifest-owned Zephyr project can have an arbitrary path beside another source checkout',async t=>{
   const {root,a,b,open} = await fixture(t);
   await write(root,'.west/config','[manifest]\npath = product\nfile = manifest/local.yml\n');

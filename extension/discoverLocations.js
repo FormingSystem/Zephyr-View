@@ -52,6 +52,18 @@ async function nearbyRoot(directory) {
   return parent;
 }
 
+function containsDirectory(root, directory) {
+  const relative=path.relative(root,directory);
+  return relative!=='..' && !relative.startsWith('..'+path.sep) && !path.isAbsolute(relative);
+}
+
+function workspaceApplications(records,folder) {
+  const externalSources=records.filter(r=>r.kind==='ZEPHYR_BASE' && !containsDirectory(r.path,folder));
+  const candidates=records.filter(r=>r.kind==='application' && !externalSources.some(source=>containsDirectory(source.path,r.path)));
+  const local=candidates.filter(r=>containsDirectory(folder,r.path));
+  return new Set(local.length ? local : candidates);
+}
+
 async function scanLocations(folder, westRoot, checkout, moduleSource = checkout) {
   const own = await classify(folder);
   const roots = new Set([folder]);
@@ -116,7 +128,10 @@ async function scanLocations(folder, westRoot, checkout, moduleSource = checkout
   }
   const byPath = (a,b) => a.path.localeCompare(b.path);
   const unique=new Map(records.map(entry=>[entry.kind+'\0'+entry.path,entry]));
-  return {records:[...unique.values()].sort(byPath),diagnostics:diagnostics.sort(byPath)};
+  // A checkout provides build tools and manually searchable samples. Its child projects do not select the workspace app.
+  const applications=workspaceApplications(records,folder);
+  return {records:[...unique.values()].filter(entry=>entry.kind!=='application'||applications.has(entry)).sort(byPath),
+    diagnostics:diagnostics.sort(byPath)};
 }
 
 module.exports = {scanLocations, isZephyrSource, inspectLocalModule};

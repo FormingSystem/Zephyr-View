@@ -10,13 +10,24 @@ const inaccessible = new Set(['ENOENT', 'ENOTDIR', 'EACCES', 'EPERM']);
 
 function isApplication(text){
   const tokens=/#\[(=*)\[[\s\S]*?\]\1\]|#[^\r\n]*|"(?:\\[\s\S]|[^"\\])*"|\[(=*)\[[\s\S]*?\]\2\]|[()]|[^\s()#"\[]+|\S/g;
-  let depth=0,command='',first=false;
+  let depth=0,command='',args;
   for(const [token] of text.matchAll(tokens)){
     if(token[0]==='#')continue;
-    if(first && /^(?:Zephyr|"Zephyr")$/i.test(token))return true;
-    first=false;
-    if(token==='('){first=depth===0 && command==='find_package';depth++;}
-    else if(token===')'){depth=Math.max(0,depth-1);command='';}
+    if(token==='('){
+      if(depth===0 && command==='find_package')args=[];
+      depth++;
+    }else if(token===')'){
+      depth=Math.max(0,depth-1);
+      if(!depth && args){
+        const components=args.indexOf('COMPONENTS');
+        // COMPONENTS doc loads the documentation tooling in place of the firmware build system.
+        const docOnly=components>=0 && args[components+1]==='doc' &&
+          (components+2===args.length || /^(?:HINTS|PATHS|PATH_SUFFIXES|QUIET|REQUIRED|NO_\w+)$/.test(args[components+2]));
+        if(/^Zephyr$/i.test(args[0]) && !docOnly)return true;
+        args=undefined;
+      }
+      command='';
+    }else if(depth===1 && args)args.push(token.replace(/^"(.*)"$/,'$1'));
     else if(!depth)command=token.toLowerCase();
   }
   return false;
