@@ -48,4 +48,6 @@ VS Code recommends using Activity Bar entries for sidebar views and advises agai
 
 For a debug regression, configure a known runnable test application and generate its ELF. Select its launch configuration from the sidebar, break at the entry function, and check the source file, target ELF, variables and call stack. End the session and check that the sidebar returns to Idle. Record the board, runner or emulator for each Windows and Linux run. The existing evidence does not cover this full sequence. [Native VS Code debugging interface and controls](https://code.visualstudio.com/docs/debugtest/debugging)
 
+The Zephyr View 0.5.24 Activity Bar icon follows the VS Code theme. On Windows 11, selected and unselected icons were checked in Light Modern and Dark Modern. The lowest measured contrast across the four states was 4.88:1. The extension list and details page use the same color artwork. [Light theme screenshot](installed/zephyr-view-light-0.5.24.png) · [Dark theme screenshot](installed/zephyr-view-0.5.24.png)
+
 [简体中文](workbench-debug.md) | **English**

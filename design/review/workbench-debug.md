@@ -48,4 +48,6 @@ VS Code 建议活动栏入口承载侧栏视图，并明确建议避免用它直
 
 调试回归建议采用同一个可运行的测试应用，先配置并生成 ELF，再从侧栏选择启动配置，在入口函数断点处检查源文件、目标 ELF、变量、调用栈，最后终止会话并确认侧栏回到空闲状态。Windows 与 Linux 均应各记录一次，使用的板、运行器或模拟器应写清楚。目前材料没有覆盖这条完整链路。[VS Code 原生调试界面与操作](https://code.visualstudio.com/docs/debugtest/debugging)
 
+Zephyr View 0.5.24 的活动栏图标随 VS Code 主题换色。在 Windows 11 的 Light Modern 与 Dark Modern 主题下，分别检查选中和未选中状态，四种状态的最低实测对比度为 4.88∶1。扩展列表和详情页使用同一张彩色图标。[浅色安装截图](installed/zephyr-view-light-0.5.24.png) · [深色安装截图](installed/zephyr-view-0.5.24.png)
+
 **简体中文** | [English](workbench-debug.en.md)
