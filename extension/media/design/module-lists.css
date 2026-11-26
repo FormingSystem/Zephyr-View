@@ -1,0 +1,56 @@
+.module-context {
+  display: flex; align-items: baseline; gap: .7em; margin-block-end: var(--wb-gap);
+}
+.module-context h1 {font-size: 1.3em; line-height: 1.3; margin: 0}
+.module-context > span {flex: 1; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted)}
+.module-context button {flex: none}
+[data-module-selected-toggle] {font: inherit; color: inherit; border: 0; background: transparent; padding: .1em 0; line-height: 1.35}
+[data-module-selected-toggle] > span {
+  inline-size: .42em; block-size: .42em; margin: 0 .25em;
+  border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg);
+}
+[data-module-selected-toggle][aria-expanded="true"] > span {transform: rotate(45deg)}
+@media (max-height: 620px) {
+  #main .module-sections .ph, #main .module-page-rows .cell, .module-search {padding-block: .24em}
+  #main .module-sections, #main .module-page-rows .cell {row-gap: .2em}
+  .module-context {margin-block-end: .25em}
+  .module-page-rows .cell > div > small {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+}
+[data-module-list] {container: module-list / inline-size; min-inline-size: 0}
+.module-pagination {
+  display: flex; align-items: center; justify-content: flex-start; gap: .7rem;
+  flex-wrap: wrap; padding: .3rem var(--wb-space-inline); color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+.module-initials, .module-page-controls, .module-initial-picker {display: inline-flex; align-items: center}
+.module-initials {gap: .1rem; flex-wrap: wrap}
+.module-initial-picker {display: none; gap: .35rem}
+.module-pagination button, .module-initial-picker select {
+  font: inherit; color: inherit; background: transparent; cursor: pointer; border-radius: .35em;
+}
+.module-pagination button {border: 1px solid transparent; padding: .08em .3em; min-inline-size: 1.6em; min-block-size: 1.6em}
+.module-initial-picker select {border: 1px solid var(--line); padding: .2em .35em; background: var(--surface)}
+.module-pagination button:hover:not(:disabled) {background: var(--sub); color: var(--text)}
+.module-pagination button[aria-pressed="true"] {background: var(--accent2); color: var(--accent); font-weight: 650}
+.module-pagination button:focus-visible, .module-pagination select:focus-visible {outline: 2px solid var(--focus); outline-offset: 1px}
+.module-page-controls {gap: .4rem; white-space: nowrap; font-variant-numeric: tabular-nums}
+.module-page-controls button {font: inherit; font-size: 1.15em; line-height: 1}
+.module-page-controls button:disabled {opacity: .42; cursor: default}
+.module-page-rows {
+  max-block-size: max(12rem, min(46vh, 36rem));
+  overflow-y: auto;
+}
+[data-module-list="selected"] .module-page-rows {max-block-size: max(10rem, min(24vh, 16rem))}
+@container module-list (max-width: 56rem) {
+  .module-initials {display: none}
+  .module-initial-picker {display: inline-flex}
+}
+@media (forced-colors: active) {
+  .module-pagination button[aria-pressed="true"] {border-color: Highlight}
+}
+.module-sr-only {
+  position: absolute; inline-size: 1px; block-size: 1px; padding: 0; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
