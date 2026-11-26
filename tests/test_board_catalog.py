@@ -124,11 +124,11 @@ class BoardCatalogTests(unittest.TestCase):
             manifest_path = str(workspace / "manifest" / "west.yml")
 
             def west_projects():
-                self.assertEqual(Path.cwd(), workspace)
+                self.assertTrue(Path.cwd().samefile(workspace))
                 raise SystemExit("Imported manifest was not found")
 
             def parse(base, modules, extra_modules):
-                self.assertEqual(Path.cwd(), initial)
+                self.assertTrue(Path.cwd().samefile(initial))
                 return modules
 
             reader = Namespace(west_projects=west_projects, parse_modules=parse, process_module=lambda _: None)

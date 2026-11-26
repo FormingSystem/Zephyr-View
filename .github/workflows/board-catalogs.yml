@@ -3,11 +3,13 @@ on:
   push:
     paths:
       - 'extension/**'
+      - 'tests/*[Bb]oard*'
       - 'tests/integration/official-board-catalog.cjs'
       - '.github/workflows/board-catalogs.yml'
   pull_request:
     paths:
       - 'extension/**'
+      - 'tests/*[Bb]oard*'
       - 'tests/integration/official-board-catalog.cjs'
       - '.github/workflows/board-catalogs.yml'
   workflow_dispatch:
