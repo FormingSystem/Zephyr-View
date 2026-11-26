@@ -18,13 +18,16 @@ class Uri {
   static joinPath(root,...parts) { return new Uri(root.scheme,path.join(root.path,...parts)); }
   toString() { return this.scheme+':'+this.path; }
 }
+class TabInputText {
+  constructor(uri) { this.uri=uri; }
+}
 class TabInputTextDiff {
   constructor(original,modified) { this.original=original; this.modified=modified; }
 }
 class WorkspaceEdit {
   replace(uri,range,text) { this.text=text; }
 }
-const vscode = {Uri,TabInputTextDiff,WorkspaceEdit,Range:class {},env:{language:'en'},window:{},workspace:{},commands:{}};
+const vscode = {Uri,TabInputText,TabInputTextDiff,WorkspaceEdit,Range:class {},env:{language:'en'},window:{},workspace:{},commands:{}};
 const load = Module._load;
 let register;
 try {
@@ -81,7 +84,8 @@ async function openEditor(t) {
   register({subscriptions:[],extensionUri:Uri.file(root)},{folder:()=>({uri:Uri.file(root)})});
   const webview={asWebviewUri:uri=>uri,postMessage:async m=>{events.emit('message',m);return true;},
     onDidReceiveMessage:fn=>{handler=fn;return disposable;}};
-  editor.resolveCustomTextEditor(doc,{active:true,webview,onDidDispose:()=>disposable});
+  const panel={active:true,visible:true,viewColumn:1,webview,onDidDispose:()=>disposable};
+  editor.resolveCustomTextEditor(doc,panel);
   function review(promptType='approve') {
     const opened=nextEvent(events,promptType);
     handler({action:'apply',version:doc.version});
@@ -100,8 +104,29 @@ async function openEditor(t) {
     assert.equal(await fs.readFile(source,'utf8'),expected);
     assert.equal(await fs.readFile(design,'utf8'),initialDesign);
   };
-  return {review,edit,preview,assertUnwritten,events,tabs,unrelated,source,original};
+  return {review,edit,preview,assertUnwritten,events,tabs,unrelated,source,original,doc,panel,handler};
 }
+
+test('Edit JSON beside refocuses the same document in its text group from a visible inactive graph',async t=>{
+  const {doc,panel,handler,original,assertUnwritten} = await openEditor(t);
+  const text = {input:new TabInputText(doc.uri)};
+  vscode.window.tabGroups.all = [
+    {viewColumn:1,tabs:[text]}, // A text tab can also be hidden behind the graph.
+    {viewColumn:2,tabs:[{input:new TabInputText(Uri.file('another.zephyr-program.json'))}]},
+    {viewColumn:3,tabs:[text]}
+  ];
+  const focused = [];
+  vscode.window.showTextDocument = (document,options)=>focused.push({document,options});
+  panel.active = false;
+  handler({action:'text'});
+  await nextTurn();
+  assert.deepEqual(focused,[{document:doc,options:{viewColumn:3,preserveFocus:false,preview:false}}]);
+  panel.visible = false;
+  handler({action:'text'});
+  await nextTurn();
+  assert.equal(focused.length,1);
+  await assertUnwritten(original);
+});
 
 test('approval of an outdated review closes only its diff and immediately permits another review',async t=>{
   const h=await openEditor(t);

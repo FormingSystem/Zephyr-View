@@ -118,11 +118,15 @@ class VisualProgramEditor {
 
   show(uri) { return commands.executeCommand('vscode.openWith',uri,viewType,{preview:false}); }
 
-  edit_text_beside(uri) {
-    const existing = window.tabGroups.all.find(group => group.tabs.some(tab =>
-      tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === uri.toString()));
-    return commands.executeCommand('vscode.openWith',uri,'default',{
-      viewColumn:existing?.viewColumn ?? vscode.ViewColumn.Beside, preview:false
+  edit_text_beside(document, graphColumn) {
+    const uri = document.uri.toString();
+    const existing = window.tabGroups.all.find(group => group.viewColumn !== graphColumn && group.tabs.some(tab =>
+      tab.input instanceof vscode.TabInputText && tab.input.uri.toString() === uri));
+    if (existing) {
+      return window.showTextDocument(document,{viewColumn:existing.viewColumn,preserveFocus:false,preview:false});
+    }
+    return commands.executeCommand('vscode.openWith',document.uri,'default',{
+      viewColumn:vscode.ViewColumn.Beside, preserveFocus:false, preview:false
     });
   }
 
@@ -165,8 +169,8 @@ class VisualProgramEditor {
         if (text === document.getText() || !await replaceDocument(document,text)) return update(true);
         return;
       }
+      if (m.action === 'text' && panel.visible) return this.edit_text_beside(document,panel.viewColumn);
       if (!panel.active) return;
-      if (m.action === 'text') return this.edit_text_beside(document.uri);
       if (m.action === 'liveSource') return commands.executeCommand('zephyrWorkbench.liveSource');
       if (m.action === 'save') return commands.executeCommand('workbench.action.files.save');
       if (m.action === 'copy') return commands.executeCommand('workbench.action.files.saveAs');
