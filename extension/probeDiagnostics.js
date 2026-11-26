@@ -106,8 +106,12 @@ async function inspectDevices(profile,platform=process.platform,run=exec) {
     return macUsbDevices(stdout,profile);
   }
   if (platform!=='win32') return;
-  const script="[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)\nGet-CimInstance Win32_PnPEntity -Filter 'Present = TRUE' | Select-Object Name,PNPDeviceID,ConfigManagerErrorCode | ConvertTo-Json -Compress";
-  const {stdout}=await run(powershell(),['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout:10000,maxBuffer:4096*1024});
+  const fields='Name,PNPDeviceID,ConfigManagerErrorCode';
+  const query=`SELECT ${fields} FROM Win32_PnPEntity WHERE Present = TRUE`;
+  const script="[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)\n"+
+    `Get-CimInstance -Query '${query}' -OperationTimeoutSec 45 -ErrorAction Stop | Select-Object ${fields} | ConvertTo-Json -Compress`;
+  // Include PowerShell startup and the first WMI connection in the process deadline.
+  const {stdout}=await run(powershell(),['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout:60000,maxBuffer:4096*1024});
   return windowsDevices(stdout.trim()?JSON.parse(stdout):[],profile);
 }
 
