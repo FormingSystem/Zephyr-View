@@ -14,4 +14,15 @@ The baseline is Zephyr View 0.5.27 at `3bff9bb`. The reference application sends
 
 Zephyr message queues copy fixed-size data. Semaphores exchange permits. Analysis must account for initial state, wait mode and reachable operations. A possible endpoint alone does not demonstrate execution. Timing, hardware behavior and actual execution order require independent evidence. [Zephyr message queues](https://docs.zephyrproject.org/latest/kernel/services/data_passing/message_queues.html) · [Zephyr semaphores](https://docs.zephyrproject.org/latest/kernel/services/synchronization/semaphores.html)
 
+## Findings and acceptance results
+
+| Reproduced behavior | Change and evidence |
+| --- | --- |
+| Starting a connection at a queue left the operation unclear. Moving a step into a branch required reconstructing it. | Connecting `samples` to `relay` in the installed extension previews `k_msgq_get`. Moving an existing print into else preserved its ID in the saved design. Removing or changing a populated branch shows the number of descendants it will discard. |
+| A receiver could wait forever on an empty queue and its peers were difficult to locate. | Selecting the object lists its accesses, defining functions and reachable threads. In a QEMU boundary test a thread outside the graph sent `99` and woke the receiver. A missing sender in the graph is a lead for investigation. |
+| Function input and output shared a record and the return arrow pointed toward the callee. | The bundled QEMU capture contains 18 events. The entry to `scale` records `42` and the return to the caller records `84`. Firmware exercises also covered two threads sharing a function, driver return values and tracing disabled. The older 17-event capture retains its original evidence and source mapping. |
+| It was difficult to check proposed C against existing project source before updating. | In the installed extension a native VS Code diff showed the initial sample changing from `42` to `91`. Returning to the graph left the source byte-for-byte intact. Approving the change generated `91`. Changing the graph to `77` during review invalidated the approval and allowed an immediate new review. A hand-edited source can be compared before exporting a separate copy. |
+
+[Interactive exercise and mouse walkthrough](../../extension/guides/visual-program.en.md)
+
 [简体中文](program-designer-details.md) | **English**

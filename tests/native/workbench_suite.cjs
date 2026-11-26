@@ -27,7 +27,7 @@ async function verify_cmake(tools, directory) {
 async function verify_tutorial(extension, folder) {
   const guide = vscode.env.language.toLowerCase().startsWith('zh') ? 'GETTING_STARTED.md' : 'GETTING_STARTED.en.md';
   await fs.access(path.join(extension.extensionPath, guide));
-  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio', 'visual-program']) {
+  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio', 'visual-program', 'program-authoring']) {
     const file = await fs.open(path.join(extension.extensionPath, 'guides', 'media', name + '.gif'));
     try {
       const header = Buffer.alloc(10);

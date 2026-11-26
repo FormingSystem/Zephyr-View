@@ -4,6 +4,8 @@
 
 Open **Visual program designer** in Zephyr View to connect threads, functions and signals, edit their behavior, and replay values from firmware. [Walkthrough and 1080p animation](../../extension/guides/visual-program.en.md)
 
+[0.5.28 program designer design and acceptance](program-designer-details.en.md) · [Connect, move and inspect steps in the installed extension](../../extension/guides/media/program-authoring.gif)
+
 [Visual programming design and requirements audit](visual-development-audit.en.md) · [Open the interactive designer](visual-program.html?lang=en&example=firmware)
 
 [Engineering analysis design: application entry points, threads, functions and data flow](thread-analysis.en.md) · [Interactive two-thread example](thread-analysis-preview.html?lang=en)
