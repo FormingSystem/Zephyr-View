@@ -14,7 +14,7 @@
     "baseContentUrl": "https://github.com/FormingSystem/Zephyr-View/blob/main/extension",
     "baseImagesUrl": "https://raw.githubusercontent.com/FormingSystem/Zephyr-View/main/extension"
   },
-  "version": "0.5.29",
+  "version": "0.5.30",
   "engines": {
     "vscode": "^1.85.0"
   },

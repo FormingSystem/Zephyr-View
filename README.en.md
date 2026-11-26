@@ -33,4 +33,10 @@ In **Threads**, generate a two-thread application using a message queue, semapho
 
 Zephyr View uses Apache-2.0, the same primary license as Zephyr RTOS. You may use, modify and distribute the project's original code, documentation and design assets in commercial products. When redistributing, include the license, preserve applicable copyright and attribution notices, and mark files you have modified. Bundled third-party components retain their own licenses. [Full license](LICENSE) · [Third-party notices](extension/ThirdPartyNotices.txt)
 
+## Brand mark
+
+<img src="design/marketplace-icon.png" alt="Zephyr View brand mark" width="64" height="64">
+
+The white wing and two nodes on a teal background identify Zephyr View. The VS Code Activity Bar uses the same silhouette in the current theme’s icon color. [Download the 2048 × 2048 PNG](design/marketplace-icon.png) · [Download the color vector artwork](design/zephyr-view-logo.svg)
+
 [简体中文](README.md) | **English**

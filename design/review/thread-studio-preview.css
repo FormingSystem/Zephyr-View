@@ -5,5 +5,3 @@ body>header{display:flex;align-items:center;justify-content:space-between;gap:1e
 body>header div{display:flex;align-items:center;gap:.55em;} a{color:var(--accent);text-underline-offset:.16em;}
 main,footer{max-width:1440px;margin:0 auto;padding:clamp(.8rem,2.6vw,2rem);}
 footer{padding-top:0;font-size:.85em;}
-
-body>header img { padding:4px; box-sizing:content-box; background:#116a62; border-radius:6px; }

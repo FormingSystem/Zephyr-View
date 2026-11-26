@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="2048" height="2048" role="img" aria-label="Zephyr View">
+  <rect width="128" height="128" rx="26" fill="#11676A"/>
+  <g fill="#ffffff">
+    <path d="M 23,89 C 42,73 59,48 76,21 C 77,42 69,62 54,78 L 77,64 L 88,47 L 93,50 L 81,69 L 54,87 L 92,87 L 92,94 L 31,97 Z"/>
+    <circle cx="91" cy="47" r="7.25"/>
+    <circle cx="94" cy="90.5" r="7.25"/>
+  </g>
+</svg>

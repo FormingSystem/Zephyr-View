@@ -33,4 +33,10 @@
 
 Zephyr View 与 Zephyr RTOS 的项目主许可证均为 Apache-2.0。你可以在商业产品中使用、修改和分发本项目的原创代码、文档和设计资源。再分发时须随附许可证，保留适用的版权和归属声明，并在修改过的文件中注明改动。随包分发的第三方组件按各自的许可证使用。[许可全文](LICENSE) · [第三方声明](extension/ThirdPartyNotices.txt)
 
+## 品牌标识
+
+<img src="design/marketplace-icon.png" alt="Zephyr View 产品标识" width="64" height="64">
+
+青绿色底上的白色翼形与两个节点是 Zephyr View 的品牌标识。VS Code 活动栏使用同一轮廓，颜色随主题切换。 [下载 2048 × 2048 PNG](design/marketplace-icon.png) · [下载彩色矢量原稿](design/zephyr-view-logo.svg)
+
 **简体中文** | [English](README.en.md)
