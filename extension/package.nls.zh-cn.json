@@ -1,0 +1,15 @@
+{
+  "toolDirectories": "额外的可执行文件目录。工程相对路径随工作区迁移，查找顺序在 PATH 之前。",
+  "probeSupport": "探针工具与驱动",
+  "view.title": "Zephyr 调试目标",
+  "open": "打开 Zephyr 调试目标",
+  "chooseBuild": "选择构建目录",
+  "launch": "启动工作区调试配置",
+  "refresh": "刷新调试目标",
+  "kconfig": "配置 Kconfig",
+  "show": "打开工程工作台",
+  "navigation": "工作台",
+  "appearance.theme": "工作台配色。选择 system 可跟随当前 VS Code 主题。",
+  "appearance.density": "工作台控件和分区的间距。选择 auto 可按编辑区域大小自适应。",
+  "locations": "为此工作区保存的应用、Zephyr 源码、SDK 和本地模块。相对路径从工作区文件夹解析。"
+}

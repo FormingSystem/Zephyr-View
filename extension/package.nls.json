@@ -1,0 +1,15 @@
+{
+  "toolDirectories": "Additional executable directories. Project-relative entries move with the workspace and are searched before PATH.",
+  "probeSupport": "Probe Tools and Drivers",
+  "view.title": "Zephyr Debug Target",
+  "open": "Open Zephyr Debug Target",
+  "chooseBuild": "Select Build Directory",
+  "launch": "Start Workspace Debug Configuration",
+  "refresh": "Refresh Debug Target",
+  "kconfig": "Configure Kconfig",
+  "show": "Open Workbench",
+  "navigation": "Workbench",
+  "appearance.theme": "Color scheme of the Zephyr workbench. System follows the active VS Code theme.",
+  "appearance.density": "Spacing of workbench controls and sections. Adaptive adjusts to the available editor space.",
+  "locations": "Saved application, Zephyr source, SDK and local modules. Relative paths resolve from the workspace folder."
+}
