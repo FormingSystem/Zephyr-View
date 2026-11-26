@@ -18,7 +18,7 @@
   try{const stored=localStorage.getItem(key);if(stored)initial=JSON.parse(stored);}catch{}
   const editor=ZephyrProgramView.mount(document.getElementById('designer'),{language:lang,graph:sample?sample.graph:initial,
     onChange(graph){try{if(!sample)localStorage.setItem(key,JSON.stringify(graph));}catch{} playback?.sync();}});
-  if(globalThis.ZephyrProgramPlayback)playback=ZephyrProgramPlayback.mount(editor.traceRoot,{language:lang,model:()=>editor.graph,onEvent:e=>editor.showTrace(e)});
+  if(globalThis.ZephyrProgramPlayback)playback=ZephyrProgramPlayback.mount(editor.traceRoot,{language:lang,model:()=>editor.graph,onEvent:e=>editor.showTrace(e),onRecords:(data,position,seekTo)=>editor.showRecords(data,position,seekTo)});
   if(sample && playback){playback.load(sample.log);playback.toggle();}
   open.addEventListener('click',()=>file.click());
   file.addEventListener('change',async()=>{

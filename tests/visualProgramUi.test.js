@@ -184,9 +184,9 @@ test('visual development edits branches, named hooks and ordered connections and
     const directory=await fs.mkdtemp(path.join(os.tmpdir(),'visual-program-ui-'));
     t.after(()=>fs.rm(directory,{recursive:true,force:true,maxRetries:8,retryDelay:100}));
     const asset=name=>pathToFileURL(path.resolve(__dirname,'../extension/media/threadStudio',name)).href;
-    const scripts=['model','programModel','ui','programFlow','programAuthoring','programReview','programCanvas','programInspector','programView']
+    const scripts=['model','programModel','ui','programFlow','programAuthoring','programReview','programDiagrams','programCanvas','programTypeEditor','programInspector','programView']
       .map(n=>'<script src="'+asset(n+'.js')+'"></script>').join('');
-    for(const lang of ['en','zh'])await fs.writeFile(path.join(directory,lang+'.html'),'<!doctype html><html lang="'+lang+'"><meta charset=utf-8><link rel="stylesheet" href="'+asset('programView.css')+'"><style>body{margin:0}</style><main></main>'+scripts+'<script>('+exercise.toString()+')()</script>');
+    for(const lang of ['en','zh'])await fs.writeFile(path.join(directory,lang+'.html'),'<!doctype html><html lang="'+lang+'"><meta charset=utf-8><link rel="stylesheet" href="'+asset('programView.css')+'"><link rel="stylesheet" href="'+asset('programTypeEditor.css')+'"><style>body{margin:0}</style><main></main>'+scripts+'<script>('+exercise.toString()+')()</script>');
     const widths=[380,960,1800];
     const frames=['en','zh'].flatMap(lang=>widths.map(w=>'<iframe src="'+lang+'.html" width="'+w+'" height="900"></iframe>')).join('');
     const page=path.join(directory,'index.html');

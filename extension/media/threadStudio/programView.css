@@ -53,6 +53,7 @@
 .vp-node.selected .vp-node-box,.vp-node:focus-visible .vp-node-box{fill:var(--selected);stroke:var(--action-ink);stroke-width:2;}
 .vp-node:hover .vp-node-box{stroke:var(--action-ink);}
 .vp-node-glyph{fill:none;stroke:var(--tint);stroke-width:1.55;stroke-linejoin:round;stroke-linecap:round;}
+.vp-process-detail {fill:none;stroke:var(--tint);stroke-width:1.4;}
 .vp-node-name {fill:var(--ink);font:600 13px var(--vscode-editor-font-family,ui-monospace,monospace);}
 .vp-node-meta{fill:var(--muted-ink);font:12px system-ui,sans-serif;}
 .vp-edge {cursor:pointer;}
@@ -115,3 +116,42 @@
 .vp-review-list {display:grid;gap:.3em;margin:.35em 0;max-height:13rem;overflow:auto;}
 .vp-review-list button {display:grid;gap:.15em;text-align:start;white-space:normal;overflow-wrap:anywhere;}
 .vp-review-access:not([hidden]) + details {margin-top:.65em;}
+
+/* Transfer endpoints share the same editor selection and source mapping as canvas nodes. */
+.vp-projection {background:var(--paper);min-width:0;padding:.65em;min-height:16em;max-height:clamp(20em,66vh,58em);overflow:auto;}
+.vp-empty,.vp-isolated {padding:.8em;color:var(--muted-ink);}
+.vp-routes {display:grid;gap:.4em;container-type:inline-size;}
+.vp-route,.vp-route-head {display:grid;grid-template-columns:minmax(0,1fr) 1em minmax(0,.85fr) 1em minmax(0,1fr);align-items:center;gap:.35em;}
+.vp-route {border-bottom:1px solid var(--rule);padding:.38em 0 .65em;}
+.vp-route-head {font-size:.82em;font-weight:650;color:var(--muted-ink);}
+.vp-route-head span:nth-child(2) {grid-column:3;} .vp-route-head span:last-child {grid-column:5;}
+.vp-endpoints {display:grid;gap:.24em;}
+.vp-editor :is(.vp-endpoint,.vp-transfer) {display:grid;text-align:start;gap:.1em;overflow-wrap:anywhere;word-break:normal;}
+.vp-endpoint small,.vp-transfer small {color:var(--muted-ink);font-size:.78em;}
+.vp-editor .vp-transfer {background:var(--selected);border-inline-start:3px solid var(--action-ink);}
+.vp-route-arrow {text-align:center;color:var(--action-ink);}
+.vp-isolated {display:flex;align-items:center;gap:.4em;flex-wrap:wrap;border-top:1px solid var(--rule);}
+@container (max-width:25rem) {
+ .vp-route-head {display:none;} .vp-route {grid-template-columns:minmax(0,1fr);gap:.12em;}
+ .vp-route-arrow {justify-self:center;transform:rotate(90deg);}
+}
+.vp-event-nav {display:flex;gap:.65em;align-items:center;justify-content:flex-end;font-variant-numeric:tabular-nums;padding-bottom:.45em;}
+.vp-seq-scroll {max-height:clamp(16em,55vh,50em);overflow:auto;}
+.vp-event-sheet {--label-width:clamp(8em,25%,13em);width:100%;min-width:calc(9em + var(--lanes)*6em);}
+.vp-editor .vp-event-row,.vp-event-head {display:grid;grid-template-columns:var(--label-width) minmax(0,1fr);align-items:stretch;width:100%;
+  border:0;border-radius:0;border-bottom:1px solid var(--rule);font:inherit;text-align:start;padding:0;background:var(--paper);}
+.vp-event-head {position:sticky;top:0;z-index:2;background:var(--soft);font-weight:650;}
+.vp-event-head>span,.vp-lane-names span {font-size:.86em;}
+.vp-seq-description {display:grid;align-content:center;gap:1px;padding:.32em .5em;min-width:0;overflow-wrap:anywhere;position:sticky;left:0;z-index:1;background:inherit;}
+.vp-seq-description small {color:var(--muted-ink);font-size:.78em;}
+.vp-seq-description strong {font-size:.85em;font-weight:600;}
+.vp-lane-names {display:grid;grid-template-columns:repeat(var(--lanes),minmax(0,1fr));}
+.vp-lane-names span {text-align:center;overflow-wrap:anywhere;align-self:center;padding:.4em .25em;}
+.vp-lifelines {display:flex;align-items:center;min-width:0;background-image:linear-gradient(90deg,transparent calc(50% - .5px),var(--rule) calc(50% - .5px),var(--rule) calc(50% + .5px),transparent calc(50% + .5px));background-size:calc(100% / var(--lanes)) 100%;}
+.vp-event-arrow {width:100%;height:2.4em;stroke:var(--action-ink);fill:none;stroke-width:1.6;}
+.vp-event-arrow path,.vp-event-arrow polyline {vector-effect:non-scaling-stroke;}
+.vp-event-arrow .vp-return {stroke-dasharray:5 3;}
+.vp-editor .vp-event-row:hover,.vp-editor .vp-event-row[aria-pressed=true] {background:var(--selected);}
+.vp-editor .vp-event-row[aria-pressed=true] {box-shadow:inset 3px 0 var(--action-ink);}
+.vp-record-gap {padding:.45em;color:var(--muted-ink);border-bottom:1px dashed var(--rule);}
+@media (forced-colors:active) {.vp-event-arrow {stroke:CanvasText;}.vp-event-row[aria-pressed=true] {outline:1px solid Highlight;}}

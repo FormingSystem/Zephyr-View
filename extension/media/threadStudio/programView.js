@@ -36,11 +36,14 @@ globalThis.ZephyrProgramView = (() => {
   function safe_structure(g) {
     const item=n=>n && typeof n.id==='string' && typeof n.name==='string';
     const scalar=v=>v==null || ['number','string','boolean'].includes(typeof v);
+    const operand=v=>scalar(v)||(typeof v?.type==='string' && typeof v?.member==='string');
+    const types=g?.types===undefined || (Array.isArray(g.types) && g.types.length<=32 && g.types.every(type=>
+      item(type) && Array.isArray(type.members) && type.members.length<=64 && type.members.every(member=>item(member)&&scalar(member.value))));
     let total=0;
     const steps=(items,depth=0)=>Array.isArray(items) && depth<=8 && items.length<=64 && items.every(s=>
       s && typeof s.id==='string' && typeof s.op==='string' &&
-      ['object','function','symbol','test','value','count'].every(k=>scalar(s[k])) && ++total<=1024 && ['steps','elseSteps'].every(k=>s[k]===undefined||steps(s[k],depth+1)));
-    return g?.version===1 && typeof g.name==='string' && Array.isArray(g.objects) && g.objects.length<=64 && g.objects.every(n=>item(n) && Object.hasOwn(model.operations,n.kind)) &&
+      operand(s.value) && ['object','function','symbol','test','count'].every(k=>scalar(s[k])) && ++total<=1024 && ['steps','elseSteps'].every(k=>s[k]===undefined||steps(s[k],depth+1)));
+    return types && g?.version===1 && typeof g.name==='string' && Array.isArray(g.objects) && g.objects.length<=64 && g.objects.every(n=>item(n) && Object.hasOwn(model.operations,n.kind)) &&
       Array.isArray(g.threads) && g.threads.length<=32 && g.threads.every(n=>item(n)&&steps(n.steps)) && steps(g.mainSteps??[]) && Array.isArray(g.functions??[]) && (g.functions??[]).length<=32 && (g.functions??[]).every(n=>item(n)&&steps(n.steps));
   }
   class editor {
@@ -72,6 +75,8 @@ globalThis.ZephyrProgramView = (() => {
         'static',v=>this.change(g=>{g.creation=v;}));
       this.errors=el('div','vp-warnings');this.errors.setAttribute('role','status');
       const frame=el('div','vp-viewport');
+      this.diagramFrame=frame;
+      this.diagrams=new ZephyrProgramDiagrams.diagram_panel(this);
       this.status=el('p','vp-caption');this.status.setAttribute('aria-live','polite');
       this.zoomLevel=el('output','vp-percent','100%');
       this.inspector=el('section','vp-inspector');
@@ -97,7 +102,7 @@ globalThis.ZephyrProgramView = (() => {
       });
       const project=el('div','vp-project',this.title,el('label','vp-creation',t('线程创建','Thread creation'),this.creation),
         el('div','vp-toggles',this.leftToggle,this.rightToggle));
-      const graph=el('section','vp-graph',this.tools(),frame,this.status);
+      const graph=el('section','vp-graph',this.tools(),frame,this.diagrams.root,this.status);
       this.review = new ZephyrProgramReview.review_panel(this);
       this.right.append(this.inspector,this.review.root,this.code,this.traceRoot);
       this.shell.append(project,this.errors,el('div','vp-body',this.library,graph,this.right));
@@ -122,8 +127,9 @@ globalThis.ZephyrProgramView = (() => {
         this.command(t('＋ 函数','＋ Function'),()=>this.add('function'),'function'),
         el('div','vp-object-tools',type,this.command('＋',()=>this.add(this.objectKind),'object',t('添加所选内核对象','Add selected kernel object'))));
       const add=el('div','vp-map-modes');
-      for(const [id,label] of [['architecture',t('架构','Architecture')],['flow',t('执行流程','Control flow')]]){
-        add.append(this.command(label,()=>{this.mode=id;this.connecting=null;this.refresh();this.canvas.fit();},id));
+      for(const [id,label] of [['architecture',t('架构','Architecture')],['flow',t('执行流程','Control flow')],
+        ['pipeline',t('管道','Pipeline')],['sequence',t('时序','Sequence')]]){
+        add.append(this.command(label,()=>{this.mode=id;this.connecting=null;this.refresh();if(!this.diagramFrame.hidden)this.canvas.fit();},id));
       }
       this.join=this.command(t('连接节点','Connect nodes'),()=>{
         if(this.connecting){this.cancelConnection();return;}
@@ -134,11 +140,19 @@ globalThis.ZephyrProgramView = (() => {
         this.command('+',()=>this.canvas.zoom(1.25),'zoomIn',t('放大','Zoom in')),
         this.command('⌖',()=>this.canvas.fit(),'fit',t('定位全图 (Home)','Fit graph (Home)')),
         this.command('◎',()=>this.canvas.center(this.stepId||this.selected),'center',t('聚焦选中节点','Center selected node')));
+      this.zoomControls=zoom;
       return el('div','vp-tools',add,this.join,zoom);
     }
     updateMode() {
       const t=this.t;
+      const projected=this.mode==='sequence' || this.mode==='pipeline';
+      this.zoomControls.hidden=projected;this.join.hidden=projected;
       this.join.setAttribute('aria-pressed',Boolean(this.connecting));
+      if(projected){
+        this.status.textContent=this.mode==='sequence' ? t('按固件记录顺序排列。点击事件可定位其步骤与源码。','In firmware record order. Select an event to locate its step and source.') :
+          t('图中的访问关系。选择通道或端点可检查操作。','Accesses defined in the program. Select a channel or endpoint to inspect it.');
+        return;
+      }
       this.status.textContent=this.connecting?(this.connecting.notice || (this.connecting.proposal?
         t('在检查器确认连接，或按 Esc 取消。','Confirm the connection in the inspector, or press Esc to cancel.') :
         this.connecting.from?t('选择箭头终点，按 Esc 取消。','Select the arrow destination. Esc cancels.') :
@@ -324,8 +338,12 @@ globalThis.ZephyrProgramView = (() => {
       this.addButtons.querySelector('[data-action=function]').disabled=(this.graph.functions?.length||0)>=32;
       this.libraryContent();
       const owner=flow.owners(this.graph).find(o=>o.id===this.selected)||flow.owners(this.graph)[0];
-      const diagram=this.mode==='flow'?flow.flow(this.graph,owner,this.api,this.t):flow.architecture(this.graph,this.t);
-      this.canvas.show(diagram,this.selected,this.stepId);this.updateMode();
+      this.diagramFrame.hidden=this.mode==='sequence'||this.mode==='pipeline';
+      if (!this.diagramFrame.hidden) {
+        const diagram=this.mode==='flow'?flow.flow(this.graph,owner,this.api,this.t):flow.architecture(this.graph,this.t);
+        this.canvas.show(diagram,this.selected,this.stepId);
+      }
+      this.diagrams.show(this.mode,this.graph);this.updateMode();
       this.shell.querySelectorAll('.vp-map-modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.action===this.mode));
       if(!typing)this.inspector.replaceChildren(ZephyrProgramInspector.render(this,nodes.find(n=>n.id===this.selected)));
       if(this.code.open)this.showCode();
@@ -346,9 +364,10 @@ globalThis.ZephyrProgramView = (() => {
         }
         list.append(group);
       }
-      this.library.replaceChildren(el('h2','',t('组件库','Component library')),this.addButtons,list);
+      this.library.replaceChildren(el('h2','',t('组件库','Component library')),this.addButtons,list,ZephyrProgramInspector.typesPanel(this));
       if(focused)Array.from(list.querySelectorAll('[data-pick]')).find(b=>b.dataset.pick===focused)?.focus({preventScroll:true});
     }
+    showRecords(data,position,seek){this.diagrams.records(data,position,seek);}
     showTrace(event){
       if(event && this.diagnostics.length)return;
       const owner=event && flow.findStep(this.graph,event.stepId)?.owner;
@@ -415,7 +434,7 @@ globalThis.ZephyrProgramView = (() => {
       if(tooLarge===this.tooLarge && JSON.stringify(next)===JSON.stringify(this.graph))return;
       this.tooLarge=tooLarge;
       this.review.report = undefined;
-      this.source=null;this.observed=null;this.canvas.trace(null);this.graph=clone(next);this.connecting=null;this.deleting=null;this.pendingStep=null;
+      this.source=null;this.observed=null;this.diagrams.reset();this.canvas.trace(null);this.graph=clone(next);this.connecting=null;this.deleting=null;this.pendingStep=null;
       this.refresh();
     }
     dispose(){this.canvas.dispose();this.shell.remove();}

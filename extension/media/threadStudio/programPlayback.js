@@ -209,6 +209,7 @@ globalThis.ZephyrProgramPlayback = (() => {
         this.following ? t('跟随最新事件','Follow latest') : t('播放','Play');
       if (this.watch) this.watch.textContent=this.following ? t('停止跟踪','Stop following') : t('跟踪日志…','Follow log…');
       const row=this.data?.rows[this.position-first];
+      this.options.onRecords?.(this.data,this.position,position=>{this.pause();this.seek(position);});
       this.output.textContent=row ? t('行 ','Line ')+row.line+' · '+this.describe(row) : '';
       if (this.position>=0 && this.position<first) {
         this.output.textContent=t('选中的记录已移出窗口。','The selected record left the buffer.');

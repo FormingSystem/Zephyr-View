@@ -57,6 +57,38 @@ globalThis.ZephyrProgramCanvas = (() => {
       }
     }
   }
+  // Keep Chinese and wide glyphs inside the SVG symbol. Its title keeps the complete label.
+  function clipped(text, units) {
+    const value=String(text);
+    let used=0, result='';
+    for (const char of value) {
+      used+=char.codePointAt(0)>255 ? 2 : 1;
+      if (used>units) return result+'…';
+      result+=char;
+    }
+    return value;
+  }
+
+  function instruction_face(node, label, metric) {
+    const middle=[{class:'vp-node-name',x:92,y:28,'text-anchor':'middle'},
+      {class:'vp-node-meta',x:92,y:45,'text-anchor':'middle'}];
+    let shape='process', face=svg('rect',{class:'vp-node-box',width,height,rx:3});
+    if (node.op==='if') shape='decision';
+    else if (node.op==='repeat') shape='loop';
+    else if (['call','external'].includes(node.op)) shape='subroutine';
+    else if (['print','send','receive'].includes(node.op)) shape='io';
+    const outlines={decision:'M 92 0 L 184 32 L 92 64 L 0 32 Z',
+      loop:'M 18 0 H 166 L 184 32 L 166 64 H 18 L 0 32 Z',
+      io:'M 17 0 H 184 L 167 64 H 0 Z'};
+    if (outlines[shape]) face=svg('path',{class:'vp-node-box',d:outlines[shape]});
+    face.dataset.shape=shape;
+    const parts=[face];
+    if (shape==='subroutine') parts.push(svg('path',{class:'vp-process-detail',d:'M 8 0 V 64 M 176 0 V 64'}));
+    parts.push(svg('text',middle[0],clipped(label,shape==='decision'?14:20)),
+      svg('text',middle[1],clipped(metric,shape==='decision'?12:21)));
+    return parts;
+  }
+
   class canvas {
     constructor(frame,ctx) {
       this.frame=frame;
@@ -195,10 +227,12 @@ globalThis.ZephyrProgramCanvas = (() => {
       const label=node.name||this.ctx.t('未命名','Unnamed');
       const metric=node.metric || (kind!=='thread' && !node.kind ? this.ctx.kind(kind) : node.kind ? this.ctx.kind(kind)+(node.kind==='mutex'?'':'  ·  '+node.capacity) :
         this.ctx.kind(kind)+'  ·  '+this.ctx.t('优先级 ','Priority ')+node.priority);
-      g.append(svg('title',{},label+' · '+metric),svg('rect',{class:'vp-node-box',width,height,rx:7}),
+      g.append(svg('title',{},label+' · '+metric));
+      if (kind==='instruction') {g.append(...instruction_face(node,label,metric));return g;}
+      g.append(svg('rect',{class:'vp-node-box',width,height,rx:7}),
         svg('path',{class:'vp-node-glyph',d:glyphs[kind]||glyphs.thread,transform:'translate(13 13)'}),
-        svg('text',{class:'vp-node-name',x:41,y:28},label.length>15?label.slice(0,14)+'…':label),
-        svg('text',{class:'vp-node-meta',x:14,y:50},metric));
+        svg('text',{class:'vp-node-name',x:41,y:28},clipped(label,16)),
+        svg('text',{class:'vp-node-meta',x:14,y:50},clipped(metric,23)));
       return g;
     }
     transform() {
