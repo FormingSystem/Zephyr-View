@@ -19,6 +19,7 @@ globalThis.ZephyrThreadStudio = (() => {
     notice.setAttribute('role','status');
     const heading = el('div','ts-heading',el('h1','',t('线程工作室','Thread studio')),
       options.preview ? el('span','ts-preview-label',t('交互设计稿','Interactive prototype')) : null);
+    if (options.openDesigner) heading.append(button(t('打开程序设计器','Open program designer'),options.openDesigner,'ts-item'));
     shell.append(heading,tabs,pane,notice);
     const ctx = {t,model,state,draw,preview:options.preview,post:m=>options.post?.(m),save:()=>options.onDraft?.({...state.draft})};
 

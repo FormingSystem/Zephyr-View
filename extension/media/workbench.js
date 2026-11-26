@@ -12,6 +12,7 @@
       const drafts = stored().threadDrafts || {};
       threads = ZephyrThreadStudio.mount(root, {
         language:data.language, preview:false, draft:drafts[threadScope],
+        openDesigner:()=>host.postMessage({action:'visualProgram'}),
         post:input => host.postMessage({action:'threadStudio',scope:threadScope,input}),
         onDraft:draft => persist({threadDrafts:{...stored().threadDrafts,[threadScope]:draft}})
       });

@@ -28,7 +28,7 @@ const vscode = {
   Uri:{file:uri, parse:uri, joinPath:(base,...parts)=>uri(path.join(base.fsPath,...parts))},
   FileType:{File:1,Directory:2}, l10n:{t:(text,...args)=>text.replace(/\{(\d+)\}/g,(_,index)=>args[index])},
   commands:{registerCommand:(id,run)=>commands.set(id,run),executeCommand:async()=>{}},
-  window:{onDidChangeActiveTextEditor:editorChanged.event,registerTreeDataProvider:ignore},
+  window:{onDidChangeActiveTextEditor:editorChanged.event,registerTreeDataProvider:ignore,registerCustomEditorProvider:ignore},
   debug:{onDidChangeActiveDebugSession:sessionChanged.event,onDidStartDebugSession:ignore,onDidTerminateDebugSession:ignore,
     startDebugging:(folder,name)=>launches.push([folder.name,name])},
   workspace:{
@@ -89,7 +89,7 @@ async function setup(t) {
   editorChanged.handlers.length=sessionChanged.handlers.length=0;
   const saved=new Map();
   const state={get:(key,fallback)=>saved.has(key)?saved.get(key):fallback,update:(key,value)=>saved.set(key,value)};
-  const {target}=activate({subscriptions:[],workspaceState:state});
+  const {target}=activate({subscriptions:[],workspaceState:state,extensionUri:uri(directory)});
   const row=async name=>(await target.getChildren()).find(item=>item.label===name);
   const edit=folder=>editorChanged.fire(folder && {document:{uri:uri(path.join(folder.uri.fsPath,'main.c'))}});
   const debug=session=>{vscode.debug.activeDebugSession=session;sessionChanged.fire(session);};

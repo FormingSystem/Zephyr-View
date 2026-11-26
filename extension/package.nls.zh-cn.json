@@ -1,4 +1,6 @@
 {
+  "visualProgram": "可视化程序设计器",
+  "openVisualFile": "打开可视化设计文件…",
   "threads": "打开线程工作室",
   "gettingStarted": "入门指南",
   "copyExamples": "复制入门示例…",

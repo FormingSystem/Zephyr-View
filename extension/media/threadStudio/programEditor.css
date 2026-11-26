@@ -1,0 +1,19 @@
+html { color-scheme:light dark; font:var(--vscode-font-size) var(--vscode-font-family); color:var(--vscode-editor-foreground); background:var(--vscode-editor-background); }
+body { margin:0; padding:0; display:flex; flex-direction:column; min-height:100vh; }
+#commands, #feedback { flex:none; }
+#commands { display:flex; flex-wrap:wrap; gap:.3rem; align-items:center; padding:.35rem .7rem; border-bottom:1px solid var(--vscode-panel-border); }
+#commands button { font:inherit; border-radius:4px; border:1px solid transparent; padding:.3em .65em; color:inherit; background:transparent; cursor:pointer; }
+#commands button:hover:enabled { background:var(--vscode-toolbar-hoverBackground); }
+#commands button:focus-visible { outline:1px solid var(--vscode-focusBorder); }
+#commands button:disabled { color:var(--vscode-disabledForeground); }
+#commands [data-command=export] { color:var(--vscode-button-foreground); background:var(--vscode-button-background); }
+#commands [data-command=export]:hover:enabled { background:var(--vscode-button-hoverBackground); }
+#feedback { color:var(--vscode-descriptionForeground); overflow-wrap:anywhere; padding:.3em .8em; }
+#feedback:empty { display:none; }
+#designer { display:flex; flex:1; min-width:0; max-width:none; margin:0; padding:.45rem; }
+#designer > .vp-editor { display:flex; flex-direction:column; flex:1; }
+#designer .vp-body { flex:1; }
+@container program (min-width:721px) {
+  #designer .vp-viewport { min-height:12rem; }
+  #designer .vp-library, #designer .vp-right { max-height:calc(100vh - 9rem); }
+}

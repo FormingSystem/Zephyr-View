@@ -14,7 +14,7 @@
     "baseContentUrl": "https://github.com/FormingSystem/Zephyr-View/blob/main/extension",
     "baseImagesUrl": "https://raw.githubusercontent.com/FormingSystem/Zephyr-View/main/extension"
   },
-  "version": "0.5.26",
+  "version": "0.5.27",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -27,7 +27,15 @@
     "workspace"
   ],
   "contributes": {
+    "customEditors": [{
+      "viewType": "zephyrWorkbench.visualProgram",
+      "displayName": "%visualProgram%",
+      "selector": [{"filenamePattern": "*.zephyr-program.json"}],
+      "priority": "default"
+    }],
     "commands": [
+      {"command": "zephyrWorkbench.visualProgram", "title": "%visualProgram%", "category": "Zephyr View"},
+      {"command": "zephyrWorkbench.openVisualFile", "title": "%openVisualFile%", "category": "Zephyr View"},
       {"command": "zephyrWorkbench.threads", "title": "%threads%", "category": "Zephyr View"},
       {"command": "zephyrWorkbench.gettingStarted", "title": "%gettingStarted%", "category": "Zephyr View"},
       {"command": "zephyrWorkbench.copyExamples", "title": "%copyExamples%", "category": "Zephyr View"},
