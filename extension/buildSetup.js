@@ -229,9 +229,10 @@ async function describe(context,s,method) {
     base:env.ZEPHYR_BASE || s.target.zephyrBase},extra);
   if(layout.appConflict)error ||= l10n.t('APP_DIR differs from the selected application. Select the matching application or remove the APP_DIR definition.');
   const plan=plans(s,method,app,projectBoard ? undefined : board,layout,parallelism);
-  const configurationCache=s.target.system?.cache || s.target.cache;
+  const configuration=s.target.system?.cache ? s.target.system : s.target;
   const pending=refreshOverlay || Boolean(files.fileReset?.imageEdits?.length) || layout.definitions.some(arg=>{
-    return arg.startsWith('-U') ? configurationCache.has(arg.slice(2)) : !definition_matches(configurationCache,parseDefinition(arg));
+    return arg.startsWith('-U') ? configuration.cache.has(arg.slice(2)) :
+      !definition_matches(configuration.cache,parseDefinition(arg),configuration.cacheTypes);
   });
   const [cmake,west,appExists,westGenerator,missingModules]=await Promise.all([
     usableTool(s,'cmake'),westMode && usableTool(s,'west'),isApplicationDirectory(app),

@@ -21,6 +21,17 @@ try{
   catalog=require('../extension/compiler_catalog');
 }finally{Module._load=loader;}
 
+test('configure accepts equivalent boolean cache values while preserving explicit strings', () => {
+  const cache = new Map([['FLAG','TRUE'], ['DISABLED','0']]);
+  const types = new Map([['FLAG','BOOL'], ['DISABLED','BOOL']]);
+  const matches = (name,value,type) => selection.definition_matches(cache,{name,value,type},types);
+  assert.equal(matches('FLAG','ON','BOOL'),true);
+  assert.equal(matches('DISABLED','off'),true);
+  assert.equal(matches('FLAG','0'),false);
+  assert.equal(matches('FLAG','ON','STRING'),false);
+  assert.equal(matches('MISSING','OFF','BOOL'),false);
+});
+
 const exe=process.platform==='win32'?'.exe':'';
 const host_image=process.platform==='win32'?Buffer.from('MZ\0\0'):Buffer.from('#!/bin/sh\n');
 const uri=file=>({scheme:'file',fsPath:file,toString:()=>file});

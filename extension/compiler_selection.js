@@ -123,10 +123,15 @@ function compiler_request(context,s,target,args) {
 }
 
 /** Zephyr stores zephyr/gnu as two cache fields, and CMake normalizes paths on Windows. */
-function definition_matches(cache,entry) {
+function definition_matches(cache,entry,types) {
   if(entry.name===variant_key)return variant_matches(cache,entry.value);
   if(entry.name===prefix_key && path.isAbsolute(entry.value))return same_file(cache.get(prefix_key),entry.value);
-  return cache.get(entry.name)===entry.value;
+  const cached=cache.get(entry.name);
+  if (cached===entry.value) return true;
+  if (cached===undefined || (entry.type ?? types?.get(entry.name))!=='BOOL') return false;
+  // CMake may write TRUE to a BOOL entry passed as ON. String and path entries retain literal spelling.
+  const truthy=/^(1|ON|YES|TRUE|Y)$/i, falsy=/^(0|OFF|NO|FALSE|N|IGNORE|NOTFOUND|)$/i;
+  return (truthy.test(cached) && truthy.test(entry.value)) || (falsy.test(cached) && falsy.test(entry.value));
 }
 
 function default_variant(s, cache) {
