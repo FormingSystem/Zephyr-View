@@ -19,7 +19,7 @@ test('the board reader and its module settings follow the selected checkout acro
     await fs.writeFile(path.join(scripts,'list_boards.py'), [
       'import os','from pathlib import Path','from types import SimpleNamespace',
       'def find_boards(args):',
-      '    assert Path(os.environ["ZEPHYR_BASE"]) == Path(__file__).resolve().parent.parent',
+      '    assert Path(os.environ["ZEPHYR_BASE"]).samefile(Path(__file__).resolve().parent.parent)',
       '    return [SimpleNamespace(name=p.name, dir=p) for p in args.board_roots]'
     ].join('\n'));
   }
