@@ -1,5 +1,5 @@
 {
-  "README.md": "bde796c2e36f0cf39af2b597b95ed4ecdcc62d3b1b338be4adc823f80f3bf8fb",
+  "README.md": "69ba63fc827c675d7ab21ed08951e0254ab32fc0f63d2588663f30dc1d47d7eb",
   "design/README.md": "de72bfca10b95d7ef811fd051a78e899975010cd7d4afaf18ae580016455f44b",
   "design/acceptance-0.2.0.md": "751a07079270856c708ce1709ef38a32d458697ea7dfbb437e0fac33e906b1cb",
   "design/interaction.md": "3b53f4d1bd9d1f06d0be6766c1207f59a1e8f51375768434a0c87dc0c9562cc3",
@@ -15,7 +15,7 @@
   "design/review/multi-board-build.md": "ef5921ef7153999ceace47d682dd7aecd04ca2da5827a02f4b5cfd13dfc6f5c5",
   "design/review/onboarding.md": "7c7b2b558534175901fad7128ab5bcb9c5c7542347eefa83adae97672996c266",
   "design/review/platform-support.md": "b9e59e6e4ada96061110cbfb892eeb0551b3adb61222f042a707793fb988d3da",
-  "design/review/program-designer-details.md": "3a621ed8729f5bc1df507d21361d8f17e072b5397890ef4020c4aa976925fa65",
+  "design/review/program-designer-details.md": "c6efe166259e63ed0e2351f9ce32345a9480ec768a8c7d9c7746b1a55dd1e0e2",
   "design/review/prototype-layout.md": "91cc57d1fde074cb97d30a693f5d2b2bf3aefa3e06e6ce4543cb434d26bf2577",
   "design/review/standard-adaptation.md": "6f47e67f4bd54d9208e7b2e602a54238005d18c30f0288621769cf512cf55351",
   "design/review/thread-analysis.md": "b8a4c7ace6336893534873a0b9cfdd1a6bb8da8ffb05a1c806b6ae1b5940d446",
@@ -24,11 +24,11 @@
   "design/review/thread-studio.md": "61740e678d641c0a1f78caa2809688ecfd42d3fa2456b9bb8b966dd1869075f4",
   "design/review/visual-development-audit.md": "5ff23c4fd19eeb382204411a9505756a6b9b47ce76c388ea3b7ea505b0cb309b",
   "design/review/workbench-debug.md": "71e87a7c88715b012751ad8c534a480a03fbc9b2808f038e8f0d6953ce81c5dd",
-  "extension/GETTING_STARTED.md": "9d867275dbc4f055787a3a6519b513fcaf368102f6adf6be87044467c93c94af",
-  "extension/README.md": "7f5e36c7f72bdc86d68350edb71d7771b70cd8c77e52d3d01cad8944b2182179",
+  "extension/GETTING_STARTED.md": "59e2c070c71f8112870c4bbffd62751f9561c739be1af6d7f3151b91f3365661",
+  "extension/README.md": "f93991a4f0ee976bac9c880fa1242c95394042c62152e72ff25631c09a1954fd",
   "extension/guides/cmake-integration.md": "e758b91a3a1c1502606aa471e36b40cbeb65ccd2dcb18c4339679e6988a29cfc",
   "extension/guides/hardware-port.md": "a5e238306429cdcdf6738848d223d37ff5ae079033054ed1bad83a1d4b120494",
   "extension/guides/threads.md": "9ed5dae1832b47d8064fb7289ab1609b78dbd3f87bcbc0c46860506d572c2513",
-  "extension/guides/visual-program.md": "235fcac233448ec2b66475c00af7c050e5c048fbd3766d8526d646c40670ad87",
+  "extension/guides/visual-program.md": "7ac00f4cfd36ff8dca88614b147b59d39174d74e7e83bbebd12cef92e3643b69",
   "extension/guides/west-workspace.md": "43d50b819eb8f096801cf8a039bbe0bf1055872aa796b43fb3fcb208421572b4"
 }

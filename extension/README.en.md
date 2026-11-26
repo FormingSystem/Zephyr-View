@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | **English**
 
-Open **Visual program designer** in Zephyr View to connect threads, functions and signals, edit their behavior, and replay values from firmware. [Walkthrough and 1080p animation](guides/visual-program.en.md)
+Open **Visual program designer** in Zephyr View to explore architecture, control flow, pipelines and firmware sequences. Follow inputs and return values across threads and functions. In a C source or header file, open **Live C source diagram** to see calls, signal directions and type members as you edit. [Walkthrough and 1080p animation](guides/visual-program.en.md)
 
 For your first build, open [Getting started](GETTING_STARTED.en.md). The same guide is available offline from the Zephyr View sidebar, with animations and a Command Palette action to copy the examples.
 

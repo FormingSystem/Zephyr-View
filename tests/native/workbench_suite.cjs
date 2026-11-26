@@ -27,7 +27,7 @@ async function verify_cmake(tools, directory) {
 async function verify_tutorial(extension, folder) {
   const guide = vscode.env.language.toLowerCase().startsWith('zh') ? 'GETTING_STARTED.md' : 'GETTING_STARTED.en.md';
   await fs.access(path.join(extension.extensionPath, guide));
-  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio', 'visual-program', 'program-authoring']) {
+  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio', 'visual-program', 'program-authoring', 'program-diagrams', 'program-views']) {
     const file = await fs.open(path.join(extension.extensionPath, 'guides', 'media', name + '.gif'));
     try {
       const header = Buffer.alloc(10);
@@ -87,6 +87,22 @@ async function verify_source_review(extension, design, graph) {
   } finally { for (const item of subscriptions) item.dispose(); }
 }
 
+async function verify_live_source(extension, project) {
+  const flags = path.join(extension.extensionPath,'examples','visual-program','flags.zephyr-program.json');
+  const {validate,generate} = require(path.join(extension.extensionPath,'media','threadStudio','programModel'));
+  const example = JSON.parse(await fs.readFile(flags,'utf8'));
+  assert.deepEqual(validate(example),[]);
+  assert.ok(generate(example)['src/main.c'].includes('UINT32_C(2147483648)'));
+  const source = vscode.Uri.file(path.join(project,'src','main.c'));
+  const panels = () => vscode.window.tabGroups.all.flatMap(group=>group.tabs).filter(tab =>
+    tab.input instanceof vscode.TabInputWebview && tab.input.viewType.endsWith('zephyrWorkbench.liveSource'));
+  await vscode.commands.executeCommand('zephyrWorkbench.liveSource',source);
+  await vscode.commands.executeCommand('zephyrWorkbench.liveSource',source);
+  for (let i=0;i<80 && !panels().length;i++) await new Promise(resolve=>setTimeout(resolve,50));
+  assert.equal(panels().length,1,'Opening the same source twice should reuse the live preview');
+  await vscode.window.tabGroups.close(panels(),true);
+}
+
 async function verify_visual_program(extension, folder) {
   const {exportProgram,inspectProgram,designFile} = require(path.join(extension.extensionPath,'visualProgramFiles'));
   const {example} = require(path.join(extension.extensionPath,'media','threadStudio','programModel'));
@@ -106,6 +122,7 @@ async function verify_visual_program(extension, folder) {
   assert.equal(JSON.parse(await fs.readFile(uri.fsPath,'utf8')).threads[0].initialValue,123);
   assert.ok((await inspectProgram(uri.fsPath,graph)).changed);
   await verify_source_review(extension,uri.fsPath,graph);
+  await verify_live_source(extension,project);
   await fs.access(path.join(extension.extensionPath,'examples','visual-program','console.txt'));
   await fs.access(path.join(extension.extensionPath,'guides','visual-program.en.md'));
 }
@@ -139,7 +156,7 @@ exports.run = async function run() {
     assert.ok(workbenchTabs.length <= 1, 'Probe support should open inside the same workbench');
     if (workbenchTabs.length === 1) {
       const result = {extension: extension.packageJSON.version, vscode: vscode.version,
-        platform: process.platform, arch: process.arch, cmake, hostBuild: 'passed', threadStudioExportAndAnalysis: 'passed', visualProgramCustomEditor: 'passed'};
+        platform: process.platform, arch: process.arch, cmake, hostBuild: 'passed', threadStudioExportAndAnalysis: 'passed', visualProgramCustomEditor: 'passed', liveSourcePreview:'passed'};
       await fs.writeFile(process.env.ZEPHYR_TEST_EVIDENCE, JSON.stringify(result));
       return;
     }

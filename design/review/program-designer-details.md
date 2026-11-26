@@ -14,6 +14,17 @@
 
 消息队列复制固定大小的数据；信号量发放和获取许可。诊断要依据初始状态、等待方式和可达操作，图上可能存在的端点不能证明真实运行已执行。运行时间、硬件行为与实际执行顺序需要分别取证。[Zephyr 消息队列](https://docs.zephyrproject.org/latest/kernel/services/data_passing/message_queues.html) · [Zephyr 信号量](https://docs.zephyrproject.org/latest/kernel/services/synchronization/semaphores.html)
 
+## 同一程序的四个视图
+
+| 开发者的问题 | 使用的视图 | 图上可核对的证据 |
+| --- | --- | --- |
+| 谁创建和访问内核对象？ | 架构图 | 从入口、线程或函数追到对象。箭头保留发送、接收、释放或获取的方向。 |
+| 一个线程接下来可能走哪条路径？ | 执行流程 | 条件显示两个出口，循环显示循环体。图中可编辑的指令与生成的 C 对应。 |
+| 哪些阶段传数据，哪些阶段只发通知？ | 管道图 | 把线程、函数与它们访问的对象连成阶段。区分消息、许可和调用，保留回路和未连接的阶段。 |
+| 这一轮固件实际先做了什么？ | 时序图 | 按采集顺序显示线程、对象、调用、返回和记录值。日志缺口也要可见。没有采集时间戳时，行间距只表达顺序。 |
+
+源码和程序设计各自保留自己的编辑入口。手写 C 的预览读取编辑器中尚未保存的文本。图形设计与旁边的 JSON 编辑器共享同一文档，输入不完整时保留上次有效的图并暂停图上改写。自定义类型先覆盖可在现有 32 位消息和计算模型中执行的命名枚举，成员可作为指令参数。验证包括重命名成员、拒绝无效引用、修改未保存的源码、恢复半个括号，以及用旧图回放原有记录。[VS Code 自定义文本编辑器](https://code.visualstudio.com/api/extension-guides/custom-editors)
+
 ## 评审记录与验收结果
 
 | 原先可复现的现象 | 修改及验收证据 |
@@ -24,6 +35,8 @@
 | 更新前难以核对生成代码和实际工程文件。 | 安装版在 VS Code 差异视图中比较将采样初值从 `42` 改为 `91` 的修改。返回设计后源码逐字节相同；确认后才生成 `91`。复核期间若图被改为 `77`，原确认即失效，关闭本次差异后可立即重新审查。含手工修改的源码可查看差异并导出副本。 |
 
 同一份设计还在 Arm `mps2/an386` 和 RISC-V `qemu_riscv32` 上使用离线 CMake 构建并在 QEMU 执行。Zephyr 源码为 `25c8f4a23988`，SDK 为 1.0.1。分别采集的 18 条事件按线程和步骤核对一致，包括队列发送与接收的 `42` 和函数返回的 `84`。可将工程切换到对应目标，启用 `ZV_TRACE=ON` 后复验。[示例设计](../../extension/examples/visual-program/graph.json) · [预期串口记录](../../extension/examples/visual-program/console.txt)
+
+两个目标还各自运行了位标志示例。六条事件覆盖置位、取掩码、条件和移位，最高位 `2147483648` 右移 31 位后得到 `1`。在真实 VS Code 中，未保存的 C 修改更新了信号方向，临时缺少右括号时保留有效图，补齐后恢复定位。[位标志设计](../../extension/examples/visual-program/flags.zephyr-program.json) · [Arm 控制台实录](../../extension/examples/visual-program/flags.console.txt)
 
 [交互练习与鼠标演示](../../extension/guides/visual-program.md)
 

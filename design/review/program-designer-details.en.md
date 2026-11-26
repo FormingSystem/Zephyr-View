@@ -14,6 +14,17 @@ The baseline is Zephyr View 0.5.27 at `3bff9bb`. The reference application sends
 
 Zephyr message queues copy fixed-size data. Semaphores exchange permits. Analysis must account for initial state, wait mode and reachable operations. A possible endpoint alone does not demonstrate execution. Timing, hardware behavior and actual execution order require independent evidence. [Zephyr message queues](https://docs.zephyrproject.org/latest/kernel/services/data_passing/message_queues.html) · [Zephyr semaphores](https://docs.zephyrproject.org/latest/kernel/services/synchronization/semaphores.html)
 
+## Four views of one program
+
+| Engineering question | View | Evidence to inspect |
+| --- | --- | --- |
+| Who creates or uses a kernel object? | Architecture | Follow entries, threads and functions to an object. Send, receive, give and take retain their direction. |
+| Which path can this thread take next? | Control flow | Inspect both outcomes of a condition and the body of a loop. Editable instructions map to generated C. |
+| Which stages exchange data or send a notification? | Pipeline | Follow threads, functions and the objects they access. Messages, permits and calls have distinct meanings. Cycles and disconnected stages remain visible. |
+| What happened first on this run? | Sequence | Follow recorded threads, objects, calls, returns and values in capture order, including gaps. Row spacing expresses order when timestamps are unavailable. |
+
+Hand-written C and visual designs each retain a source of truth. The C preview reads unsaved editor text. The visual design and its JSON editor share one document. Incomplete text keeps the last valid diagram visible and suspends canvas edits. The first custom types are named enumerations usable as instruction operands in the existing 32-bit message and computation model. Acceptance checks cover renaming a member, invalid references, unsaved source edits, recovering from an incomplete delimiter and replaying an existing design. [VS Code custom text editors](https://code.visualstudio.com/api/extension-guides/custom-editors)
+
 ## Findings and acceptance results
 
 | Reproduced behavior | Change and evidence |
@@ -24,6 +35,8 @@ Zephyr message queues copy fixed-size data. Semaphores exchange permits. Analysi
 | It was difficult to check proposed C against existing project source before updating. | In the installed extension a native VS Code diff showed the initial sample changing from `42` to `91`. Returning to the graph left the source byte-for-byte intact. Approving the change generated `91`. Changing the graph to `77` during review invalidated the approval and allowed an immediate new review. A hand-edited source can be compared before exporting a separate copy. |
 
 The same design was built with offline CMake and run under QEMU on Arm `mps2/an386` and RISC-V `qemu_riscv32` using Zephyr `25c8f4a23988` and SDK 1.0.1. The two independent captures matched on all 18 events by thread and step, including queue send and receive at `42` and function return at `84`. To reproduce, select either target and build the design with `ZV_TRACE=ON`. [Sample design](../../extension/examples/visual-program/graph.json) · [Expected console capture](../../extension/examples/visual-program/console.txt)
+
+Both targets also ran the bit-flag example. Six events cover setting and masking bits, branching and shifting. Shifting the high bit `2147483648` right by 31 produced `1`. In VS Code, an unsaved C edit reversed the signal direction. Removing a closing delimiter preserved the last valid diagram and restoring it re-enabled source navigation. [Flag design](../../extension/examples/visual-program/flags.zephyr-program.json) · [Arm console capture](../../extension/examples/visual-program/flags.console.txt)
 
 [Interactive exercise and mouse walkthrough](../../extension/guides/visual-program.en.md)
 

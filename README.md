@@ -2,7 +2,7 @@
 
 **简体中文** | [English](README.en.md)
 
-从 Zephyr View 左栏打开**可视化程序设计器**，编排线程、函数和信号，在图上编辑行为并回放固件传递的值。[操作指南与 1080p 动图](extension/guides/visual-program.md)
+从 Zephyr View 左栏打开**可视化程序设计器**，用架构、流程、管道和时序图编排线程、函数和信号，查看固件记录的输入与返回值。在 C 或头文件中打开**实时 C 源码图**，可随编辑查看调用、信号方向和类型成员。[操作指南与 1080p 动图](extension/guides/visual-program.md)
 
 在 VS Code 中配置、构建和调试 Zephyr 应用。支持 west 工作区和独立 CMake 工程，可使用已有源码、模块、SDK 与离线安装包。
 
