@@ -1,0 +1,22 @@
+{
+  "README.md": "89500da8843d17750943e0a604b76b9dcb82232c96bc28c09a9681228f0c179f",
+  "design/README.md": "04aba7f85c5adc0b8c8c7032f70b2354ed928f29077df0d8aaa46343a2f7d8f2",
+  "design/acceptance-0.2.0.md": "751a07079270856c708ce1709ef38a32d458697ea7dfbb437e0fac33e906b1cb",
+  "design/interaction.md": "3b53f4d1bd9d1f06d0be6766c1207f59a1e8f51375768434a0c87dc0c9562cc3",
+  "design/review-0.5/README.md": "6877ae6871d393f77d3bb8203abd906e58e4267a5a14ceddaabbb1f81c2ab43f",
+  "design/review/README.md": "9f550e25c983a584e0e694b0aa54bdd8d0cda15795ee86dbcbf7f87382b8675f",
+  "design/review/adaptive-builds.md": "0b4f3278c51ffdecbfc5a1dbd6bf792626d88f88bbd1dbb52f3234fbf42f7c04",
+  "design/review/catalog-coverage.md": "68ae534b97180d80ee2871008f7eee6112547144ad75aec7cd78390f74381e0c",
+  "design/review/configuration-modules.md": "44bc55183ecc03043aeb7249c671c5660d9e16306d95a423ad172dac8aa7d118",
+  "design/review/environment-workspace-build.md": "d1ba1924ca60b3a81418d01d22f0d99a4b071b661e33a294ad68bdea3a3db571",
+  "design/review/installation-and-flashing.md": "b7f3f0a5ace5ed09ff1bdccc4a54156f4e4288f1935000da589bee9cec94648a",
+  "design/review/local-selection.md": "14a8535fe25467716180f435f2cf5e739b47d6c65dc6658c385204913af4847a",
+  "design/review/module-refinement.md": "ac9239ec4f9fca713f7dbec0ad570d77ec13d152bb1fab04e39da19b8a0d7610",
+  "design/review/multi-board-build.md": "ef5921ef7153999ceace47d682dd7aecd04ca2da5827a02f4b5cfd13dfc6f5c5",
+  "design/review/platform-support.md": "3f34169f5c3c19fb801d204ed37c5077f4dd02fcb2d37e93de76db7e24f46ef4",
+  "design/review/prototype-layout.md": "91cc57d1fde074cb97d30a693f5d2b2bf3aefa3e06e6ce4543cb434d26bf2577",
+  "design/review/standard-adaptation.md": "6f47e67f4bd54d9208e7b2e602a54238005d18c30f0288621769cf512cf55351",
+  "design/review/thread-analysis.md": "b8a4c7ace6336893534873a0b9cfdd1a6bb8da8ffb05a1c806b6ae1b5940d446",
+  "design/review/workbench-debug.md": "66ad90696ea4dcf2a8cd5021f1ecea4d0298187de4010ba3d857c243d72e4fe9",
+  "extension/README.md": "3755177244feb97c09df94053d1c67899fe0ae418422b03bb9e4dbca294508d2"
+}
