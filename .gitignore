@@ -1,0 +1,4 @@
+# Release packages are added explicitly after installation checks.
+/*.vsix
+__pycache__/
+*.pyc

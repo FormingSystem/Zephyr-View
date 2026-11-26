@@ -1,0 +1,77 @@
+/* Spacing belongs to the workbench. Font size and zoom belong to the reader. */
+:root {
+  --wb-space-inline: clamp(.65rem, 1.6vw, 1.125rem);
+  --wb-space-block: clamp(.45rem, 1vh, .75rem);
+  --wb-gap: clamp(.5rem, 1.2vh, .875rem);
+  --wb-row: clamp(2rem, 4vh, 2.5rem);
+  --wb-gutter: clamp(.65rem, 2.25vw, 2.5rem);
+}
+
+:root[data-density="compact"] {
+  --wb-space-inline: .65rem;
+  --wb-space-block: .35rem;
+  --wb-gap: .45rem;
+  --wb-row: 1.875rem;
+}
+
+:root[data-density="comfortable"] {
+  --wb-space-inline: clamp(.85rem, 2vw, 1.375rem);
+  --wb-space-block: .9rem;
+  --wb-gap: 1.125rem;
+  --wb-row: 2.875rem;
+}
+
+body > header {
+  min-height: 3rem;
+  padding-inline: var(--wb-gutter);
+  gap: .25rem clamp(.35rem, 1vw, 1rem);
+}
+body > header .identity svg { width: 1.7rem; height: 1.7rem; }
+body > header nav { align-self: stretch; align-items: stretch; }
+body > header nav button { padding-block: .4rem; }
+body > header #theme {
+  min-inline-size: 2rem;
+  min-block-size: 2rem;
+  padding: .25rem;
+  border-radius: .375rem;
+}
+body > header #theme:hover { background: var(--sub); }
+.editor-shell > main {
+  padding: clamp(.65rem, 1.6vh, 1.5rem) var(--wb-gutter);
+}
+:root[data-density="compact"] .editor-shell > main {padding-block:var(--wb-gap);}
+#main :is(.layout, .stack, .studio-layout) { gap: var(--wb-gap); }
+#main :is(.ph, .body, .sectionfoot) { padding: var(--wb-space-block) var(--wb-space-inline); }
+#main .row { min-height: var(--wb-row); }
+#main .listrow { padding-block: var(--wb-space-block); }
+#main .cell { padding-block: var(--wb-space-block); }
+#main .titleline { margin-block-end: var(--wb-gap); }
+#main .titleline h1 {
+  font-size: clamp(1.35rem, 1.05rem + 1.2vw, 2rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+#main :where(button, summary, select) { scroll-margin-block: 4.5rem; }
+:where(button, select, summary, textarea, input):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+#appearance-dialog {width:min(23rem, calc(100% - 1.5rem)); padding:1rem; border-radius:.65rem;}
+#appearance-dialog form {display:grid; gap:1rem; margin:1rem 0 0;}
+#appearance-dialog label {display:grid; gap:.3rem;}
+#appearance-dialog select {width:100%; min-height:2rem;}
+#appearance-dialog .actions {justify-content:flex-end; gap:.45rem;}
+#appearance-dialog button {border:1px solid var(--line); min-height:2rem;}
+#appearance-dialog button.primary {border-color:var(--accent);}
+
+@media (max-width: 37.5rem) {
+  body > header {padding-block:.2rem;}
+  body > header nav {margin-inline:0; min-width:0;}
+  body > header nav button {min-height:2rem; padding-inline:.35rem;}
+}
+@media (max-width: 25rem) {
+  body > header nav {display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); overflow:visible;}
+  body > header nav button {min-width:0; white-space:normal; line-height:1.15;}
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-shell :focus {scroll-behavior:auto;}
+}

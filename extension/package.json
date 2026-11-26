@@ -1,0 +1,174 @@
+{
+  "name": "zephyr-workbench-preview",
+  "displayName": "Zephyr Extension",
+  "publisher": "zephyr-workbench-preview",
+  "description": "Configure Zephyr workspaces, build with west or CMake, and edit Kconfig and devicetree in VS Code.",
+  "license": "Apache-2.0",
+  "repository": {"type": "git", "url": "https://github.com/FormingSystem/zephyr-extension.git", "directory": "extension"},
+  "homepage": "https://github.com/FormingSystem/zephyr-extension#readme",
+  "bugs": {"url": "https://github.com/FormingSystem/zephyr-extension/issues"},
+  "categories": ["Other", "Debuggers"],
+  "keywords": ["Zephyr", "RTOS", "embedded", "west", "CMake", "Kconfig", "devicetree", "firmware"],
+  "icon": "media/marketplace-icon.png",
+  "vsce": {
+    "baseContentUrl": "https://github.com/FormingSystem/zephyr-extension/blob/main/extension",
+    "baseImagesUrl": "https://raw.githubusercontent.com/FormingSystem/zephyr-extension/main/extension"
+  },
+  "version": "0.5.18",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "main": "./extension.js",
+  "l10n": "./l10n",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "contributes": {
+    "commands": [
+      {"command": "zephyrWorkbench.probeSupport", "title": "%probeSupport%", "category": "Zephyr"},
+      {
+        "command": "zephyrWorkbench.open",
+        "title": "%open%",
+        "category": "Zephyr"
+      },
+      {
+        "command": "zephyrWorkbench.chooseBuild",
+        "title": "%chooseBuild%",
+        "category": "Zephyr",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "zephyrWorkbench.launch",
+        "title": "%launch%",
+        "category": "Zephyr",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "zephyrWorkbench.refresh",
+        "title": "%refresh%",
+        "category": "Zephyr",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "zephyrWorkbench.kconfig",
+        "title": "%kconfig%",
+        "category": "Zephyr"
+      },
+      {
+        "command": "zephyrWorkbench.show",
+        "title": "%show%",
+        "category": "Zephyr"
+      }
+    ],
+    "views": {
+      "debug": [
+        {
+          "id": "zephyrWorkbench.target",
+          "name": "%view.title%",
+          "when": "zephyrWorkbench.available",
+          "visibility": "visible"
+        }
+      ],
+      "zephyr-workbench": [
+        {
+          "id": "zephyrWorkbench.navigation",
+          "name": "%navigation%",
+          "visibility": "visible"
+        },
+        {
+          "id": "zephyrWorkbench.projectTarget",
+          "name": "%view.title%"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "zephyrWorkbench.chooseBuild",
+          "when": "view == zephyrWorkbench.target || view == zephyrWorkbench.projectTarget",
+          "group": "navigation@1"
+        },
+        {
+          "command": "zephyrWorkbench.launch",
+          "when": "view == zephyrWorkbench.target || view == zephyrWorkbench.projectTarget",
+          "group": "navigation@2"
+        },
+        {
+          "command": "zephyrWorkbench.refresh",
+          "when": "view == zephyrWorkbench.target || view == zephyrWorkbench.projectTarget",
+          "group": "navigation@3"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "zephyr-workbench",
+          "title": "Zephyr Extension",
+          "icon": "media/zephyr-workbench.svg"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Zephyr Extension",
+      "properties": {
+        "zephyrWorkbench.appearance.theme": {
+          "type": "string",
+          "scope": "application",
+          "enum": ["system", "light", "dark"],
+          "default": "system",
+          "description": "%appearance.theme%"
+        },
+        "zephyrWorkbench.appearance.density": {
+          "type": "string",
+          "scope": "application",
+          "enum": ["auto", "compact", "comfortable"],
+          "default": "auto",
+          "description": "%appearance.density%"
+        },
+        "zephyrWorkbench.toolDirectories": {
+          "type": "array",
+          "scope": "resource",
+          "default": [],
+          "items": {"type": "string"},
+          "uniqueItems": true,
+          "description": "%toolDirectories%"
+        },
+        "zephyrWorkbench.locations": {
+          "type": "object",
+          "scope": "resource",
+          "default": {},
+          "description": "%locations%",
+          "properties": {
+            "application": {
+              "type": "string"
+            },
+            "ZEPHYR_BASE": {
+              "type": "string"
+            },
+            "ZEPHYR_SDK_INSTALL_DIR": {
+              "type": "string"
+            },
+            "modules": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.1"
+  },
+  "scripts": {
+    "vscode:prepublish": "node packageDesign.js"
+  }
+}
