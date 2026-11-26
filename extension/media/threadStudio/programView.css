@@ -109,3 +109,9 @@
  .vp-editor .vp-tools{gap:.3em;}
 }
 @media(forced-colors:active){.vp-node-box{fill:Canvas;stroke:ButtonText;}.vp-node.selected .vp-node-box,.vp-node.observed .vp-node-box{stroke:Highlight;}.vp-node-name,.vp-node-meta,.vp-edge-caption{fill:CanvasText;}.vp-wire,.vp-node-glyph{stroke:ButtonText;}.vp-head,.vp-pulse{fill:ButtonText;}}
+
+.vp-review {border-top:1px solid var(--rule);padding-block:.65em;}
+.vp-review summary {cursor:pointer;font-weight:600;}
+.vp-review-list {display:grid;gap:.3em;margin:.35em 0;max-height:13rem;overflow:auto;}
+.vp-review-list button {display:grid;gap:.15em;text-align:start;white-space:normal;overflow-wrap:anywhere;}
+.vp-review-access:not([hidden]) + details {margin-top:.65em;}

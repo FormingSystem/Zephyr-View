@@ -41,7 +41,7 @@ function replaceDocument(document, text) {
 function editorHtml(view, root) {
   const nonce = randomBytes(20).toString('hex');
   const asset = name => view.asWebviewUri(Uri.joinPath(root,'threadStudio',name));
-  const scripts = ['model','programModel','ui','programFlow','programCanvas','programInspector','programView','programTrace','programPlayback','programEditor'];
+  const scripts = ['model','programModel','ui','programFlow','programAuthoring','programReview','programCanvas','programInspector','programView','programTrace','programPlayback','programEditor'];
   const styles = ['programView','programPlayback','programEditor'];
   return `<!doctype html><html lang="${zh()?'zh-CN':'en'}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
