@@ -2,6 +2,10 @@
 
 **简体中文** | [English](README.en.md)
 
+从 Zephyr View 左栏打开**可视化程序设计器**，编排线程、函数和信号，在图上编辑行为并回放固件传递的值。[操作指南与 1080p 动图](../../extension/guides/visual-program.md)
+
+[程序设计与历史需求核对](visual-development-audit.md) · [打开可交互的程序设计器](visual-program.html?example=firmware)
+
 [工程分析设计评审：从应用入口到线程、函数和数据流](thread-analysis.md) · [双线程交互样例](thread-analysis-preview.html)
 
 [线程工作室交互初稿](thread-studio-draft.md) · [详细设计和验收矩阵](thread-studio.md) · [调试适配器验证](thread-debug-protocol.md)

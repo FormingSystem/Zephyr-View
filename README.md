@@ -2,6 +2,8 @@
 
 **简体中文** | [English](README.en.md)
 
+从 Zephyr View 左栏打开**可视化程序设计器**，编排线程、函数和信号，在图上编辑行为并回放固件传递的值。[操作指南与 1080p 动图](extension/guides/visual-program.md)
+
 在 VS Code 中配置、构建和调试 Zephyr 应用。支持 west 工作区和独立 CMake 工程，可使用已有源码、模块、SDK 与离线安装包。
 
 [下载当前预发布版 VSIX](https://github.com/FormingSystem/Zephyr-View/releases) · [使用手册](extension/README.md) · [Apache-2.0](LICENSE) · [第三方声明](extension/ThirdPartyNotices.txt)

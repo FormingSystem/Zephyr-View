@@ -2,6 +2,8 @@
 
 **简体中文** | [English](README.en.md)
 
+从 Zephyr View 左栏打开**可视化程序设计器**，编排线程、函数和信号，在图上编辑行为并回放固件传递的值。[操作指南与 1080p 动图](guides/visual-program.md)
+
 初次构建请打开[入门指南](GETTING_STARTED.md)。也可在 Zephyr View 左栏点击「入门指南」，离线查看动图，并从命令面板复制可修改的练习工程。
 
 在 VS Code 中使用 west 或 CMake 构建固件，查看开发板、管理模块，编辑 Kconfig 与设备树。支持本地工具、离线 SDK 和已有的 west 工作区。

@@ -2,6 +2,10 @@
 
 [简体中文](README.md) | **English**
 
+Open **Visual program designer** in Zephyr View to connect threads, functions and signals, edit their behavior, and replay values from firmware. [Walkthrough and 1080p animation](../../extension/guides/visual-program.en.md)
+
+[Visual programming design and requirements audit](visual-development-audit.en.md) · [Open the interactive designer](visual-program.html?lang=en&example=firmware)
+
 [Engineering analysis design: application entry points, threads, functions and data flow](thread-analysis.en.md) · [Interactive two-thread example](thread-analysis-preview.html?lang=en)
 
 [Thread studio interaction draft](thread-studio-draft.en.md) · [Detailed design and acceptance matrix](thread-studio.en.md) · [Debug adapter verification](thread-debug-protocol.en.md)

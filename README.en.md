@@ -2,6 +2,8 @@
 
 [简体中文](README.md) | **English**
 
+Open **Visual program designer** in Zephyr View to connect threads, functions and signals, edit their behavior, and replay values from firmware. [Walkthrough and 1080p animation](extension/guides/visual-program.en.md)
+
 Configure, build and debug Zephyr applications in VS Code. Use a west workspace or a standalone CMake project with existing sources, modules, SDKs and offline installers.
 
 [Download the current preview VSIX](https://github.com/FormingSystem/Zephyr-View/releases) · [User guide](extension/README.en.md) · [Apache-2.0](LICENSE) · [Third-party notices](extension/ThirdPartyNotices.txt)

@@ -6,15 +6,17 @@ Start with a supported board and build one working image. Then add a module, cha
 
 ## Make a writable copy
 
-Press `F1` in VS Code and run **Zephyr View: Copy Tutorial Examples…**. Choose a writable directory, then select **Open examples in a new window**. The new `zephyr-view-examples` folder contains two exercises:
+Press `F1` in VS Code and run **Zephyr View: Copy Tutorial Examples…**. Choose a writable directory, then select **Open examples in a new window**. The new `zephyr-view-examples` folder contains the following exercises.
 
 - `onboarding/app` is the application. `onboarding/modules/greeting` is a separate library you can integrate into it.
 - `hardware-port` is a complete out-of-tree hardware package that exports a teaching board and a Cortex-M3 teaching SoC.
+- `visual-program` contains an editable example graph and its QEMU console recording. Select **Play firmware example** in the designer to follow the values alongside the program.
 
 ## Choose a task
 
 | What you want to do | Where to go | How to check the result |
 | --- | --- | --- |
+| Design a program and trace its messages | Visual program designer → Play firmware example | Step through send, receive and branch operations alongside the generated C. [Walkthrough and animation](guides/visual-program.en.md) |
 | Build two threads and follow a value | Threads → Program draft, then Source analysis and Paused stack | Follow the queue receive call to `value = 42` in the debugger. [Thread tutorial](guides/threads.en.md) |
 | Initialize, open or repair a west workspace | Workspace → west workspace | The expected workspace root and manifest file appear. [Workspace walkthrough and animation](guides/west-workspace.en.md) |
 | Build with existing sources and an SDK, or choose another compiler | Review tools in Workspace, then select a build method and target compiler on Build | `CMakeCache.txt` shows the actual `CMAKE_C_COMPILER`. [Compiler example and animation](guides/cmake-integration.en.md) |

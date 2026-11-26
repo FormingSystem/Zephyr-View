@@ -2,6 +2,8 @@
 
 [简体中文](README.md) | **English**
 
+Open **Visual program designer** in Zephyr View to connect threads, functions and signals, edit their behavior, and replay values from firmware. [Walkthrough and 1080p animation](guides/visual-program.en.md)
+
 For your first build, open [Getting started](GETTING_STARTED.en.md). The same guide is available offline from the Zephyr View sidebar, with animations and a Command Palette action to copy the examples.
 
 Build Zephyr firmware with west or CMake, inspect board targets, manage modules, and edit Kconfig and devicetree in VS Code. You can use local tools, offline SDKs and existing west workspaces.

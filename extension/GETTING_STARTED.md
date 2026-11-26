@@ -6,15 +6,17 @@
 
 ## 先准备一个可以修改的副本
 
-在 VS Code 按 `F1`，运行 **Zephyr View: 复制入门示例…**，选择一个可写目录，然后点 **在新窗口打开示例**。生成的 `zephyr-view-examples` 中有两个练习：
+在 VS Code 按 `F1`，运行 **Zephyr View: 复制入门示例…**，选择一个可写目录，然后点 **在新窗口打开示例**。生成的 `zephyr-view-examples` 中包含以下练习。
 
 - `onboarding/app` 是要编译的应用，`onboarding/modules/greeting` 是可以接进应用的独立库。
 - `hardware-port` 是一个完整的树外硬件包，导出一块教学板和一颗 Cortex-M3 教学 SoC。
+- `visual-program` 包含可编辑的示例程序图和 QEMU 控制台记录。在程序设计器点击「播放固件示例」即可并排对照节点和运行值。
 
 ## 我接下来该点哪里？
 
 | 你现在要做什么 | 工作台入口 | 完成时能看到什么 |
 | --- | --- | --- |
+| 在图上编写程序、追踪消息 | 可视化程序设计器 → 播放固件示例 | 单步看到发送、接收、分支和对应 C 行。[程序设计器动图与练习](guides/visual-program.md) |
 | 创建双线程示例，跟踪一个数值 | 线程 → 编程草稿，随后进入工程分析和暂停栈 | 从队列接收端的源码追到调试器里的 `value = 42`。[线程练习](guides/threads.md) |
 | 初始化、打开或修复 west 工作区 | 工作区 → west 工作区 | 显示正确的工作区根和清单文件。[工作区操作动图与手册](guides/west-workspace.md) |
 | 用现成源码和 SDK 编译应用，或改用另一套编译器 | 工作区核对工具，构建页选择构建方式和目标编译器 | `CMakeCache.txt` 中的 `CMAKE_C_COMPILER` 指向实际使用的编译器。[编译器接入示例与动图](guides/cmake-integration.md) |

@@ -27,7 +27,7 @@ async function verify_cmake(tools, directory) {
 async function verify_tutorial(extension, folder) {
   const guide = vscode.env.language.toLowerCase().startsWith('zh') ? 'GETTING_STARTED.md' : 'GETTING_STARTED.en.md';
   await fs.access(path.join(extension.extensionPath, guide));
-  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio']) {
+  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio', 'visual-program']) {
     const file = await fs.open(path.join(extension.extensionPath, 'guides', 'media', name + '.gif'));
     try {
       const header = Buffer.alloc(10);
@@ -64,6 +64,28 @@ async function verify_thread_studio(extension, folder) {
   await vscode.commands.executeCommand('zephyrWorkbench.threads');
 }
 
+async function verify_visual_program(extension, folder) {
+  const {exportProgram,inspectProgram,designFile} = require(path.join(extension.extensionPath,'visualProgramFiles'));
+  const {example} = require(path.join(extension.extensionPath,'media','threadStudio','programModel'));
+  const project = await exportProgram(folder.uri.fsPath,example());
+  const uri = vscode.Uri.file(path.join(project,designFile));
+  await vscode.commands.executeCommand('vscode.openWith',uri,'zephyrWorkbench.visualProgram',{preview:false});
+  const custom = () => vscode.window.tabGroups.all.flatMap(group=>group.tabs).find(tab =>
+    tab.input instanceof vscode.TabInputCustom && tab.input.uri.toString()===uri.toString());
+  assert.ok(custom(),'The exported graph must open in the custom editor');
+  const doc = await vscode.workspace.openTextDocument(uri);
+  const graph = JSON.parse(doc.getText());
+  graph.threads[0].initialValue = 123;
+  const edit = new vscode.WorkspaceEdit();
+  edit.replace(uri,new vscode.Range(doc.positionAt(0),doc.positionAt(doc.getText().length)),JSON.stringify(graph,null,2)+'\n');
+  assert.ok(await vscode.workspace.applyEdit(edit));
+  assert.ok(await doc.save());
+  assert.equal(JSON.parse(await fs.readFile(uri.fsPath,'utf8')).threads[0].initialValue,123);
+  assert.ok((await inspectProgram(uri.fsPath,graph)).changed);
+  await fs.access(path.join(extension.extensionPath,'examples','visual-program','console.txt'));
+  await fs.access(path.join(extension.extensionPath,'guides','visual-program.en.md'));
+}
+
 exports.run = async function run() {
   const extension = vscode.extensions.getExtension('zephyr-workbench-preview.zephyr-workbench-preview');
   assert.ok(extension, 'The VSIX must be discovered in the isolated profile');
@@ -83,6 +105,7 @@ exports.run = async function run() {
   const {tools} = await inspectWorkspace(target);
   await verify_tutorial(extension, target.folder());
   await verify_thread_studio(extension, target.folder());
+  await verify_visual_program(extension, target.folder());
   const cmake = await verify_cmake(tools, target.folder().uri.fsPath);
   await vscode.commands.executeCommand('zephyrWorkbench.show', 'workspace');
   await vscode.commands.executeCommand('zephyrWorkbench.probeSupport', 'jlink');
@@ -92,7 +115,7 @@ exports.run = async function run() {
     assert.ok(workbenchTabs.length <= 1, 'Probe support should open inside the same workbench');
     if (workbenchTabs.length === 1) {
       const result = {extension: extension.packageJSON.version, vscode: vscode.version,
-        platform: process.platform, arch: process.arch, cmake, hostBuild: 'passed', threadStudioExportAndAnalysis: 'passed'};
+        platform: process.platform, arch: process.arch, cmake, hostBuild: 'passed', threadStudioExportAndAnalysis: 'passed', visualProgramCustomEditor: 'passed'};
       await fs.writeFile(process.env.ZEPHYR_TEST_EVIDENCE, JSON.stringify(result));
       return;
     }
