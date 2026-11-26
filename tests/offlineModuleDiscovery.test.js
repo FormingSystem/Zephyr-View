@@ -106,6 +106,33 @@ test('project CMake and explicit module lists are preserved; deselecting release
   assert.deepEqual(await args(),['-UZEPHYR_EXTENSION_MODULE_INPUT']);
 });
 
+test('a standalone app preserves modules discovered from the selected Zephyr checkout',async t=>{
+  const {root,source,driver,s,state}=await workspace(t);
+  const app=path.join(root,'product');
+  await write(app,'CMakeLists.txt','find_package(Zephyr REQUIRED)\n');
+  s.setup.app=app;
+  s.localModules=[{name:'driver',path:driver}];
+  await state.workspaceState.update(host.moduleCatalog.scope(s,'CMake'),{selected:['driver'],extras:[]});
+  const values=async(status,env)=> (await moduleArguments(state,s,{app,cacheStatus:status},'CMake',[],env))
+    .map(parseDefinition).filter(Boolean).map(def=>def.name);
+  s.target.cache.set('WEST','python;-m;west');
+  assert.ok((await values('current',{})).includes('EXTRA_ZEPHYR_MODULES'));
+  s.target.cache.set('WEST','WEST-NOTFOUND');
+  assert.ok((await values('current',{})).includes('ZEPHYR_MODULES'));
+
+  // Exercise a fresh build with no cache, both with and without west in its Python environment.
+  const site=path.join(root,'site');
+  await write(site,'west/__init__.py');
+  await write(site,'west/util.py','from pathlib import Path\ndef west_topdir():\n    assert Path(".west/config").is_file()\n');
+  await write(source,'.west/config','[manifest]\npath = manifest\n');
+  s.tools.python=process.platform==='win32' ? 'python' : 'python3';
+  const environment={...process.env,ZEPHYR_BASE:source,PYTHONPATH:site};
+  assert.ok((await values('absent',environment)).includes('EXTRA_ZEPHYR_MODULES'));
+  const isolated=path.join(root,'standalone-site');
+  await write(isolated,'west.py','raise ImportError("west is not installed")\n');
+  assert.ok((await values('absent',{...environment,PYTHONPATH:isolated})).includes('ZEPHYR_MODULES'));
+});
+
 test('generated image metadata exposes application-owned modules even when nobody selected them',async t=>{
   const {root,s,state}=await workspace(t);
   const external=path.join(root,'private','library');

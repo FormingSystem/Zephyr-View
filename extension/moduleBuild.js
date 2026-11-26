@@ -2,8 +2,12 @@
 
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const execute = require('node:util').promisify(require('node:child_process').execFile);
+const {workspace} = require('vscode');
 const {parseDefinition} = require('./buildVariables');
 const {entries,rootOf,selectedState} = require('./modules');
+const {westModuleDiscovery} = require('./toolchainDiscoveryCache');
+const {probeKey} = require('./probeCache');
 
 const primary = 'ZEPHYR_MODULES', extra = 'EXTRA_ZEPHYR_MODULES';
 const marker = 'ZEPHYR_EXTENSION_MODULE_INPUT';
@@ -40,6 +44,27 @@ async function projectOwnsModuleList(app,base) {
   return false;
 }
 
+// Zephyr checks west with its build interpreter, from ZEPHYR_BASE even for an external application.
+async function cmakeUsesWest(s, target, manual, cache, environment) {
+  const selected = name => manual.get(name)?.value;
+  const buildPython = selected('Python3_EXECUTABLE') || selected('WEST_PYTHON');
+  if (cache.has('WEST') && !buildPython && !selected('ZEPHYR_BASE')) {
+    const value = cache.get('WEST');
+    return Boolean(value && !value.endsWith('-NOTFOUND'));
+  }
+  const source = selected('ZEPHYR_BASE') || environment.ZEPHYR_BASE || cache.get('ZEPHYR_BASE') || s.checkout;
+  const python = buildPython || cache.get('Python3_EXECUTABLE') || s.tools?.python;
+  if (!source || !python || !workspace.isTrusted) return false;
+  const cwd = path.resolve(target.app, source);
+  return westModuleDiscovery.read(probeKey(python, cwd, environment), async () => {
+    try {
+      await execute(python, ['-c', 'import sys; del sys.path[0]; from west.util import west_topdir; west_topdir()'],
+        {cwd,env:environment,windowsHide:true,timeout:5000});
+      return true;
+    } catch { return false; }
+  });
+}
+
 /** Preserve the project's primary module set. Zephyr merges EXTRA_ZEPHYR_MODULES from each scope. */
 async function moduleArguments(context,s,target,method,args,environment) {
   const record=selectedState(context,{...s,setup:target},method);
@@ -51,9 +76,9 @@ async function moduleArguments(context,s,target,method,args,environment) {
   const manual=new Map(args.map(parseDefinition).filter(Boolean).map(d=>[d.name,d]));
   const original=key=>manual.get(key)?.value ?? (old?.key===key ? old.original : cache.get(key));
   const base=original(primary) ?? environment[primary];
-  const hasWest=cache.get('WEST') && !cache.get('WEST').endsWith('-NOTFOUND');
-  const supplementary=method==='west' || base || (hasWest && s.manifest.root) ||
-    (paths.length && await projectOwnsModuleList(target.app,environment.ZEPHYR_BASE));
+  const supplementary=method==='west' || base || (paths.length && (
+    await projectOwnsModuleList(target.app,environment.ZEPHYR_BASE) ||
+    await cmakeUsesWest(s,target,manual,cache,environment)));
   const key=supplementary ? extra : primary;
   const result=paths.length ? args.filter(arg=>parseDefinition(arg)?.name!==key) : [...args];
   // Only clear cache values that still match the extension's last input, allowing external CMake edits.
