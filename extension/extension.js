@@ -40,6 +40,7 @@ class DebugTarget {
     this.onDidChangeTreeData = this.changed.event;
     this.manual = context.workspaceState.get('targetVisible', false);
     this.refreshNumber = 0;
+    this.rescanPending = false;
     this.targetChanged = new vscode.EventEmitter();
     this.onDidRefreshTarget = this.targetChanged.event;
     this.selectedRoot = context.workspaceState.get('debug.workspaceFolder');
@@ -59,7 +60,9 @@ class DebugTarget {
   }
 
   followEditor(editor) {
+    const previous = this.folder();
     if (editor) this.followFolder(vscode.workspace.getWorkspaceFolder(editor.document.uri));
+    return previous?.uri.toString() !== this.folder()?.uri.toString();
   }
 
   async chooseFolder() {
@@ -88,14 +91,18 @@ class DebugTarget {
     return selected;
   }
 
-  async refresh() {
+  async refresh(rescan = false) {
+    this.rescanPending ||= rescan;
     const generation = ++this.refreshNumber;
     const folders = vscode.workspace.workspaceFolders || [];
     const visible = this.manual || (await Promise.all(folders.map(f => looksLikeZephyr(f).catch(() => false)))).some(Boolean);
     if (generation !== this.refreshNumber) return;
     await vscode.commands.executeCommand('setContext', 'zephyrWorkbench.available', visible);
+    if (generation !== this.refreshNumber) return;
     this.changed.fire();
-    this.targetChanged.fire();
+    const rescanRequested = this.rescanPending;
+    this.rescanPending = false;
+    this.targetChanged.fire(rescanRequested);
   }
 
   showSelection(snapshot) {
@@ -210,7 +217,7 @@ function activate(context) {
   for (const view of ['zephyrWorkbench.projectTarget', 'zephyrWorkbench.target']) {
     context.subscriptions.push(vscode.window.registerTreeDataProvider(view, target));
   }
-  register('refresh', () => target.refresh());
+  register('refresh', () => target.refresh(true));
   register('chooseWorkspaceFolder', () => target.chooseFolder());
   register('chooseBuild', () => target.chooseBuild());
   register('launch', () => target.launch());
@@ -225,7 +232,7 @@ function activate(context) {
   const changes = vscode.workspace.createFileSystemWatcher('**/{CMakeCache.txt,build_info.yml,domains.yaml,zephyr.dts,runners.yaml,prj.conf,launch.json}');
   context.subscriptions.push(changes, changes.onDidCreate(refresh), changes.onDidChange(refresh), changes.onDidDelete(refresh),
     vscode.workspace.onDidChangeWorkspaceFolders(refresh),
-    vscode.window.onDidChangeActiveTextEditor(editor => { target.followEditor(editor); refresh(); }),
+    vscode.window.onDidChangeActiveTextEditor(editor => { if (target.followEditor(editor)) refresh(); }),
     vscode.debug.onDidChangeActiveDebugSession(session => { target.followFolder(session?.workspaceFolder); refresh(); }),
     vscode.debug.onDidStartDebugSession(refresh),
     vscode.debug.onDidTerminateDebugSession(refresh));

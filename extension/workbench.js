@@ -8,7 +8,8 @@ const modules=require('./modules');
 const environmentConfig=require('./environment');
 const {environmentRows}=require('./environmentValues');
 const {registrationScopes, candidates:registrationCandidates} = require('./environmentRegistration');
-const {effectiveManifest}=require('./effectiveManifest');
+const {createManifestResolver}=require('./effectiveManifest');
+const {clearToolchainDiscovery}=require('./toolchainDiscoveryCache');
 const studio=require('./studio');
 const {appearance_settings} = require('./appearance_settings');
 const {readDevicetreeCatalog}=require('./devicetreeCatalog');
@@ -94,6 +95,13 @@ function registerWorkbench(context, provider) {
   const appearance = new appearance_settings(vscode.workspace, vscode.ConfigurationTarget.Global);
   const send_appearance = () => panel?.webview.postMessage({appearanceSettings: appearance.read()});
   const discovery = require('./workspaceLocations').createDiscovery();
+  const manifests = createManifestResolver();
+  function resetDiscovery(folder) {
+    manifests.clear();
+    discovery.reset(folder);
+    modules.clearStatusCache();
+    clearToolchainDiscovery();
+  }
   const resultFiles=new Map();
   const studioFiles=new Map();
   const pendingWrites = new Set();
@@ -130,16 +138,21 @@ function registerWorkbench(context, provider) {
     if (!panel || !ready) return;
     const version = ++generation;
     const s = await inspectWorkspace(provider,context,discovery);
+    if (version !== generation) return;
     Object.assign(s,environmentConfig.resolve(context,s));
     if (s.folder) {
       const west = vscode.workspace.isTrusted ? s.tools.west : undefined;
-      s.manifest = await effectiveManifest(s.manifest, west, setup.taskEnvironment(context,s));
+      s.manifest = await manifests.resolve(s.manifest, west, setup.taskEnvironment(context,s));
     }
+    if (version !== generation) return;
     await discovery.apply(context,s);
+    if (version !== generation) return;
     s.setup = await setup.describe(context,s,method(s));
     s.lastFailure=await lastBuildFailure(context,s);
     setup.applyLastConfigureResult(s.setup,s.lastFailure);
+    if (version !== generation) return;
     s.devicetree = await devicetreeReferences(context, s);
+    if (version !== generation) return;
     if (s.folder && vscode.workspace.isTrusted && ['build','configuration'].includes(page)) {
       s.configurationFiles = await describeFiles(context, s, setup.taskEnvironment(context, s));
       apply_file_readiness(s.setup,s.configurationFiles);
@@ -266,6 +279,7 @@ function registerWorkbench(context, provider) {
       const result=moduleQueue.then(run);moduleQueue=result.catch(()=>{});
       try{const value=await result;await view.webview.postMessage({reply:m.request,value});}
       catch(e){await view.webview.postMessage({reply:m.request,error:e.message});}
+      if (m.op==='apply') resetDiscovery(s.folder);
       if(['apply','select','add'].includes(m.op))await refresh();
       return;
     }
@@ -277,7 +291,7 @@ function registerWorkbench(context, provider) {
       return refresh();
     }
     if (m?.action === 'page' && Object.hasOwn(sections,m.id)) {requestedInspector=undefined;page=m.id;return refresh();}
-    if (m?.action === 'refresh') {discovery.reset(provider.folder());return refresh();}
+    if (m?.action === 'refresh') {resetDiscovery(provider.folder());return refresh();}
     const s = snapshot;
     if (m.action === 'studioCheckpoint' && page === 'configuration' && s) {
       configurationWindow.remember(panel,studio_scope(s),m.id);
@@ -402,7 +416,7 @@ function registerWorkbench(context, provider) {
       const current = () => same_folder() && vscode.workspace.isTrusted && !running.has(s.build?.toString());
       const source = await require('./sourceSetup').acquireSource(s,method(s),current);
       if (source && current()) await environmentConfig.useInstalled(context,s.folder,{ZEPHYR_BASE:source});
-      discovery.reset(s.folder);
+      resetDiscovery(s.folder);
       return refresh();
     }
     if (m.action === 'toolDirectories') {
@@ -417,7 +431,7 @@ function registerWorkbench(context, provider) {
       if(!current())return;
       const recheck=async()=>{
         if(!current())return;
-        discovery.reset(s.folder);
+        resetDiscovery(s.folder);
         await refresh();
         if(current() && snapshot?.folder?.uri.toString()===s.folder.uri.toString())return snapshot;
       };
@@ -426,7 +440,7 @@ function registerWorkbench(context, provider) {
     }
     if (m.action === 'installComponent') {
       await require('./componentInstall').install(context,s,m.id,() => same_folder() && vscode.workspace.isTrusted && !running.has(s.build?.toString()));
-      discovery.reset(provider.folder());
+      resetDiscovery(provider.folder());
       return refresh();
     }
     if (['compiler','compilerBrowse','compilerPrefix'].includes(m.action)) {
@@ -481,7 +495,7 @@ function registerWorkbench(context, provider) {
       }else if(!s.choices?.[kind]?.includes(value))return;
       if(snapshot!==s||s.folder.uri.toString()!==provider.folder()?.uri.toString()||running.has(s.build.toString()))return;
       await setup.applyChoice(context,s,kind,value);
-      await provider.refresh();return refresh();
+      return provider.refresh();
     }
     if (m.action==='method' && ['CMake','west'].includes(m.id)) {
       await context.workspaceState.update(storedMethod(s.folder),m.id);
@@ -492,12 +506,20 @@ function registerWorkbench(context, provider) {
 
   function open(id) {
     if (Object.hasOwn(sections,id)) page=id;
-    if (panel) {panel.reveal(panel.viewColumn);return safeRefresh();}
+    if (panel) {
+      const alreadyVisible = panel.visible;
+      panel.reveal(panel.viewColumn);
+      if (alreadyVisible) return safeRefresh();
+      return;
+    }
     panel=vscode.window.createWebviewPanel('zephyrWorkbench.home',title,vscode.ViewColumn.Active,
       {enableScripts:true,retainContextWhenHidden:true,localResourceRoots:[base]});
     panel.iconPath=Uri.joinPath(base,'zephyr-workbench.svg');
-    panel.onDidChangeViewState(async () => {
-      try { if (await activateConfigurationWindow()) await safeRefresh(); }
+    let wasVisible = panel.visible;
+    panel.onDidChangeViewState(async ({webviewPanel}) => {
+      const revealed = webviewPanel.visible && !wasVisible;
+      wasVisible = webviewPanel.visible;
+      try { if ((await activateConfigurationWindow()) || revealed) await safeRefresh(); }
       catch (error) { report(error); }
     });
     panel.onDidDispose(()=>{
@@ -514,7 +536,10 @@ function registerWorkbench(context, provider) {
     vscode.commands.registerCommand('zephyrWorkbench.show',open),
     vscode.commands.registerCommand('zephyrWorkbench.kconfig', () => {requestedInspector='kconfig';open('configuration');}),
     vscode.commands.registerCommand('zephyrWorkbench.inspectDevicetree', () => {requestedInspector='device';open('configuration');}),
-    provider.onDidRefreshTarget(safeRefresh),
+    provider.onDidRefreshTarget(rescan => {
+      if (rescan === true) resetDiscovery(provider.folder());
+      return safeRefresh();
+    }),
     {dispose:()=>panel?.dispose()});
   context.subscriptions.push(vscode.tasks.onDidEndTaskProcess(async event=>{
     const task=event.execution.task.definition;
@@ -544,7 +569,7 @@ function registerWorkbench(context, provider) {
     if(def.type==='zephyrWorkbench' && def.action!=='list'){running.delete(def.buildKey);safeRefresh();}
   }));
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e=>{
-    if(e.affectsConfiguration('zephyrWorkbench.locations'))safeRefresh();
+    if(e.affectsConfiguration('zephyrWorkbench.locations')) {resetDiscovery(provider.folder());safeRefresh();}
     if(e.affectsConfiguration('zephyrWorkbench.appearance'))void send_appearance();
   }));
   if (view.visible) open();
