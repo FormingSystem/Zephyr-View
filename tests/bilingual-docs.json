@@ -1,22 +1,22 @@
 {
-  "README.md": "921e5df373ccbfbcaa844b74ffadb3d583f25bf9dbcf6bc1f1bff07fb78f7e7b",
+  "README.md": "7bea439285128b7164d4303f595d636bc984275ec7af61e0e8ba460e130cf4f0",
   "design/README.md": "de72bfca10b95d7ef811fd051a78e899975010cd7d4afaf18ae580016455f44b",
   "design/acceptance-0.2.0.md": "751a07079270856c708ce1709ef38a32d458697ea7dfbb437e0fac33e906b1cb",
   "design/interaction.md": "3b53f4d1bd9d1f06d0be6766c1207f59a1e8f51375768434a0c87dc0c9562cc3",
   "design/review-0.5/README.md": "6877ae6871d393f77d3bb8203abd906e58e4267a5a14ceddaabbb1f81c2ab43f",
   "design/review/README.md": "f93fa2a3e97ad2e025c074a795d5341d51490102627f382e9ffdd4907ca65f54",
   "design/review/adaptive-builds.md": "0b4f3278c51ffdecbfc5a1dbd6bf792626d88f88bbd1dbb52f3234fbf42f7c04",
-  "design/review/catalog-coverage.md": "4ec4072f0ef7ed95c2f78d4e57a21142ffefaed008e17952e08302faa624a107",
+  "design/review/catalog-coverage.md": "6e23be3e3baed6bcc0636a0feb2762149aac50fa6fc23479bc6dc93158c485b1",
   "design/review/configuration-modules.md": "b58014da1bc70bc23fc262b564e30dec331b3e70a15d0dfdb9ecd58e97f2e469",
   "design/review/environment-workspace-build.md": "d1ba1924ca60b3a81418d01d22f0d99a4b071b661e33a294ad68bdea3a3db571",
   "design/review/installation-and-flashing.md": "182f86f0ac93a6a7e9a6c28925ed3b0a459e9d170ea6eb9f636bd844ac8ba19a",
   "design/review/local-selection.md": "14a8535fe25467716180f435f2cf5e739b47d6c65dc6658c385204913af4847a",
   "design/review/module-refinement.md": "ac9239ec4f9fca713f7dbec0ad570d77ec13d152bb1fab04e39da19b8a0d7610",
   "design/review/multi-board-build.md": "ef5921ef7153999ceace47d682dd7aecd04ca2da5827a02f4b5cfd13dfc6f5c5",
-  "design/review/platform-support.md": "5ef6882931774804897c52c60e373f8db3ca1747840bbedfeb21a02c32491e2b",
+  "design/review/platform-support.md": "b9e59e6e4ada96061110cbfb892eeb0551b3adb61222f042a707793fb988d3da",
   "design/review/prototype-layout.md": "91cc57d1fde074cb97d30a693f5d2b2bf3aefa3e06e6ce4543cb434d26bf2577",
   "design/review/standard-adaptation.md": "6f47e67f4bd54d9208e7b2e602a54238005d18c30f0288621769cf512cf55351",
   "design/review/thread-analysis.md": "b8a4c7ace6336893534873a0b9cfdd1a6bb8da8ffb05a1c806b6ae1b5940d446",
   "design/review/workbench-debug.md": "71e87a7c88715b012751ad8c534a480a03fbc9b2808f038e8f0d6953ce81c5dd",
-  "extension/README.md": "f5a88663d979dce89153f7791a4ff12e40873672ba1ed940fe319910ae12e0b7"
+  "extension/README.md": "bc1607bea521450af01b509003f978a792cc662c1822cc74e4dd3a6f30c655a9"
 }

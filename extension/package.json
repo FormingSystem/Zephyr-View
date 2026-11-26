@@ -4,15 +4,15 @@
   "publisher": "zephyr-workbench-preview",
   "description": "Configure Zephyr workspaces, build with west or CMake, and edit Kconfig and devicetree in VS Code.",
   "license": "Apache-2.0",
-  "repository": {"type": "git", "url": "https://github.com/FormingSystem/zephyr-extension.git", "directory": "extension"},
-  "homepage": "https://github.com/FormingSystem/zephyr-extension#readme",
-  "bugs": {"url": "https://github.com/FormingSystem/zephyr-extension/issues"},
+  "repository": {"type": "git", "url": "https://github.com/FormingSystem/Zephyr-View.git", "directory": "extension"},
+  "homepage": "https://github.com/FormingSystem/Zephyr-View#readme",
+  "bugs": {"url": "https://github.com/FormingSystem/Zephyr-View/issues"},
   "categories": ["Other", "Debuggers"],
   "keywords": ["Zephyr", "RTOS", "embedded", "west", "CMake", "Kconfig", "devicetree", "firmware"],
   "icon": "media/marketplace-icon.png",
   "vsce": {
-    "baseContentUrl": "https://github.com/FormingSystem/zephyr-extension/blob/main/extension",
-    "baseImagesUrl": "https://raw.githubusercontent.com/FormingSystem/zephyr-extension/main/extension"
+    "baseContentUrl": "https://github.com/FormingSystem/Zephyr-View/blob/main/extension",
+    "baseImagesUrl": "https://raw.githubusercontent.com/FormingSystem/Zephyr-View/main/extension"
   },
   "version": "0.5.24",
   "engines": {

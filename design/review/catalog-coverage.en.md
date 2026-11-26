@@ -4,7 +4,7 @@
 
 ## Zephyr 3.x and 4.x releases
 
-Windows Server 2022 and Ubuntu 24.04 each downloaded the official tags, ran `west boards`, and compared the extension's west and CMake board lists entry by entry. Both hosts passed every row. Build targets include board revisions, SoCs, CPU clusters and variants. [Results for all 14 jobs](https://github.com/FormingSystem/zephyr-extension/actions/runs/45754136914)
+Windows Server 2022 and Ubuntu 24.04 each downloaded the official tags, ran `west boards`, and compared the extension's west and CMake board lists entry by entry. Both hosts passed every row. Build targets include board revisions, SoCs, CPU clusters and variants. [Results for all 14 jobs](https://github.com/FormingSystem/Zephyr-View/actions/runs/45754136914)
 
 | Zephyr release | Board names | Distinct build targets |
 | --- | ---: | ---: |

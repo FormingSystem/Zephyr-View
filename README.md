@@ -4,7 +4,7 @@
 
 在 VS Code 中配置、构建和调试 Zephyr 应用。支持 west 工作区和独立 CMake 工程，可使用已有源码、模块、SDK 与离线安装包。
 
-[下载当前预发布版 VSIX](https://github.com/FormingSystem/zephyr-extension/releases) · [使用手册](extension/README.md) · [Apache-2.0](LICENSE) · [第三方声明](extension/ThirdPartyNotices.txt)
+[下载当前预发布版 VSIX](https://github.com/FormingSystem/Zephyr-View/releases) · [使用手册](extension/README.md) · [Apache-2.0](LICENSE) · [第三方声明](extension/ThirdPartyNotices.txt)
 
 在发布页展开 **Assets**，下载 `.vsix` 文件，然后在 VS Code 的「扩展 → … → 从 VSIX 安装…」中选择它。
 

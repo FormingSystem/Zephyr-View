@@ -4,7 +4,7 @@
 
 在 VS Code 中使用 west 或 CMake 构建固件，查看开发板、管理模块，编辑 Kconfig 与设备树。支持本地工具、离线 SDK 和已有的 west 工作区。
 
-在 GitHub 发布页的 **Assets** 下下载 `.vsix` 文件，打开 VS Code 的「扩展 → … → 从 VSIX 安装…」并选择它。[下载当前预发布版](https://github.com/FormingSystem/zephyr-extension/releases)
+在 GitHub 发布页的 **Assets** 下下载 `.vsix` 文件，打开 VS Code 的「扩展 → … → 从 VSIX 安装…」并选择它。[下载当前预发布版](https://github.com/FormingSystem/Zephyr-View/releases)
 
 工作台和调试侧栏中的本地路径统一使用 `/`，例如 `samples/hello_world`。Windows 的「输入路径」也接受从资源管理器复制的 `\` 写法。
 
@@ -88,7 +88,7 @@
 
 ## 商业使用与许可
 
-Zephyr View 与 Zephyr RTOS 的项目主许可证均为 Apache-2.0。你可以在商业产品中使用、修改和分发本项目的原创代码、文档和设计资源。再分发时须随附许可证，保留适用的版权和归属声明，并在修改过的文件中注明改动。随包分发的第三方组件按各自的许可证使用。[许可全文](https://www.apache.org/licenses/LICENSE-2.0) · [第三方声明](https://github.com/FormingSystem/zephyr-extension/blob/main/extension/ThirdPartyNotices.txt)
+Zephyr View 与 Zephyr RTOS 的项目主许可证均为 Apache-2.0。你可以在商业产品中使用、修改和分发本项目的原创代码、文档和设计资源。再分发时须随附许可证，保留适用的版权和归属声明，并在修改过的文件中注明改动。随包分发的第三方组件按各自的许可证使用。[许可全文](https://www.apache.org/licenses/LICENSE-2.0) · [第三方声明](https://github.com/FormingSystem/Zephyr-View/blob/main/extension/ThirdPartyNotices.txt)
 
 <a id="english"></a>
 

@@ -4,7 +4,7 @@
 
 Build Zephyr firmware with west or CMake, inspect board targets, manage modules, and edit Kconfig and devicetree in VS Code. You can use local tools, offline SDKs and existing west workspaces.
 
-Download the `.vsix` file under **Assets** on the GitHub release page. In the VS Code Extensions view, choose **… → Install from VSIX…** and select the file. [Download the current preview](https://github.com/FormingSystem/zephyr-extension/releases)
+Download the `.vsix` file under **Assets** on the GitHub release page. In the VS Code Extensions view, choose **… → Install from VSIX…** and select the file. [Download the current preview](https://github.com/FormingSystem/Zephyr-View/releases)
 
 Local paths in the workbench and debug sidebar use `/`, as in `samples/hello_world`. On Windows, the path entry fields also accept `\` when pasting from File Explorer.
 
@@ -87,6 +87,6 @@ Use **Choose from list…** to search by filename or path, or **Browse…** to s
 
 ## Commercial use and licensing
 
-Zephyr View uses Apache-2.0, the same primary license as Zephyr RTOS. You may use, modify and distribute the project's original code, documentation and design assets in commercial products. When redistributing, include the license, preserve applicable copyright and attribution notices, and mark files you have modified. Bundled third-party components retain their own licenses. [Full license](https://www.apache.org/licenses/LICENSE-2.0) · [Third-party notices](https://github.com/FormingSystem/zephyr-extension/blob/main/extension/ThirdPartyNotices.txt)
+Zephyr View uses Apache-2.0, the same primary license as Zephyr RTOS. You may use, modify and distribute the project's original code, documentation and design assets in commercial products. When redistributing, include the license, preserve applicable copyright and attribution notices, and mark files you have modified. Bundled third-party components retain their own licenses. [Full license](https://www.apache.org/licenses/LICENSE-2.0) · [Third-party notices](https://github.com/FormingSystem/Zephyr-View/blob/main/extension/ThirdPartyNotices.txt)
 
 [简体中文](README.md) | **English**

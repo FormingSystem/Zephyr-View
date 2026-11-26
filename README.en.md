@@ -4,7 +4,7 @@
 
 Configure, build and debug Zephyr applications in VS Code. Use a west workspace or a standalone CMake project with existing sources, modules, SDKs and offline installers.
 
-[Download the current preview VSIX](https://github.com/FormingSystem/zephyr-extension/releases) · [User guide](extension/README.en.md) · [Apache-2.0](LICENSE) · [Third-party notices](extension/ThirdPartyNotices.txt)
+[Download the current preview VSIX](https://github.com/FormingSystem/Zephyr-View/releases) · [User guide](extension/README.en.md) · [Apache-2.0](LICENSE) · [Third-party notices](extension/ThirdPartyNotices.txt)
 
 Expand **Assets** on the release page and download the `.vsix` file. In the VS Code Extensions view, choose **… → Install from VSIX…** and select the file.
 

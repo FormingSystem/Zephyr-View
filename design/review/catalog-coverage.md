@@ -4,7 +4,7 @@
 
 ## Zephyr 3.x 和 4.x 正式版
 
-Windows Server 2022 和 Ubuntu 24.04 分别从官方标签下载源码，运行 `west boards`，再逐项核对扩展的 west 和 CMake 板卡列表。下表是两种宿主都通过的结果。目标数包括板卡修订版、SoC、CPU 集群和变体。[14 项流水线结果](https://github.com/FormingSystem/zephyr-extension/actions/runs/45754136914)
+Windows Server 2022 和 Ubuntu 24.04 分别从官方标签下载源码，运行 `west boards`，再逐项核对扩展的 west 和 CMake 板卡列表。下表是两种宿主都通过的结果。目标数包括板卡修订版、SoC、CPU 集群和变体。[14 项流水线结果](https://github.com/FormingSystem/Zephyr-View/actions/runs/45754136914)
 
 | Zephyr 版本 | 板名 | 不重复的构建目标 |
 | --- | ---: | ---: |
