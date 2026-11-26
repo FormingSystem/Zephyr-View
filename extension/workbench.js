@@ -11,6 +11,7 @@ const {registrationScopes, candidates:registrationCandidates} = require('./envir
 const {createManifestResolver}=require('./effectiveManifest');
 const {clearToolchainDiscovery}=require('./toolchainDiscoveryCache');
 const studio=require('./studio');
+const {ThreadStudioHost} = require('./threadStudioHost');
 const {appearance_settings} = require('./appearance_settings');
 const {readDevicetreeCatalog}=require('./devicetreeCatalog');
 const setup = require('./buildSetup');
@@ -27,7 +28,7 @@ const {targetChoiceReply} = require('./targetChoiceReply');
 const {debugRunner, hasCurrentBuild, lastBuildFailure, taskScope} = require('./target');
 const {Uri, l10n} = vscode;
 const running = new Set();
-const sections = {build:'Build',workspace:'Workspace',configuration:'Project configuration',modules:'Modules'};
+const sections = {build:'Build',workspace:'Workspace',configuration:'Project configuration',modules:'Modules',threads:'Threads'};
 function navigation() {
   function action(title, icon, command) {
     const row = new vscode.TreeItem(title);
@@ -50,7 +51,7 @@ function documentHtml(view, base, title) {
   const template=fs.readFileSync(Uri.joinPath(base,shared,'index.html').fsPath,'utf8');
   const policy=`default-src 'none'; img-src ${view.cspSource}; style-src ${view.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src https://api.github.com https://gitee.com`;
   const scripts=['fuzzy.js','pathDisplay.js','vendor/js-yaml/js-yaml.min.js','appearance.js','build-context.js','configuration-inputs.js','build-panel.js','toolchain-controls.js','configuration-tree.js','configuration-workspace.js','module-identification.js','module-pagination.js','module-lists.js','module-sources.js','probe-list.js']
-    .map(name=>shared+name).concat(['nativeModules.js','kconfigFields.js','fragmentFields.js','deviceTreeDraft.js','studioMap.js','studioView.js','discoveryDiagnostics.js','probeControls.js','setupViews.js','targetPicker.js','buildControls.js','flashPlan.js','flashPanel.js','build_page.js','workbench.js']);
+    .map(name=>shared+name).concat(['nativeModules.js','kconfigFields.js','fragmentFields.js','deviceTreeDraft.js','studioMap.js','studioView.js','discoveryDiagnostics.js','probeControls.js','setupViews.js','targetPicker.js','buildControls.js','flashPlan.js','flashPanel.js','build_page.js','threadStudio/model.js','threadStudio/ui.js','threadStudio/draftView.js','threadStudio/evidenceView.js','threadStudio/studio.js','workbench.js']);
   return template.replace('lang="zh-CN"', `lang="${vscode.env.language.startsWith('zh')?'zh-CN':'en'}" data-path-platform="${process.platform}"`).replace('<title>',`<meta http-equiv="Content-Security-Policy" content="${policy}"><title>`)
     .replace('href="marketplace-icon.png"',`href="${asset('marketplace-icon.png')}"`)
     .replace('href="appearance.css"',`href="${asset(shared+'appearance.css')}"`)
@@ -60,7 +61,7 @@ function documentHtml(view, base, title) {
     .replace('href="configuration-map-navigation.css"',`href="${asset(shared+'configuration-map-navigation.css')}"`)
     .replace('href="configuration-workspace.css"',`href="${asset(shared+'configuration-workspace.css')}"`)
     
-    .replace('<body>',`<link rel="stylesheet" href="${asset('workbench.css')}"><body>`)
+    .replace('<body>',`<link rel="stylesheet" href="${asset('workbench.css')}"><link rel="stylesheet" href="${asset('threadStudio/studio.css')}"><body>`)
     .replace(/<title>[^<]*<\/title>/,'<title>'+title+'</title>')
     .replace('交互设计稿 · 示例数据',title)
     .replace(/<script src=[\s\S]+?<\/body>/,scripts.map(name=>`<script nonce="${nonce}" src="${asset(name)}"></script>`).join('')+'</body>');
@@ -139,6 +140,11 @@ function registerWorkbench(context, provider) {
     return vscode.commands.executeCommand('vscode.open', result);
   }
   let panel, ready = false, page = 'workspace', snapshot, generation = 0;
+  const threadHost = new ThreadStudioHost(
+    patch => panel?.webview.postMessage({threadPatch:patch,threadScope:threadHost.scope}),
+    scope => page === 'threads' && panel && snapshot && studio_scope(snapshot) === scope &&
+      snapshot.folder?.uri.toString() === provider.folder()?.uri.toString());
+  context.subscriptions.push(threadHost);
   let requestedInspector;
   let requestedProbes;
   const configurationWindow = new ConfigurationWindow();
@@ -199,7 +205,10 @@ function registerWorkbench(context, provider) {
     const currentSystem = s.setup.cacheStatus === 'current' ? s.target?.system : undefined;
     s.discoveryIssues = [...(s.manifest.diagnostics || []), ...(s.locations?.diagnostics || [])];
     const probeRequest = page === 'workspace' ? requestedProbes : undefined;
-    const delivered = await panel.webview.postMessage({page,studioDetached:configurationWindow.detached,studioPresentation:configurationWindow.presentation,studioRestore:transfer?.state,inspector:requestedInspector,version,language:vscode.env.language,method:method(s),
+    const threadScope = page === 'threads' ? studio_scope(s) : undefined;
+    const threadState = threadScope ? threadHost.enter(s,threadScope) : undefined;
+    if (!threadScope) threadHost.leave();
+    const delivered = await panel.webview.postMessage({page,threadScope,threadState,studioDetached:configurationWindow.detached,studioPresentation:configurationWindow.presentation,studioRestore:transfer?.state,inspector:requestedInspector,version,language:vscode.env.language,method:method(s),
       folder:s.folder?.uri.fsPath, app:s.setup.app, board:s.setup.board, projectBoard:s.setup.projectBoard, build:s.build?.fsPath,
       system:s.setup.system,defaultImage:currentSystem?.main?.name,images:currentSystem?.domains?.map(image=>image.name),
       plan:previewPlan(s.setup.plan), parallelism:s.setup.parallelism, argsText:s.setup.argsText,error:s.setup.error, conflict:s.setup.conflict, canConfigure:s.setup.canConfigure, canBuild:s.setup.canBuild,
@@ -310,6 +319,11 @@ function registerWorkbench(context, provider) {
     if (m?.action === 'page' && Object.hasOwn(sections,m.id)) {requestedInspector=undefined;requestedProbes=undefined;page=m.id;return refresh();}
     if (m?.action === 'refresh') {resetDiscovery(provider.folder());return refresh();}
     const s = snapshot;
+    if (m.action === 'threadStudio') {
+      if (page === 'threads' && m.scope === threadHost.scope && m.input && typeof m.input === 'object')
+        return threadHost.handle(m.input);
+      return;
+    }
     if (m.action === 'studioCheckpoint' && page === 'configuration' && s) {
       configurationWindow.remember(panel,studio_scope(s),m.id);
       return;
@@ -567,6 +581,7 @@ function registerWorkbench(context, provider) {
       catch (error) { report(error); }
     });
     panel.onDidDispose(()=>{
+      threadHost.leave();
       if (!configurationWindow.close()) studioFiles.clear();
       probes.reset();requestedProbes=undefined;
       provider.showSelection(undefined);panel=undefined;ready=false;snapshot=undefined;++generation;
@@ -579,6 +594,7 @@ function registerWorkbench(context, provider) {
   const view=vscode.window.createTreeView('zephyrWorkbench.navigation',{treeDataProvider:navigation()});
   context.subscriptions.push(view,view.onDidChangeVisibility(e=>{if(e.visible) open();}),
     vscode.commands.registerCommand('zephyrWorkbench.show',open),
+    vscode.commands.registerCommand('zephyrWorkbench.threads', () => open('threads')),
     vscode.commands.registerCommand('zephyrWorkbench.probeSupport', runner => {
       requestedProbes = {id:runnerProfile(runner)};
       return open('workspace');

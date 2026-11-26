@@ -1,0 +1,86 @@
+/* Shared by the native webview and the offline design review. */
+.thread-studio { color:var(--text); font:inherit; min-width:0; text-align:start; }
+.thread-studio *, .thread-studio *::before, .thread-studio *::after { box-sizing:border-box; }
+.thread-studio :is(h1,h2,h3,p,ol,pre) { margin:0; }
+.thread-studio :is(button,input,select) { font:inherit; color:var(--text); min-width:0; max-width:100%; }
+.thread-studio :is(button,select,input) { background:var(--surface); border:1px solid var(--line); border-radius:5px; padding:.35em .7em; min-height:2.1em; }
+.thread-studio button, .thread-studio summary { cursor:pointer; }
+.thread-studio button:disabled { opacity:.55; cursor:default; }
+.thread-studio button:hover:enabled { border-color:var(--accent); }
+.thread-studio :focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+.thread-studio code,.thread-studio pre,.thread-studio .ts-line { font-family:var(--vscode-editor-font-family,Consolas,'Liberation Mono',monospace); font-size:.92em; }
+.thread-studio code { color:inherit; padding:0; background:transparent; }
+.thread-studio .ts-heading { display:flex; align-items:center; flex-wrap:wrap; gap:.8em; padding:.25em 0 .8em; }
+.thread-studio h1 { font-family:inherit; font-size:clamp(1.42rem,2vw,1.85rem); font-weight:650; line-height:1.18; letter-spacing:-.035em; }
+.thread-studio .ts-preview-label,.thread-studio .ts-note,.thread-studio .ts-file,.thread-studio small { color:var(--muted); }
+.thread-studio .ts-preview-label { border-inline-start:1px solid var(--line); padding-inline-start:.8em; font-size:.85em; }
+.thread-studio .ts-tabs { display:flex; gap:.25em; border-bottom:1px solid var(--line); margin-bottom:var(--wb-gap,.8rem); }
+.thread-studio .ts-tab { background:transparent; padding:.45em .75em; border:0; border-block-end:2px solid transparent; border-radius:0; color:var(--muted); }
+.thread-studio .ts-tab[aria-selected=true] { color:var(--accent); border-color:currentColor; font-weight:650; }
+.thread-studio .ts-section,.thread-studio .ts-details { border:1px solid var(--line); background:var(--surface); border-radius:var(--radius,8px); padding:var(--wb-space-block,.7rem) var(--wb-space-inline,1rem); min-width:0; }
+.thread-studio .ts-section > .ts-section { background:var(--sub); margin-top:.65em; }
+.thread-studio .ts-pane { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--wb-gap,.8rem); }
+.thread-studio .ts-subtitle { font-size:1.04em; font-weight:650; margin:.1em 0 .6em; }
+.thread-studio .ts-choices { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(11.6em,100%),1fr)); gap:.5em; }
+.thread-studio .ts-choice { display:flex; gap:.75em; align-items:center; text-align:start; padding:.6em .8em; }
+.thread-studio .ts-choice :is(strong,small) { display:block; }
+.thread-studio :is(.ts-choice,.ts-node,.ts-item)[aria-pressed=true] { color:var(--accent); border-color:var(--accent); background:var(--accent2); }
+.thread-studio .ts-icon { width:1.25em; height:1.25em; flex:none; fill:none; stroke:currentColor; stroke-width:1.45; stroke-linecap:round; stroke-linejoin:round; }
+.thread-studio .ts-choice > .ts-icon { width:1.55em; height:1.55em; }
+.thread-studio .ts-diagram { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(5em,.8fr) minmax(0,1.2fr) minmax(5em,.8fr) minmax(0,1.2fr); align-items:center; padding:clamp(.75rem,2.7vh,2.1rem) clamp(.25rem,1vw,1rem); }
+.thread-studio .ts-node { width:100%; text-align:start; display:grid; gap:.25em; min-height:5.2em; align-content:center; border-radius:7px; overflow-wrap:anywhere; background:var(--sub); }
+.thread-studio .ts-node-title { display:flex; gap:.4em; align-items:center; font-weight:650; }
+.thread-studio .ts-wire { min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; align-self:center; gap:4px; color:var(--muted); overflow-wrap:anywhere; text-align:center; }
+.thread-studio .ts-wire code { font-size:.76em; }
+.thread-studio .ts-arrow { width:100%; height:8px; background:currentColor; clip-path:polygon(0 44%,calc(100% - 6px) 44%,calc(100% - 6px) 0,100% 50%,calc(100% - 6px) 100%,calc(100% - 6px) 60%,0 60%); }
+.thread-studio .ts-reverse .ts-arrow { transform:scaleX(-1); }
+.thread-studio .ts-inspector { border-top:1px solid var(--line); padding-top:.65em; display:grid; grid-template-columns:minmax(0,1fr); gap:.5em; }
+.thread-studio .ts-fields,.thread-studio .ts-field,.thread-studio .ts-actions,.thread-studio .ts-options,.thread-studio .ts-path { display:flex; align-items:center; gap:.45em .7em; flex-wrap:wrap; }
+.thread-studio .ts-fields:empty,.thread-studio .ts-errors:empty,.thread-studio .ts-notice:empty { display:none; }
+.thread-studio .ts-number { width:6em; font-variant-numeric:tabular-nums; }
+.thread-studio .ts-number[aria-invalid=true] { border-color:var(--warn); }
+.thread-studio :is(.ts-unit,.ts-line) { color:var(--muted); }
+.thread-studio .ts-note,.thread-studio .ts-file,.thread-studio .ts-warning,.thread-studio .ts-errors,.thread-studio .ts-notice { overflow-wrap:anywhere; font-size:.9em; }
+.thread-studio .ts-excerpt { display:grid; grid-template-columns:3em minmax(0,1fr); background:var(--sub); padding:.25em .4em; }
+.thread-studio .ts-excerpt code { white-space:pre-wrap; overflow-wrap:anywhere; }
+.thread-studio .ts-file { display:block; margin-bottom:.3em; }
+.thread-studio .ts-details { margin:0; }
+.thread-studio .ts-details > summary { font-weight:600; }
+.thread-studio .ts-details[open]>summary { margin-bottom:.5em; }
+.thread-studio .ts-code { background:var(--sub); color:var(--text); border:1px solid var(--line); padding:.65em .8em; border-radius:5px; max-height:22rem; overflow:auto; margin-top:.4em; }
+.thread-studio .ts-code code { white-space:pre; }
+.thread-studio .ts-primary { background:var(--vscode-button-background,var(--accent)); color:var(--vscode-button-foreground,var(--surface)); border-color:transparent; font-weight:600; }
+.thread-studio :is(.ts-warning,.ts-errors) { color:var(--warn); }
+.thread-studio .ts-notice { margin-top:.65em; }
+.thread-studio .ts-record { display:flex; flex-wrap:wrap; gap:.2em .65em; align-items:baseline; padding:.38em 0; overflow-wrap:anywhere; border-top:1px solid var(--line); }
+.thread-studio .ts-record :is(strong,small,code) { min-width:0; max-width:100%; }
+.thread-studio .ts-source,.thread-studio .ts-link { color:var(--accent); border:0; background:transparent; text-align:start; white-space:normal; overflow-wrap:anywhere; }
+.thread-studio .ts-source { margin-inline-start:auto; }
+.thread-studio .ts-empty { color:var(--muted); padding:.6em 0; grid-column:1/-1; }
+.thread-studio .ts-path { padding:.35em 0; }
+.thread-studio .ts-frames { padding-inline-start:1.7em; }
+.thread-studio .ts-select { width:auto; }
+.thread-studio .ts-phase { color:var(--accent); }
+@media(max-width:760px) {
+  .thread-studio .ts-diagram { grid-template-columns:minmax(0,1fr); gap:0; }
+  .thread-studio .ts-node { min-height:3em; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:.12em .45em; }
+  .thread-studio .ts-node small { grid-column:1/-1; }
+  .thread-studio .ts-wire { flex-direction:row-reverse; height:2.8em; justify-self:start; margin-inline-start:.9em; gap:.55em; }
+  .thread-studio .ts-arrow { width:.6em; height:100%; clip-path:polygon(42% 0,58% 0,58% calc(100% - 6px),100% calc(100% - 6px),50% 100%,0 calc(100% - 6px),42% calc(100% - 6px)); }
+  .thread-studio .ts-reverse .ts-arrow { transform:scaleY(-1); }
+}
+@media(forced-colors:active) {
+ .thread-studio :is([aria-pressed=true],[aria-selected=true]) { outline:2px solid Highlight; outline-offset:-2px; }
+ .thread-studio .ts-arrow { forced-color-adjust:none; color:CanvasText; }
+}
+
+.thread-studio .ts-diagram { border:1px solid var(--line); border-radius:6px; margin-bottom:.75em; background-color:var(--surface); background-image:radial-gradient(color-mix(in srgb,var(--line) 62%, transparent) .7px,transparent .75px); background-size:14px 14px; }
+.thread-studio .ts-relations { display:grid; gap:.25em; margin-bottom:.55em; }
+.thread-studio .ts-relation { display:flex; flex-wrap:wrap; align-items:center; gap:.25em .55em; overflow-wrap:anywhere; }
+.thread-studio .ts-relation :is(strong,code) { min-width:0; }
+.thread-studio .ts-contract { display:block; color:var(--accent); margin:.1em 0 .5em; }
+.thread-studio .ts-node { background:var(--surface); }
+.thread-studio .ts-record > span { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+.thread-studio .ts-select,.thread-studio .ts-item { white-space:normal; overflow-wrap:anywhere; }
+
+.thread-studio .ts-creation { display:flex; flex-wrap:wrap; gap:.35em .65em; align-items:center; margin-top:.65em; }

@@ -1,4 +1,5 @@
 {
+  "threads": "打开线程工作室",
   "gettingStarted": "入门指南",
   "copyExamples": "复制入门示例…",
   "toolDirectories": "额外的可执行文件目录。工程相对路径随工作区迁移，查找顺序在 PATH 之前。",

@@ -1,4 +1,5 @@
 {
+  "threads": "Open Thread Studio",
   "gettingStarted": "Getting Started",
   "copyExamples": "Copy Tutorial Examples…",
   "toolDirectories": "Additional executable directories. Project-relative entries move with the workspace and are searched before PATH.",
