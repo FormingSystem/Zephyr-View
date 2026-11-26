@@ -64,6 +64,29 @@ async function verify_thread_studio(extension, folder) {
   await vscode.commands.executeCommand('zephyrWorkbench.threads');
 }
 
+async function verify_source_review(extension, design, graph) {
+  const {preview_program} = require(path.join(extension.extensionPath,'visualProgramFiles'));
+  const {program_source_preview} = require(path.join(extension.extensionPath,'program_source_preview'));
+  const plan = await preview_program(design,graph);
+  const subscriptions = [];
+  try {
+    const preview = new program_source_preview({subscriptions});
+    const review = await preview.show(plan.original,plan.next,'Review src/main.c');
+    const find_diff = () => vscode.window.tabGroups.all.flatMap(group => group.tabs).map(tab => tab.input)
+      .find(input => input instanceof vscode.TabInputTextDiff && input.modified.scheme === 'zephyr-program-preview');
+    for (let attempt = 0; attempt < 100 && !find_diff(); attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    const input = find_diff();
+    assert.ok(input, 'Expected the generated source diff to appear');
+    const texts = await Promise.all([input.original,input.modified].map(uri=>vscode.workspace.openTextDocument(uri)));
+    assert.deepEqual(texts.map(doc=>doc.getText().replaceAll('\r\n','\n')),
+      [plan.original,plan.next].map(text=>text.replaceAll('\r\n','\n')));
+    assert.equal(await fs.readFile(plan.target,'utf8'),plan.original);
+    await review.close();
+  } finally { for (const item of subscriptions) item.dispose(); }
+}
+
 async function verify_visual_program(extension, folder) {
   const {exportProgram,inspectProgram,designFile} = require(path.join(extension.extensionPath,'visualProgramFiles'));
   const {example} = require(path.join(extension.extensionPath,'media','threadStudio','programModel'));
@@ -82,6 +105,7 @@ async function verify_visual_program(extension, folder) {
   assert.ok(await doc.save());
   assert.equal(JSON.parse(await fs.readFile(uri.fsPath,'utf8')).threads[0].initialValue,123);
   assert.ok((await inspectProgram(uri.fsPath,graph)).changed);
+  await verify_source_review(extension,uri.fsPath,graph);
   await fs.access(path.join(extension.extensionPath,'examples','visual-program','console.txt'));
   await fs.access(path.join(extension.extensionPath,'guides','visual-program.en.md'));
 }

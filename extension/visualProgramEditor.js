@@ -5,7 +5,8 @@ const path = require('node:path');
 const {FirmwareLog,encoding} = require('./firmwareLog');
 const {randomBytes} = require('node:crypto');
 const {pickFile, pickDirectory} = require('./fileDialogs');
-const {exportProgram, inspectProgram, updateProgram, designFile, graphText} = require('./visualProgramFiles');
+const {program_source_preview} = require('./program_source_preview');
+const {exportProgram, preview_program, inspectProgram, updateProgram, designFile, graphText, step_source_line} = require('./visualProgramFiles');
 const model = require('./media/threadStudio/programModel');
 
 const viewType = 'zephyrWorkbench.visualProgram';
@@ -53,6 +54,7 @@ ${scripts.map(s=>'<script nonce="'+nonce+'" src="'+asset(s+'.js')+'"></script>')
 
 class VisualProgramEditor {
   constructor(context, target) {
+    this.context = context;
     this.target = target;
     this.root = Uri.joinPath(context.extensionUri,'media');
     this.recording = Uri.joinPath(context.extensionUri,'examples','visual-program');
@@ -143,16 +145,46 @@ class VisualProgramEditor {
       if (!workspace.isTrusted) return;
       if (m.action === 'trace' || m.action === 'follow') return this.readTrace(send,follower,m.action==='follow',()=>!disposed);
       if (m.version !== document.version) return update(true);
+      if (m.action === 'source') return this.open_source(document,m);
       if (m.action === 'export') return this.export(document,notice);
       if (m.action === 'apply') return this.apply(document,notice);
     };
-    const listener = web.onDidReceiveMessage(m=>{
-      queue = queue.then(()=>handle(m)).catch(async err=>{ if (m?.action==='edit') await update(true); await notice(errorMessage(err)); });
+    let reviewing = false;
+    const listener = web.onDidReceiveMessage(message => {
+      const dispatch = async () => {
+        if (message?.action !== 'apply') return handle(message);
+        if (reviewing) return;
+        reviewing = true;
+        try { await handle(message); }
+        finally { reviewing = false; }
+      };
+      const result = queue.then(dispatch).catch(async error => {
+        if (message?.action === 'edit') await update(true);
+        await notice(errorMessage(error));
+      });
+      // Keep document edits ordered while file pickers and diff reviews are open.
+      if (message?.action === 'edit' || message?.action === 'ready') queue = result;
     });
     const changes = workspace.onDidChangeTextDocument(e=>{ if (e.document===document && e.contentChanges.length) void update(false); });
     panel.onDidDispose(()=>{disposed=true;follower.stop();changes.dispose();listener.dispose();});
     this.sessions.set(this.target.folder()?.uri.toString() || '',document);
     web.html = editorHtml(web,this.root);
+  }
+
+  async open_source(design, request) {
+    if (!localFile(design.uri) || path.basename(design.uri.fsPath)!==designFile) return;
+    const names = ['src/main.c','src/user_hooks.c','prj.conf','CMakeLists.txt'];
+    if (!names.includes(request.file)) return;
+    const uri = Uri.joinPath(design.uri,'..',request.file);
+    const document = await workspace.openTextDocument(uri);
+    const line = request.file==='src/main.c' ?
+      step_source_line(decode(design.getText()),document.getText(),request.step,request.protocol) : undefined;
+    const range = line ? document.lineAt(line-1).range : undefined;
+    await window.showTextDocument(document,{preview:false,selection:range});
+    if (request.file==='src/main.c' && request.step && !line) {
+      void window.showInformationMessage(say('工程源码与图中预览不同，已打开实际文件。请审查源码更新后再按步骤定位。',
+        'Project source differs from the preview. Review the source changes to enable step navigation.'));
+    }
   }
 
   async export(document, notice) {
@@ -171,16 +203,52 @@ class VisualProgramEditor {
   async apply(document, notice) {
     if (!localFile(document.uri)) return;
     const graph = decode(document.getText()), version = document.version;
-    const proposal = await inspectProgram(document.uri.fsPath,graph);
-    if (!proposal.changed) { await notice(say('生成的源码已与设计一致。','Generated source already matches this design.')); return; }
-    const apply = say('更新源码','Update source');
-    const detail = say('保存本设计并重新生成 src/main.c。','Save this design and regenerate src/main.c.');
-    if (await window.showInformationMessage(detail,{modal:true},apply)!==apply) return;
-    if (version !== document.version || workspace.textDocuments.some(d=>d.isDirty && d.uri.fsPath===proposal.target)) {
-      throw Object.assign(Error(),{code:'SOURCE_EDITED'});
+    const proposal = await preview_program(document.uri.fsPath,graph);
+    const dirty_source = () => workspace.textDocuments.find(d => localFile(d.uri) && d.isDirty &&
+      path.relative(d.uri.fsPath,proposal.target)==='');
+    const dirty = dirty_source();
+    if (!dirty && !proposal.changed) {
+      await notice(say('生成的源码已与设计一致。','Generated source already matches this design.'));
+      return;
     }
-    if (!await document.save() || document.version !== version) return;
-    await updateProgram(document.uri.fsPath,graph,proposal);
+    this.previews ??= new program_source_preview(this.context);
+    const review = await this.previews.show(dirty?.getText() ?? proposal.original,proposal.next,
+      say('src/main.c · 当前源码 ↔ 设计生成','src/main.c · Current source ↔ Generated design'));
+    const return_to_design = async () => {
+      await review.close();
+      if (!document.isClosed) await this.show(document.uri);
+    };
+    const stale = async () => {
+      await return_to_design();
+      void window.showWarningMessage(say('设计或源码已经改变，请重新审查差异。','The design or source has changed. Review a fresh diff.'));
+    };
+    const back = say('返回设计','Back to design');
+    if (dirty || proposal.edited) {
+      const message = say('当前源码包含手工修改。可对照差异，或返回设计导出新副本。',
+        'The current source has local edits. Review the diff, or return to the design to export a copy.');
+      if (await window.showWarningMessage(message,back)===back) await return_to_design();
+      return;
+    }
+    const apply = say('应用已审查的修改','Apply reviewed changes');
+    const prompt = say('应用差异将保存设计并更新 src/main.c。','Applying this diff saves the design and updates src/main.c.');
+    const choice = await window.showInformationMessage(prompt,apply,back);
+    if (choice===back) return return_to_design();
+    if (choice!==apply) return;
+    if (document.isClosed || document.version!==version || dirty_source()) {
+      return stale();
+    }
+    try {
+      const current = await inspectProgram(document.uri.fsPath,graph);
+      if (current.original!==proposal.original) throw Object.assign(Error(),{code:'SOURCE_EDITED'});
+      if (document.isClosed || document.version!==version || dirty_source()) return stale();
+      if (!await document.save()) return;
+      if (document.version!==version || dirty_source()) return stale();
+      await updateProgram(document.uri.fsPath,graph,proposal);
+    } catch (error) {
+      if (error.code === 'SOURCE_EDITED') return stale();
+      throw error;
+    }
+    await return_to_design();
     await notice(say('已更新 src/main.c，可重新构建。','Updated src/main.c. Rebuild to run the changes.'));
   }
 

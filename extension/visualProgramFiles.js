@@ -24,6 +24,14 @@ function generatedBody(contents) {
   return markedSource(source) === normalized ? source : undefined;
 }
 
+function step_source_line(graph, text, step, protocol) {
+  if (typeof step !== 'string' || ![1,2].includes(protocol)) return;
+  const expected = model.generate(graph,protocol)[sourceFile];
+  if (generatedBody(text) !== expected && text.replace(/\r\n/g,'\n') !== expected) return;
+  const lines = model.describe(graph,protocol).lines;
+  return Object.hasOwn(lines,step) ? lines[step] : undefined;
+}
+
 function projectName(graph) {
   const name = String(graph.name || '').trim().replace(/[^\p{L}\p{N}_-]+/gu, '-').slice(0,60);
   return 'zephyr-visual-' + (name || 'program');
@@ -38,7 +46,7 @@ async function exportProgram(parent, graph) {
 function conflict(code) { return Object.assign(new Error(code), {code}); }
 
 /** Validate the exported design and source location anew on each update; reject links and edits. */
-async function inspectProgram(designPath, graph) {
+async function preview_program(designPath, graph) {
   if (path.basename(designPath) !== designFile) throw conflict('NOT_GENERATED_PROJECT');
   const root = await fs.realpath(path.dirname(designPath));
   const document = path.join(root, designFile);
@@ -49,9 +57,14 @@ async function inspectProgram(designPath, graph) {
   const original = await fs.readFile(target, 'utf8');
   if (!original.includes(marker)) throw conflict('NOT_GENERATED_PROJECT');
   const body = generatedBody(original);
-  if (body === undefined) throw conflict('SOURCE_EDITED');
   const next = model.generate(graph)[sourceFile];
-  return {target, original, next:markedSource(next), changed:body !== next, mode:stat.mode};
+  return {target, original, next:markedSource(next), changed:body !== next, edited:body === undefined, mode:stat.mode};
+}
+
+async function inspectProgram(designPath, graph) {
+  const proposal = await preview_program(designPath, graph);
+  if (proposal.edited) throw conflict('SOURCE_EDITED');
+  return proposal;
 }
 
 /** Stage and publish a single file. Parallel designers recheck the original after acquiring the lock. */
@@ -75,4 +88,4 @@ async function updateProgram(designPath, graph, approved) {
   }
 }
 
-module.exports = {designFile, sourceFile, graphText, exportProgram, inspectProgram, updateProgram};
+module.exports = {designFile, sourceFile, graphText, step_source_line, exportProgram, preview_program, inspectProgram, updateProgram};

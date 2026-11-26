@@ -6,7 +6,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const {example,generate} = require('../extension/media/threadStudio/programModel');
-const {exportProgram,inspectProgram,updateProgram,designFile} = require('../extension/visualProgramFiles');
+const {exportProgram,preview_program,inspectProgram,updateProgram,designFile,step_source_line} = require('../extension/visualProgramFiles');
 const {FirmwareLog} = require('../extension/firmwareLog');
 
 async function sandbox(t) {
@@ -34,6 +34,35 @@ test('export can be reopened; regeneration preserves custom hooks, project files
   await fs.appendFile(main,'/* local edit */\n');
   await assert.rejects(()=>updateProgram(design,graph,plan),{code:'SOURCE_EDITED'});
   assert.ok((await fs.readFile(main,'utf8')).endsWith('/* local edit */\n'));
+});
+
+test('source navigation uses the actual project buffer and the generation that produced the recording',()=>{
+  const graph=example();
+  for (const protocol of [1,2]) {
+    const source=generate(graph,protocol)['src/main.c'];
+    const line=step_source_line(graph,source.replaceAll('\n','\r\n'),'process',protocol);
+    assert.match(source.split('\n')[line-1],/zv_fn_scale/);
+    assert.equal(step_source_line(graph,'/* hand edit */\n'+source,'process',protocol),undefined);
+    assert.equal(step_source_line(graph,source,'process',protocol===1?2:1),undefined);
+  }
+});
+
+test('source review is read-only and preserves the actual divergent source for comparison',async t=>{
+  const dir=await sandbox(t), graph=example(), root=await exportProgram(dir,graph);
+  const doc=path.join(root,designFile), source=path.join(root,'src','main.c');
+  const original=await fs.readFile(source,'utf8');
+  graph.threads[0].initialValue=91;
+  const proposal=await preview_program(doc,graph);
+  assert.equal(proposal.original,original);
+  assert.notEqual(proposal.next,original);
+  assert.equal(await fs.readFile(source,'utf8'),original);
+  const hand_edit=original+'/* external change */\n';
+  await fs.writeFile(source,hand_edit);
+  const review=await preview_program(doc,graph);
+  assert.ok(review.edited);
+  assert.equal(review.original,hand_edit);
+  await assert.rejects(()=>updateProgram(doc,graph,proposal),{code:'SOURCE_EDITED'});
+  assert.equal(await fs.readFile(source,'utf8'),hand_edit);
 });
 
 test('regeneration refuses unrelated source and a replaced source directory',async t=>{
