@@ -16,8 +16,8 @@ Press `F1` in VS Code and run **Zephyr View: Copy Tutorial Examples…**. Choose
 
 | What you want to do | Where to go | How to check the result |
 | --- | --- | --- |
-| Design a program and trace its messages | Visual program designer → Play firmware example | Step through sends, receives and function returns. Try **New design → Enums and bit flags** for custom types, or open **Live C source diagram** in a hand-written C file. [Walkthrough and animation](guides/visual-program.en.md) |
-| Build two threads and follow a value | Threads → Program draft, then Source analysis and Paused stack | Follow the queue receive call to `value = 42` in the debugger. [Thread tutorial](guides/threads.en.md) |
+| Design a program and trace its messages | Programming Studio → File → Play firmware example | Step through sends, receives and function returns. Try **New design → Enums and bit flags** for custom types, or open **Live C source diagram** in a hand-written C file. [Walkthrough and animation](guides/visual-program.en.md) |
+| Build two threads and follow a value | Programming Studio → Tools → Analyze project concurrency → Program draft, then Source analysis and Paused stack | Follow the queue receive call to `value = 42` in the debugger. [Thread tutorial](guides/threads.en.md) |
 | Initialize, open or repair a west workspace | Workspace → west workspace | The expected workspace root and manifest file appear. [Workspace walkthrough and animation](guides/west-workspace.en.md) |
 | Build with existing sources and an SDK, or choose another compiler | Review tools in Workspace, then select a build method and target compiler on Build | `CMakeCache.txt` shows the actual `CMAKE_C_COMPILER`. [Compiler example and animation](guides/cmake-integration.en.md) |
 | Add a local library and decide whether its sources compile | Modules → Select directory, then edit Kconfig under Project configuration | When enabled, `greeting.c` appears in the compile commands and the output changes in the emulator. [Local module and build options exercise](guides/cmake-integration.en.md) |

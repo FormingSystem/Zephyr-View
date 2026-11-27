@@ -2,7 +2,7 @@
 
 **简体中文** | [English](README.en.md)
 
-从 Zephyr View 左栏打开**可视化程序设计器**，用架构、流程、管道和时序图编排线程、函数和信号，查看固件记录的输入与返回值。在 C 或头文件中打开**实时 C 源码图**，可随编辑查看调用、信号方向和类型成员。[操作指南与 1080p 动图](extension/guides/visual-program.md)
+从 Zephyr View 左栏打开**编程工作室**。在独立窗口左边设计架构、流程和信号管道，右边对照选中节点的 C 源码。切换到**工程源码**可查看手写代码的调用和类型成员，也能在对应行设断点。[操作指南与 1080p 动图](extension/guides/visual-program.md)
 
 在 VS Code 中配置、构建和调试 Zephyr 应用。支持 west 工作区和独立 CMake 工程，可使用已有源码、模块、SDK 与离线安装包。
 
@@ -12,7 +12,7 @@
 
 首次使用可从[入门指南](extension/GETTING_STARTED.md)开始。随包提供操作动图、可编译的应用和本地模块，以及一套树外板与 SoC 示例。
 
-在 VS Code 活动栏打开 **Zephyr View**。默认进入工作区。导航依次为构建、工作区、工程配置、模块和线程。在工作区查看构建进程使用的环境变量；在构建页核对配置输入和 CMake 上次记录的值。工作台支持 west 和 CMake。选板后可以在同一行组查看识别到的 DTS。在「工程配置」展开当前应用的配置图，双击软件符号或实际硬件节点，在节点旁修改。支持空白处拖动、Ctrl + 滚轮缩放、另存副本和写回应用配置。
+在 VS Code 活动栏打开 **Zephyr View**。默认进入工作区。导航依次为构建、工作区、工程配置、模块和编程工作室。在工作区查看构建进程使用的环境变量；在构建页核对配置输入和 CMake 上次记录的值。工作台支持 west 和 CMake。选板后可以在同一行组查看识别到的 DTS。在「工程配置」展开当前应用的配置图，双击软件符号或实际硬件节点，在节点旁修改。支持空白处拖动、Ctrl + 滚轮缩放、另存副本和写回应用配置。
 
 在「工作区 → 环境搭建 → 探针与驱动」逐项查看本机工具路径和已连接的设备，选择已有工具目录，或从该行部署工具与驱动。
 
@@ -27,7 +27,7 @@
 - [组件安装、固件烧写和工作台全量评审](design/review/installation-and-flashing.md)
 - [逐模块评审和验收条件](design/review/module-refinement.md)
 
-在「线程」页可以生成消息队列、信号量或互斥量的双线程工程，分析当前应用的调用关系，也可以在断点处核对栈帧与变量。示例工程可用 west 或 CMake 构建。[线程入门](extension/guides/threads.md) · [详细设计与验证](design/review/thread-studio.md) · [离线交互稿](design/review/thread-studio-preview.html)
+在「编程工作室 → 工具 → 分析工程并发」可以生成消息队列、信号量或互斥量的双线程工程，分析当前应用的调用关系，也可以在断点处核对栈帧与变量。示例工程可用 west 或 CMake 构建。[线程入门](extension/guides/threads.md) · [详细设计与验证](design/review/thread-studio.md) · [离线交互稿](design/review/thread-studio-preview.html)
 
 ## 商业使用与许可
 

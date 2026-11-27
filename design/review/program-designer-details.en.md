@@ -38,6 +38,17 @@ The same design was built with offline CMake and run under QEMU on Arm `mps2/an3
 
 Both targets also ran the bit-flag example. Six events cover setting and masking bits, branching and shifting. Shifting the high bit `2147483648` right by 31 produced `1`. In VS Code, an unsaved C edit reversed the signal direction. Removing a closing delimiter preserved the last valid diagram and restoring it re-enabled source navigation. [Flag design](../../extension/examples/visual-program/flags.zephyr-program.json) · [Arm console capture](../../extension/examples/visual-program/flags.console.txt)
 
+## Separate studio layout and acceptance
+
+When authoring, the canvas takes the left side and the source pane follows the selected node on the right. Properties, checks and firmware playback share the dock below the source. To read an existing application, switch the same window to Project source. Selecting a call, signal or data member locates its line. Both modes share the divider, source-line renderer and debug controls. The window can be maximized or moved to another display. Opening the same design reuses its window. A VS Code auxiliary window retains the workspace, native editor and debug extensions. [VS Code floating windows](https://code.visualstudio.com/docs/configure/custom-layout) · [Debug adapters](https://code.visualstudio.com/api/extension-guides/debugger-extension)
+
+| Review question | Acceptance evidence |
+| --- | --- |
+| Where is the code for a selected condition? | The condition and corresponding C line highlight together. The divider supports the mouse and keyboard. |
+| Which file opens when a workspace has several applications? | Default discovery stays within the current design or application. Explicit selection can cross directories. The host rejects navigation requests for another file or an older revision. |
+| Could macros make mutually exclusive paths look unconditional? | The reader evaluates conditions it can resolve locally and labels unknown branches and unexpanded macros. An incomplete buffer retains the last valid relationships. Build flags, cross-file expansion and actual call targets require build or debugger evidence. |
+| How can I tell a replay from a live stop? | Replay reads firmware events. Debug controls bind to the chosen VS Code session. In a separate window on Windows, a real adapter stopped at line 3, stepped to line 4, continued, paused and stopped. |
+
 [Interactive exercise and mouse walkthrough](../../extension/guides/visual-program.en.md)
 
 [简体中文](program-designer-details.md) | **English**

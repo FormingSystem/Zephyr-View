@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | **English**
 
-Open **Visual program designer** in Zephyr View to explore architecture, control flow, pipelines and firmware sequences. Follow inputs and return values across threads and functions. In a C source or header file, open **Live C source diagram** to see calls, signal directions and type members as you edit. [Walkthrough and 1080p animation](extension/guides/visual-program.en.md)
+Open **Programming Studio** from the Zephyr View sidebar. In its separate window, design architecture, control flow and signal pipelines on the left and follow the selected node in C on the right. Switch to **Project source** to explore calls and type members in hand-written code or set a breakpoint on a selected line. [Walkthrough and 1080p animation](extension/guides/visual-program.en.md)
 
 Configure, build and debug Zephyr applications in VS Code. Use a west workspace or a standalone CMake project with existing sources, modules, SDKs and offline installers.
 
@@ -12,7 +12,7 @@ Expand **Assets** on the release page and download the `.vsix` file. In the VS C
 
 Start with [Getting started](extension/GETTING_STARTED.en.md) for step-by-step animations, a buildable application and local module, and an out-of-tree board and SoC example.
 
-Open **Zephyr View** in the Activity Bar. The workbench opens on **Workspace**. Its tabs are **Build**, **Workspace**, **Project configuration**, **Modules** and **Threads**. Workspace shows the environment available to the build process. Build shows the inputs for the next configure alongside the last values recorded by CMake. Select a board to see the detected board DTS. In Project configuration, expand the application's graph and double-click a Kconfig symbol or hardware node to edit it in place. Drag the canvas to pan, use Ctrl + wheel to zoom, then save a copy or write the reviewed changes to the application configuration.
+Open **Zephyr View** in the Activity Bar. The workbench opens on **Workspace**. Its tabs are **Build**, **Workspace**, **Project configuration**, **Modules** and **Programming Studio**. Workspace shows the environment available to the build process. Build shows the inputs for the next configure alongside the last values recorded by CMake. Select a board to see the detected board DTS. In Project configuration, expand the application's graph and double-click a Kconfig symbol or hardware node to edit it in place. Drag the canvas to pan, use Ctrl + wheel to zoom, then save a copy or write the reviewed changes to the application configuration.
 
 Open **Workspace → Environment setup → Probes and drivers** to see local tool paths and connected devices. Select an existing tool folder or deploy the tool and its supported drivers from the same row.
 
@@ -27,7 +27,7 @@ After selecting a board and CPU on **Build**, use the recommended SDK compiler o
 - [Component installation, firmware flashing and workbench review](design/review/installation-and-flashing.en.md)
 - [Review and acceptance criteria by module](design/review/module-refinement.en.md)
 
-In **Threads**, generate a two-thread application using a message queue, semaphore or mutex. Explore calls in your own application and inspect frames and variables at a breakpoint. The generated applications build with west or CMake. [Thread tutorial](extension/guides/threads.en.md) · [Detailed design and verification](design/review/thread-studio.en.md) · [Offline interactive prototype](design/review/thread-studio-preview.html?lang=en)
+In **Programming Studio → Tools → Analyze project concurrency**, generate a two-thread application using a message queue, semaphore or mutex. Explore calls in your own application and inspect frames and variables at a breakpoint. The generated applications build with west or CMake. [Thread tutorial](extension/guides/threads.en.md) · [Detailed design and verification](design/review/thread-studio.en.md) · [Offline interactive prototype](design/review/thread-studio-preview.html?lang=en)
 
 ## Commercial use and licensing
 

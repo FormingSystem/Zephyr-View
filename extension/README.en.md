@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | **English**
 
-Open **Visual program designer** in Zephyr View to explore architecture, control flow, pipelines and firmware sequences. Follow inputs and return values across threads and functions. In a C source or header file, open **Live C source diagram** to see calls, signal directions and type members as you edit. [Walkthrough and 1080p animation](guides/visual-program.en.md)
+Open **Programming Studio** from the Zephyr View sidebar. In its separate window, design architecture, control flow and signal pipelines on the left and follow the selected node in C on the right. Switch to **Project source** to explore calls and type members in hand-written code or set a breakpoint on a selected line. [Walkthrough and 1080p animation](guides/visual-program.en.md)
 
 For your first build, open [Getting started](GETTING_STARTED.en.md). The same guide is available offline from the Zephyr View sidebar, with animations and a Command Palette action to copy the examples.
 
@@ -12,9 +12,9 @@ Download the `.vsix` file under **Assets** on the GitHub release page. In the VS
 
 Local paths in the workbench and debug sidebar use `/`, as in `samples/hello_world`. On Windows, the path entry fields also accept `\` when pasting from File Explorer.
 
-Open **Zephyr View** in the VS Code Activity Bar. The workbench opens on Workspace. Its tabs are Build, Workspace, Project configuration, Modules and Threads. The build method in the header applies to the active project.
+Open **Zephyr View** in the VS Code Activity Bar. The workbench opens on Workspace. Its tabs are Build, Workspace, Project configuration, Modules and Programming Studio. The build method in the header applies to the active project.
 
-In **Threads**, choose a concurrency component and how to create its threads. Select a node to inspect the generated C. Use **Source analysis** on an existing application and **Paused stack** to inspect variables at a breakpoint. [Follow a value between two threads](guides/threads.en.md)
+In **Programming Studio → Tools → Analyze project concurrency**, choose a concurrency component and how to create its threads. Select a node to inspect the generated C. Use **Source analysis** on an existing application and **Paused stack** to inspect variables at a breakpoint. [Follow a value between two threads](guides/threads.en.md)
 
 **Workspace folders and debugging.** Click **Workspace folder** in the target sidebar to switch projects. Opening a file in a workspace folder or activating a debug session scoped to it also selects that folder. Moving to the workbench or terminal keeps the selection. The sidebar reads the debug runner from the current app and board’s generated `zephyr/runners.yaml` and shows the reason when it is unavailable. Use **Refresh debug target** at the bottom of the list to reread the target.
 

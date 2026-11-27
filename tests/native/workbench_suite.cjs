@@ -7,6 +7,7 @@ const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
 const vscode = require('vscode');
 const execute = promisify(execFile);
+const {verify_window,verify_adapter} = require('./programStudio.cjs');
 
 async function verify_cmake(tools, directory) {
   assert.ok(tools.cmake && path.isAbsolute(tools.cmake), 'CMake must resolve on the extension host');
@@ -27,7 +28,7 @@ async function verify_cmake(tools, directory) {
 async function verify_tutorial(extension, folder) {
   const guide = vscode.env.language.toLowerCase().startsWith('zh') ? 'GETTING_STARTED.md' : 'GETTING_STARTED.en.md';
   await fs.access(path.join(extension.extensionPath, guide));
-  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio', 'visual-program', 'program-authoring', 'program-diagrams', 'program-views']) {
+  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio', 'visual-program', 'program-authoring', 'program-diagrams', 'program-views', 'programming-studio']) {
     const file = await fs.open(path.join(extension.extensionPath, 'guides', 'media', name + '.gif'));
     try {
       const header = Buffer.alloc(10);
@@ -123,6 +124,7 @@ async function verify_visual_program(extension, folder) {
   assert.ok((await inspectProgram(uri.fsPath,graph)).changed);
   await verify_source_review(extension,uri.fsPath,graph);
   await verify_live_source(extension,project);
+  await verify_window(uri);
   await fs.access(path.join(extension.extensionPath,'examples','visual-program','console.txt'));
   await fs.access(path.join(extension.extensionPath,'guides','visual-program.en.md'));
 }
@@ -147,6 +149,7 @@ exports.run = async function run() {
   await verify_tutorial(extension, target.folder());
   await verify_thread_studio(extension, target.folder());
   await verify_visual_program(extension, target.folder());
+  await verify_adapter(extension,target.folder());
   const cmake = await verify_cmake(tools, target.folder().uri.fsPath);
   await vscode.commands.executeCommand('zephyrWorkbench.show', 'workspace');
   await vscode.commands.executeCommand('zephyrWorkbench.probeSupport', 'jlink');
@@ -156,7 +159,7 @@ exports.run = async function run() {
     assert.ok(workbenchTabs.length <= 1, 'Probe support should open inside the same workbench');
     if (workbenchTabs.length === 1) {
       const result = {extension: extension.packageJSON.version, vscode: vscode.version,
-        platform: process.platform, arch: process.arch, cmake, hostBuild: 'passed', threadStudioExportAndAnalysis: 'passed', visualProgramCustomEditor: 'passed', liveSourcePreview:'passed'};
+        platform: process.platform, arch: process.arch, cmake, hostBuild: 'passed', threadStudioExportAndAnalysis: 'passed', visualProgramCustomEditor: 'passed', liveSourcePreview:'passed',detachedStudio:'passed',studioDebugControls:'passed'};
       await fs.writeFile(process.env.ZEPHYR_TEST_EVIDENCE, JSON.stringify(result));
       return;
     }
