@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | **English**
 
-Open **Programming Studio** from the Zephyr View sidebar. In its separate window, design architecture, control flow and signal pipelines on the left and follow the selected node in C on the right. Switch to **Project source** to explore calls and type members in hand-written code or set a breakpoint on a selected line. Use **UML classes** to distinguish value members, references and explicit inheritance, follow an edge to its member declaration, open a target type in a directly included header, or export to PlantUML. [Walkthrough and 1080p animation](extension/guides/visual-program.en.md)
+Open **Programming Studio** from the Zephyr View sidebar. In its separate window, design architecture, control flow and signal pipelines on the left and follow the selected node in C on the right. Switch to **Project source** to explore calls and type members in hand-written code or set a breakpoint on a selected line. Use **UML classes** to distinguish value members, references and explicit inheritance, follow an edge to its member declaration, open a target type in a directly included header, or export to PlantUML. Choose **UML modeling…** to create editable project diagrams from 14 templates. [Walkthrough and 1080p animation](extension/guides/visual-program.en.md)
 
 Configure, build and debug Zephyr applications in VS Code. Use a west workspace or a standalone CMake project with existing sources, modules, SDKs and offline installers.
 

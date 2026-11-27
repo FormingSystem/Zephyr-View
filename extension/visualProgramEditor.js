@@ -187,6 +187,7 @@ class VisualProgramEditor {
         return;
       }
       if (m.action === 'text' && panel.visible) return this.edit_text_beside(document,panel.viewColumn);
+      if (m.action==='umlModeling' && panel.visible) return commands.executeCommand('zephyrWorkbench.umlModeling',folder?.uri);
       if (m.action==='projectSource') return project_sources.handle(m);
       if (m.action==='analysis' && panel.visible) return commands.executeCommand('zephyrWorkbench.threads');
       if (m.action==='debug' && panel.visible && workspace.isTrusted) {

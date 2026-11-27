@@ -1,5 +1,7 @@
 {
   "visualProgram": "Edit visual program",
+  "umlModeling": "UML modeling…",
+  "previewUml": "Preview UML diagram",
   "programmingStudio": "Open Programming Studio",
   "liveSource": "Live C source diagram",
   "openVisualFile": "Open visual design file…",

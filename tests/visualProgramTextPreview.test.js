@@ -23,7 +23,8 @@ function text_preview() {
   const script = fs.readFileSync(require.resolve('../extension/media/threadStudio/programEditor'), 'utf8');
   vm.runInNewContext(script,{
     window,document,structuredClone,ZephyrProgramModel:model,
-    ZephyrStudioToolbar:{mount() {
+    ZephyrStudioToolbar:{mount(toolbar,t,dispatch) {
+      controls.set('umlModeling',{click:()=>dispatch('umlModeling')});
       for(const command of ['export','apply']) controls.set(command,{dataset:{command}});
       return {trust(){},update(){}};
     }},
@@ -39,6 +40,15 @@ function text_preview() {
   }
   return {surface,feedback,sent,editor,controls,receive};
 }
+
+test('opening a UML model is independent of pending changes to a visual design',() => {
+  const preview=text_preview(), graph=model.example();
+  preview.receive({type:'document',graph});
+  preview.editor.change(structuredClone(graph));
+  preview.controls.get('umlModeling').click();
+  assert.deepEqual(preview.sent.map(message=>message.action),['ready','edit','umlModeling']);
+  assert.equal('version' in preview.sent.at(-1),false);
+});
 
 test('incomplete design text preserves the last valid diagram, rejects canvas edits and recovers without saving',() => {
   const preview = text_preview(), original = model.example();

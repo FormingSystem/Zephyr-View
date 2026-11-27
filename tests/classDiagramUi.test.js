@@ -14,7 +14,16 @@ function check_header_navigation(check,t) {
   document.body.append(fixture);fixture.append(toolbar,design);
   const messages=[], q=selector=>fixture.querySelector(selector);
   const deliver=data=>window.dispatchEvent(new MessageEvent('message',{data}));
+  ZephyrStudioToolbar.mount(toolbar,t,action=>messages.push({action}));
   ZephyrStudioProjectSource.bind({postMessage:message=>messages.push(message)},design,toolbar,t);
+  function open_modeling() {
+    const item=q('[data-command="umlModeling"]'), menu=item.closest('details');
+    menu.querySelector('summary').click();
+    check(!menu.hidden && menu.open && item.getClientRects().length && item.textContent===t('UML 建模…','UML modeling…'),'UML in Tools menu');
+    item.click();
+    check(!menu.open && messages.at(-1).action==='umlModeling','dispatch modeling and close menu');
+  }
+  open_modeling();
   const uri='file:///project/root.h', file='file:///project/chip.h', version=3, revision=7;
   const nodes=[{id:'device',name:'Device',kind:'struct',line:1,members:[{name:'struct Chip chip',line:5}]},
     {id:'chip',name:'Chip',kind:'struct',line:4,file,members:[{name:'uint32_t value',line:8}]}];
@@ -30,6 +39,7 @@ function check_header_navigation(check,t) {
   const action=op=>messages.filter(m=>m.op===op).at(-1);
   const control=(cn,en)=>Array.from(fixture.querySelectorAll('.ps-reader button')).find(b=>b.textContent===t(cn,en));
   q('[data-studio-mode="source"]').click();deliver(root);q('[data-mode="class_diagram"]').click();
+  open_modeling();
   q('button[data-uml-edge]').click();check(row()===5,'root evidence line');
   q('button[data-uml-type="chip"]').click();const first=action('revealHeader');
   check(first.uri===uri && first.file===file && first.line===4 && first.version===3 && first.graphRevision===7,'header request context');
@@ -111,7 +121,7 @@ test('UML canvas links declarations and directional edges to source at narrow an
     const dir=await fs.mkdtemp(path.join(os.tmpdir(),'zephyr-uml-ui-'));
     t.after(()=>fs.rm(dir,{recursive:true,force:true,maxRetries:4,retryDelay:100}));
     const uri=name=>pathToFileURL(path.resolve(__dirname,'../extension/media/threadStudio',name)).href;
-    const scripts=['ui','classDiagram','sourceRelations','programDesk','studioProjectSource'].map(n=>'<script src="'+uri(n+'.js')+'"></script>').join('');
+    const scripts=['ui','classDiagram','sourceRelations','programDesk','studioToolbar','studioProjectSource'].map(n=>'<script src="'+uri(n+'.js')+'"></script>').join('');
     const styles=['liveSource','sourceRelations','classDiagram'].map(n=>'<link rel="stylesheet" href="'+uri(n+'.css')+'">').join('');
     const widths=[360,720,1640],themes=['dark','light'];
     for (const theme of themes) {

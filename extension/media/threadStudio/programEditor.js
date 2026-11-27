@@ -10,6 +10,7 @@
   let trusted = false, attached = false, text_invalid = false;
 
   function action(name,fields={}) {
+    if (name==='umlModeling') return host.postMessage({action:name});
     if (submitted || pending) queuedAction = {name,fields};
     else host.postMessage({...fields,action:name,version});
   }

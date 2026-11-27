@@ -4,7 +4,7 @@
 
 Open **Programming Studio** in Zephyr View to connect threads, functions and signals, edit their behavior, and replay values from firmware. [Walkthrough and 1080p animation](../../extension/guides/visual-program.en.md)
 
-[Source UML class diagram design and acceptance](source-class-diagram.en.md)
+[Source UML class diagram design and acceptance](source-class-diagram.en.md) · [UML modeling and renderer selection](uml-modeling.en.md)
 
 [0.5.28 program designer design and acceptance](program-designer-details.en.md) · [Connect, move and inspect steps in the installed extension](../../extension/guides/media/program-authoring.gif)
 

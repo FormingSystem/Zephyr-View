@@ -1,6 +1,7 @@
 'use strict';
 
 const path=require('node:path').posix;
+const {extension_id,preview_model}=require('./plantumlPreview');
 const {class_diagram_text}=require('./plantumlClassDiagram');
 
 /** Save a host-owned UML snapshot selected in the studio. Recheck its revision after the dialog. */
@@ -25,14 +26,12 @@ async function export_class_diagram(vscode, source_uri, current_graph, t) {
   }
   await vscode.workspace.fs.writeFile(target,Buffer.from(class_diagram_text(diagram),'utf8'));
   const edit=t('打开图文件','Open diagram file'), preview=t('用 PlantUML 预览','Preview with PlantUML');
-  const actions=vscode.extensions.getExtension('jebbs.plantuml') ? [edit,preview] : [edit];
+  const actions=vscode.extensions.getExtension(extension_id) ? [edit,preview] : [edit];
   const choice=await vscode.window.showInformationMessage(t('已导出类图','Class diagram exported')+' · '+path.basename(target.path),...actions);
   if (!choice) return;
+  if (choice===preview) return preview_model(vscode,target,t);
   const doc=await vscode.workspace.openTextDocument(target);
   await vscode.window.showTextDocument(doc,{preview:false});
-  if (choice===preview && vscode.window.activeTextEditor?.document.uri.toString()===target.toString()) {
-    await vscode.commands.executeCommand('plantuml.preview');
-  }
 }
 
 module.exports={export_class_diagram};

@@ -28,7 +28,7 @@ async function verify_cmake(tools, directory) {
 async function verify_tutorial(extension, folder) {
   const guide = vscode.env.language.toLowerCase().startsWith('zh') ? 'GETTING_STARTED.md' : 'GETTING_STARTED.en.md';
   await fs.access(path.join(extension.extensionPath, guide));
-  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio', 'visual-program', 'program-authoring', 'program-diagrams', 'program-views', 'programming-studio']) {
+  for (const name of ['west-workspace', 'toolchain-build', 'local-module', 'hardware-port', 'thread-studio', 'visual-program', 'program-authoring', 'program-diagrams', 'program-views', 'programming-studio', 'uml-modeling']) {
     const file = await fs.open(path.join(extension.extensionPath, 'guides', 'media', name + '.gif'));
     try {
       const header = Buffer.alloc(10);
@@ -37,7 +37,7 @@ async function verify_tutorial(extension, folder) {
       assert.deepEqual([header.readUInt16LE(6), header.readUInt16LE(8)], [1920, 1080]);
     } finally { await file.close(); }
   }
-  for (const name of ['uml-class-diagram.png','uml-header-navigation.png']) {
+  for (const name of ['uml-class-diagram.png','uml-header-navigation.png','uml-modeling-chooser.png','uml-modeling-sequence.png','uml-free-layout.png']) {
     const snapshot = await fs.readFile(path.join(extension.extensionPath,'guides','media',name));
     assert.equal(snapshot.toString('ascii',1,4),'PNG');
     assert.deepEqual([snapshot.readUInt32BE(16),snapshot.readUInt32BE(20)],[1920,1080]);
@@ -50,6 +50,21 @@ async function verify_tutorial(extension, folder) {
   await fs.writeFile(config, 'CONFIG_PRINTK=n');
   await assert.rejects(() => copyExamplesTo(extension.extensionUri, folder.uri));
   assert.equal(await fs.readFile(config, 'utf8'), 'CONFIG_PRINTK=n');
+}
+
+async function verify_uml_modeling(extension,folder) {
+  const {open_modeling}=require(path.join(extension.extensionPath,'umlModeling'));
+  const {uml_templates}=require(path.join(extension.extensionPath,'umlTemplates'));
+  const model=uml_templates.find(item=>item.id==='sequence');
+  const file=vscode.Uri.joinPath(folder.uri,'thread-interaction.puml');
+  const window={
+    showQuickPick:async choices=>choices.find(choice=>choice.item?.id===model.id),
+    showSaveDialog:async()=>file,showTextDocument:doc=>vscode.window.showTextDocument(doc)
+  };
+  const {workspace,Uri,WorkspaceEdit,QuickPickItemKind}=vscode;
+  await open_modeling({window,workspace,Uri,WorkspaceEdit,QuickPickItemKind},folder.uri,(_zh,en)=>en);
+  assert.equal(Buffer.from(await workspace.fs.readFile(file)).toString('utf8'),model.source);
+  assert.equal(vscode.window.activeTextEditor.document.uri.toString(),file.toString());
 }
 
 async function verify_thread_studio(extension, folder) {
@@ -153,6 +168,7 @@ exports.run = async function run() {
   const {tools} = await inspectWorkspace(target);
   await verify_tutorial(extension, target.folder());
   await verify_thread_studio(extension, target.folder());
+  await verify_uml_modeling(extension,target.folder());
   await verify_visual_program(extension, target.folder());
   await verify_adapter(extension,target.folder());
   const cmake = await verify_cmake(tools, target.folder().uri.fsPath);

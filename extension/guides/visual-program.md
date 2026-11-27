@@ -14,6 +14,18 @@
 
 在左侧组件库选择入口、线程、函数或内核对象。拖动画布空白处可平移，Ctrl + 滚轮可缩放。找不到刚才选中的节点时，用画布工具栏定位选区或显示全图。在右侧**属性**可修改步骤次序和参数。
 
+## 为线程交互建立 UML 模型
+
+从 Zephyr View 左栏或工作室的 **工具 → UML 建模…** 打开图种列表。输入“时序”或 `sequence`，选择时序图并保存为 `.puml`。将模板里的参与者改为自己的线程，将箭头上的消息改为工程使用的 API。点击编辑器右上角的预览图标，对照图的方向和调用顺序。再次进入 **UML 建模… → 打开已有图…** 可继续编辑。
+
+![从工作室新建并预览线程交互时序图](media/uml-modeling.gif)
+
+[图种选择器](media/uml-modeling-chooser.png) · [查看时序图与并排源码](media/uml-modeling-sequence.png)
+
+要用鼠标摆放图元，选 **自由布局画布（UMLet）…**。安装 UMLet 后新建或打开 `.uxf`，在画布上排列图元、连接端点，保存即可保留布局。从右上方的图元库双击一个类添加到图中，拖动它调整位置，右下方的属性框可编辑类名及成员。`.puml` 与 `.uxf` 各自保存，可一同纳入版本管理。[查看拖放画布](media/uml-free-layout.png)
+
+列表提供 14 种起图模板。需要表达一条消息何时发生可选时序图，描述线程等候、运行和故障恢复可选状态机，比较信号随时间的变化可选时间图。首次预览可从提示打开 PlantUML 扩展详情。离线渲染使用 `plantuml.render = Local`，准备好 Java 和所需的 Graphviz。如果终端能找到的 Java 与预期不同，可在 VS Code 的 **PlantUML: Java** 设置中选择对应的 `java` 可执行文件。模板和编辑功能随 Zephyr View 安装。[PlantUML 插件说明](https://github.com/qjebbs/vscode-plantuml)
+
 ## 用 UML 类图读懂 SD 卡的数据结构
 
 在**编程工作室 → 工程源码 → 选择文件…**打开 Zephyr 源码中的 `include/zephyr/sd/sd.h`，切换到 **UML 类图**。从 `sd_card` 找到成员 `func0`。实心菱形在 `sd_card` 一端，因为卡结构体按值存放一个 `sdio_func`。沿另一方向找 `card`，点击这条关联可以在右侧看到 `struct sd_card *card`。这个字段用指针找到所属的卡。分别点击类型名、成员和关系，可以核对各自的声明。[Zephyr 示例头文件](https://github.com/zephyrproject-rtos/zephyr/blob/25c8f4a23988dd3b2cfb463613622738298c2d6c/include/zephyr/sd/sd.h)

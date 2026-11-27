@@ -14,6 +14,18 @@ Open **Zephyr View → Open Programming Studio** from the Activity Bar. In the s
 
 Select an entry point, thread, function or kernel object in the library on the left. Drag the canvas background to pan or use Ctrl + wheel to zoom. If a node has moved out of sight, use the canvas toolbar to locate the selection or fit the diagram. Edit instruction order and arguments under **Properties** on the right.
 
+## Model thread interactions with UML
+
+Open **Tools → UML modeling…** in the studio or choose the modeling entry in the Zephyr View sidebar. Search for `sequence`, choose the sequence diagram and save it as a `.puml` file. Rename the participants to match your threads and replace the arrow labels with your project's API calls. Open the preview from the editor toolbar to check direction and order. Reopen your work through **UML modeling… → Open existing diagram…**.
+
+![Creating and previewing a thread interaction diagram in Programming Studio](media/uml-modeling.gif)
+
+[Diagram picker](media/uml-modeling-chooser.png) · [Sequence diagram beside its source](media/uml-modeling-sequence.png)
+
+For drag-and-drop editing, select **Free-layout canvas (UMLet)…**. With UMLet installed, create or open a `.uxf` file, arrange shapes, connect their endpoints and save the layout. Double-click a class in the upper-right palette to add it, drag it into position, and edit its name and members in the properties pane below. Both `.puml` and `.uxf` files can be tracked in Git. [View the canvas](media/uml-free-layout.png)
+
+The picker offers 14 starting templates. Use a sequence diagram for message order, a state machine for waiting and recovery, or a timing diagram to compare signals over time. The preview action offers the PlantUML extension when it is missing. For offline rendering select `Local` for `plantuml.render` and provide Java and the required Graphviz tools. If the Java runtime you want is outside your terminal’s search path, set **PlantUML: Java** in VS Code to the path of that Java executable. Templates and text editing ship with Zephyr View. [PlantUML extension](https://github.com/qjebbs/vscode-plantuml)
+
 ## Read SD card data structures as a UML class diagram
 
 In **Programming Studio → Project source → Choose file…**, open `include/zephyr/sd/sd.h` from a Zephyr checkout and select **UML classes**. Start at `sd_card` and find the field `func0`. The filled diamond is at the `sd_card` end because the card stores an `sdio_func` by value. In the other direction, select the association labeled `card` to locate `struct sd_card *card` on the right. This pointer lets the function find its owning card. Select a type, member or edge to check its own source declaration. [Zephyr example header](https://github.com/zephyrproject-rtos/zephyr/blob/25c8f4a23988dd3b2cfb463613622738298c2d6c/include/zephyr/sd/sd.h)

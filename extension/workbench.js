@@ -39,6 +39,7 @@ function navigation() {
   const actions = [
     action(l10n.t('Open workbench'), 'layout', 'zephyrWorkbench.show'),
     action(l10n.t('Programming Studio'), 'type-hierarchy', 'zephyrWorkbench.openProgrammingStudio'),
+    action(l10n.t('UML modeling…'), 'symbol-class', 'zephyrWorkbench.umlModeling'),
     action(l10n.t('Configure Kconfig'), 'settings-gear', 'zephyrWorkbench.kconfig'),
     action(l10n.t('Getting started'), 'book', 'zephyrWorkbench.gettingStarted')
   ];

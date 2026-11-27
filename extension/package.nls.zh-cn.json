@@ -1,5 +1,7 @@
 {
   "visualProgram": "编辑可视化程序",
+  "umlModeling": "UML 建模…",
+  "previewUml": "预览 UML 图",
   "programmingStudio": "打开编程工作室",
   "liveSource": "实时 C 源码图",
   "openVisualFile": "打开可视化设计文件…",

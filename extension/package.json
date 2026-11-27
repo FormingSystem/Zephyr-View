@@ -14,7 +14,7 @@
     "baseContentUrl": "https://github.com/FormingSystem/Zephyr-View/blob/main/extension",
     "baseImagesUrl": "https://raw.githubusercontent.com/FormingSystem/Zephyr-View/main/extension"
   },
-  "version": "0.5.32",
+  "version": "0.5.33",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -35,6 +35,8 @@
     }],
     "commands": [
       {"command": "zephyrWorkbench.openProgrammingStudio", "title": "%programmingStudio%", "category": "Zephyr View"},
+      {"command": "zephyrWorkbench.umlModeling", "title": "%umlModeling%", "category": "Zephyr View"},
+      {"command": "zephyrWorkbench.previewUml", "title": "%previewUml%", "category": "Zephyr View", "icon": "$(open-preview)"},
       {"command": "zephyrWorkbench.visualProgram", "title": "%visualProgram%", "category": "Zephyr View"},
       {"command": "zephyrWorkbench.liveSource", "title": "%liveSource%", "category": "Zephyr View", "icon": "$(open-preview)"},
       {"command": "zephyrWorkbench.openVisualFile", "title": "%openVisualFile%", "category": "Zephyr View"},
@@ -99,6 +101,7 @@
     },
     "menus": {
       "editor/title": [
+        {"command": "zephyrWorkbench.previewUml", "when": "resourceExtname =~ /\\.(puml|plantuml)$/i && editorLangId != plantuml", "group": "navigation"},
         {"command": "zephyrWorkbench.liveSource", "when": "editorLangId == c || editorLangId == cpp", "group": "navigation"}
       ],
       "view/title": [

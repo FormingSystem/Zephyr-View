@@ -64,13 +64,13 @@ globalThis.ZephyrStudioToolbar = (() => {
       save:t('保存','Save'),copy:t('另存为…','Save as…'),text:t('并排编辑 JSON','Edit JSON beside'),
       export:t('导出新应用…','Export application…'),apply:t('审查源码更新…','Review source changes…'),
       liveSource:t('实时 C 源码图','Live C source diagram'),analysis:t('分析工程并发','Analyze project concurrency'),
-      window:t('独立窗口','Separate window')};
+      umlModeling:t('UML 建模…','UML modeling…'),window:t('独立窗口','Separate window')};
     const make=name=>{
       const control=button(labels[name],()=>action(name));control.dataset.command=name;return control;
     };
     const debug=new DebugControls(t,action);
     toolbar.append(menu(t('文件','File'),['new','open','demo','save','copy','text','export','apply'].map(make)),
-      menu(t('工具','Tools'),['analysis','liveSource'].map(make)),debug.root,make('window'));
+      menu(t('工具','Tools'),['umlModeling','analysis','liveSource'].map(make)),debug.root,make('window'));
     return debug;
   }
   return {mount};

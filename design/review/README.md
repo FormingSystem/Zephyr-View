@@ -4,7 +4,7 @@
 
 从 Zephyr View 左栏打开**编程工作室**，编排线程、函数和信号，在图上编辑行为并回放固件传递的值。[操作指南与 1080p 动图](../../extension/guides/visual-program.md)
 
-[源码 UML 类图的设计与验收](source-class-diagram.md)
+[源码 UML 类图的设计与验收](source-class-diagram.md) · [UML 建模与插件选型](uml-modeling.md)
 
 [0.5.28 程序设计器详细设计与验收](program-designer-details.md) · [安装版连接、移动与检查操作演示](../../extension/guides/media/program-authoring.gif)
 

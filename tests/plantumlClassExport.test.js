@@ -24,10 +24,10 @@ function host() {
   const window={
     showSaveDialog:async()=>target,showWarningMessage:async message=>notices.push(message),
     showInformationMessage:async(_message,...options)=>options.at(-1),
-    showTextDocument:async document=>{window.activeTextEditor={document};}
+    showTextDocument:async document=>{return window.activeTextEditor={document};}
   };
   const vscode={window,Uri:{joinPath:()=>target},extensions:{getExtension:()=>undefined},
-    workspace:{textDocuments:[],fs:{writeFile:async(file,bytes)=>written.push([file,bytes])},
+    workspace:{isTrusted:true,getConfiguration:()=>({get:()=>undefined}),textDocuments:[],fs:{writeFile:async(file,bytes)=>written.push([file,bytes])},
       openTextDocument:async file=>({uri:file})},
     commands:{executeCommand:async command=>commands.push(command)}};
   return {vscode,written,notices,commands,target};

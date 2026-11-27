@@ -3,6 +3,7 @@
 const vscode = require('vscode');
 const {registerWorkbench} = require('./workbench');
 const {registerVisualProgram} = require('./visualProgramEditor');
+const {register_uml_modeling} = require('./umlModeling');
 const {register_live_source} = require('./liveSourcePreview');
 const {openGuide, copyTutorialExamples} = require('./gettingStarted');
 const {pickDirectory} = require('./fileDialogs');
@@ -225,6 +226,7 @@ function activate(context) {
   for (const view of ['zephyrWorkbench.projectTarget', 'zephyrWorkbench.target']) {
     context.subscriptions.push(vscode.window.registerTreeDataProvider(view, target));
   }
+  register_uml_modeling(vscode,register,target);
   register('refresh', () => target.refresh(true));
   register('gettingStarted', () => openGuide(context.extensionUri));
   register('copyExamples', () => copyTutorialExamples(context.extensionUri));
