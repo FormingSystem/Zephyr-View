@@ -1,6 +1,7 @@
 'use strict';
 
-const {source_types} = require('./liveSourceTypes');
+const {source_types,skip_decorations} = require('./liveSourceTypes');
+const {SourcePreprocessor,header_guard} = require('./sourcePreprocessor');
 
 const identifier = /^[A-Za-z_]\w*$/;
 const definitions = new Set(['K_SEM_DEFINE','K_MUTEX_DEFINE','K_MSGQ_DEFINE','K_FIFO_DEFINE','K_LIFO_DEFINE',
@@ -11,6 +12,9 @@ const keywords = new Set(['if','else','for','while','do','return','switch','size
 const objectCall = /^k_(?:sem|mutex|msgq|fifo|lifo|queue|timer|event|work|poll_signal|condvar|pipe|mem_slab|stack)_/;
 const timeoutArg = new Map(Object.entries({k_sem_take:1,k_mutex_lock:1,k_msgq_put:2,k_msgq_get:2,
   k_fifo_get:1,k_lifo_get:1,k_queue_get:1,k_mem_slab_alloc:2,k_event_wait:3,k_event_wait_all:3}));
+const kernel_structs=new Set(['k_sem','k_mutex','k_msgq','k_fifo','k_lifo','k_queue','k_timer','k_event',
+  'k_work','k_work_delayable','k_work_user','k_poll_signal','k_condvar','k_pipe','k_mem_slab','k_stack']);
+const declared_macro_apis=new Set([...definitions,'K_THREAD_DEFINE','ISR_DIRECT_DECLARE','IRQ_CONNECT','IRQ_DIRECT_CONNECT']);
 const directObject = value => /^\s*&?\s*([a-zA-Z_]\w*)\s*$/.exec(value || '')?.[1];
 
 // Remove comments and mask all literals without changing source offsets or line numbering.
@@ -22,50 +26,29 @@ function mask(source, incomplete) {
   });
 }
 
-function expressionValue(expression) {
-  const literal = /^\s*\(*\s*(0|1)[ul]*\s*\)*\s*$/i.exec(expression);
-  return literal ? Number(literal[1]) : undefined;
-}
-
-// remaining records whether any as-yet unseen branch can run: false, true, or unknown.
-function updateCondition(stack, directive) {
-  const [, type, expression] = directive;
-  if (type === 'endif') { stack.pop(); return; }
-  if (type === 'if' || type === 'ifdef' || type === 'ifndef') {
-    const value = type === 'if' ? expressionValue(expression) : undefined;
-    stack.push({active:value, remaining:value === undefined ? undefined : 1 - value});
-    return;
-  }
-  const branch = stack.at(-1);
-  if (!branch) return;
-  const value = type === 'else' ? 1 : expressionValue(expression);
-  branch.active = value === 0 || branch.remaining === 0 ? 0 : value === 1 ? branch.remaining : undefined;
-  if (value === 1) branch.remaining = 0;
-  else if (value !== 0 && branch.remaining !== 0) branch.remaining = undefined;
-}
-
-function tokenize(source, incomplete) {
+function tokenize(source, firstBranch=false) {
   const syntax = /#(?:\\\r?\n|[^\n])*|\s+|[A-Za-z_]\w*|\d[\w.]*|@+|->|::|./g;
-  const tokens = [], conditions = [], macros = new Set();
-  let line = 1;
-  for (const match of mask(source, incomplete).matchAll(syntax)) {
-    const value = match[0], start = line;
-    line += (value.match(/\n/g) || []).length;
+  const tokens = [], preprocessor = new SourcePreprocessor(), literalErrors = [];
+  const masked = mask(source,offset=>literalErrors.push(offset));
+  const guard=header_guard(masked);
+  if (guard) preprocessor.macros.set(guard,{defined:0,value:0});
+  let line=1, problem=0, issueLine;
+  for (const match of masked.matchAll(syntax)) {
+    const value=match[0], start=line;
+    line+=(value.match(/\n/g) || []).length;
+    while (problem<literalErrors.length && literalErrors[problem]<match.index+value.length) {
+      if (preprocessor.active!==0) issueLine??=start;
+      problem++;
+    }
     if (value.startsWith('#')) {
-      const statement = value.replace(/\\\r?\n/g, ' ');
-      const directive = /^#\s*(if|ifdef|ifndef|elif|else|endif)\b(.*)/.exec(statement);
-      if (directive) updateCondition(conditions, directive);
-      else if (!conditions.some(branch=>branch.active === 0)) {
-        const define = /^#\s*define\s+([A-Za-z_]\w*)/.exec(statement);
-        if (define) macros.add(define[1]);
-      }
+      preprocessor.directive(value.replace(/\\\r?\n/g,' '),start);
       continue;
     }
-    if (/^\s/.test(value) || conditions.some(branch=>branch.active === 0)) continue;
+    if (/^\s/.test(value) || preprocessor.active===0 || firstBranch && !preprocessor.selected) continue;
     tokens.push({value,start:match.index,end:match.index+value.length,line:start,
-      conditional:conditions.some(branch=>branch.active === undefined)});
+      conditional:preprocessor.active===undefined,macro:preprocessor.opaque(value)});
   }
-  return {tokens,macros,openConditional:conditions.length > 0};
+  return {tokens,issueLine:issueLine ?? preprocessor.issueLine ?? preprocessor.stack[0]?.line};
 }
 
 function delimiters(tokens) {
@@ -81,6 +64,12 @@ function delimiters(tokens) {
     }
   }
   return pairs;
+}
+
+// Preserve a written member/array access as a use-site label. It is not a resolved global.
+function member_access(expression) {
+  const text=mask(expression || '').replace(/\s+/g,'').replace(/^&/,'');
+  return /^[A-Za-z_]\w*(?:(?:\.|->)[A-Za-z_]\w*|\[(?:[A-Za-z_]\w*|\d+)\])+$/.test(text) ? text : undefined;
 }
 
 function argumentsAt(tokens, pairs, left, right, source) {
@@ -103,9 +92,9 @@ function argumentsAt(tokens, pairs, left, right, source) {
   return args;
 }
 
-function fileLocal(tokens, index) {
+function storage_class(tokens,index,spelling) {
   for (let i = index - 1; i >= 0 && ![';','{','}'].includes(tokens[i].value); i--) {
-    if (tokens[i].value === 'static') return true;
+    if (tokens[i].value === spelling) return true;
   }
   return false;
 }
@@ -159,34 +148,67 @@ function heldMutex(call, index, right, tokens, pairs) {
   const release = tokens.slice(right+1,right+8).map(t=>t.value).join(' ');
   if (release !== '; k_mutex_unlock ( & ' + lock + ' ) ;') return;
   const pieces = tokens.slice(left-1,right+8);
-  if (pieces.some(t=>t.conditional)) return;
+  if (pieces.some(t=>t.conditional || t.macro)) return;
   return lock;
 }
 
+// An all-caps name with a return type and an actual body is a function in this file.
+function defined_uppercase_functions(tokens,pairs) {
+  const names=new Set();
+  for (let i=1;i<tokens.length;i++) {
+    const token=tokens[i];
+    if (token.macro || !/^[A-Z][A-Z0-9_]+$/.test(token.value) || tokens[i+1]?.value!=='(') continue;
+    if (!identifier.test(tokens[i-1].value) && tokens[i-1].value!=='*') continue;
+    const right=pairs.get(i+1);
+    if (right!==undefined && tokens[skip_decorations(tokens,pairs,right+1)]?.value==='{') names.add(token.value);
+  }
+  return names;
+}
+
 /** A per-translation-unit lexical index. Unknown preprocessor alternatives are source candidates. */
-function extract(file, source, english, sourceId, tokens, macros, pairs) {
+function extract(file, source, english, sourceId, tokens, pairs, coverage) {
   const result = {threads:[], functions:[], objects:[], calls:[], diagnostics:[]};
   const bindings = new Map();
+  const linkageEnds = new Set(), uppercase_functions=defined_uppercase_functions(tokens,pairs);
   let owner, ownerEnd = -1, depth = 0;
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i], name = token.value;
     if (i >= ownerEnd) owner = undefined;
-    if (name === '{') { depth++; continue; }
-    if (name === '}') { depth--; continue; }
-    if (!identifier.test(name) || keywords.has(name) || macros.has(name) || tokens[i+1]?.value !== '(') continue;
+    if (!depth && name==='struct' && kernel_structs.has(tokens[i+1]?.value) &&
+        identifier.test(tokens[i+2]?.value || '') && [';','='].includes(tokens[i+3]?.value) &&
+        !storage_class(tokens,i,'typedef') && !tokens[i+2].macro) {
+      const tag=tokens[i+1].value, object=tokens[i+2];
+      result.objects.push({file,line:object.line,id:sourceId+'#'+(i+2),name:object.value,api:'struct '+tag,args:[],conditional:object.conditional});
+    }
+    if (name === '{') {
+      if (tokens[i-2]?.value==='extern' && tokens[i-1].value.startsWith('@')) linkageEnds.add(pairs.get(i));
+      else depth++;
+      continue;
+    }
+    if (name === '}') { if (!linkageEnds.has(i)) depth--; continue; }
+    if (!identifier.test(name) || tokens[i+1]?.value !== '(') continue;
     if (['.', '->', '::'].includes(tokens[i-1]?.value)) continue;
     const right = pairs.get(i+1);
     if (right === undefined) continue;
+    if (keywords.has(name)) {
+      if (['sizeof','typeof','__typeof__','__attribute__','alignof','_Alignof','_Static_assert','static_assert'].includes(name)) i=right;
+      continue;
+    }
+    if (token.macro || (!declared_macro_apis.has(name) && !uppercase_functions.has(name) && /^[A-Z][A-Z0-9_]+$/.test(name))) {
+      if (coverage) coverage.opaqueMacros++;
+      i=right;continue;
+    }
     const args = argumentsAt(tokens,pairs,i+1,right,source);
-    const at = {file,line:token.line,id:sourceId+'#'+i,conditional:token.conditional};
-    if (!depth && tokens[right+1]?.value === '{' && pairs.has(right+1)) {
+    const at = {file,line:token.line,id:sourceId+'#'+i,conditional:token.conditional || !!owner?.conditional};
+    const body=skip_decorations(tokens,pairs,right+1);
+    if (!depth && tokens[body]?.value === '{' && pairs.has(body)) {
       const direct = name === 'ISR_DIRECT_DECLARE' && directObject(args[0]);
-      owner = {...at,name:direct || name,fileLocal:fileLocal(tokens,i)};
-      ownerEnd = pairs.get(right+1);
+      owner = {...at,name:direct || name,fileLocal:storage_class(tokens,i,'static')};
+      ownerEnd = pairs.get(body);
       result.functions.push(owner);
       if (direct && !at.conditional) bindings.set(owner.name,'interrupt');
       if (name === 'main') result.threads.push({...at,name,entry:name,api:name});
-      i = right; continue;
+      i = body-1; continue;
     }
     readRegistration(result,at,name,args,owner);
     const binding = callbackContext(name,args);
@@ -197,9 +219,10 @@ function extract(file, source, english, sourceId, tokens, macros, pairs) {
     if (owner) {
       const call = {...at,owner:owner.name,ownerId:owner.id,name,args,
         object:objectCall.test(name) ? directObject(args[0]) : undefined};
+      if (!call.object && objectCall.test(name)) call.member=member_access(args[0]);
       result.calls.push(call);
       const lock = heldMutex(call,i,right,tokens,pairs);
-      if (lock && !macros.has('k_mutex_lock') && !macros.has('k_mutex_unlock'))
+      if (lock)
         result.diagnostics.push({...call,rule:'held-mutex-wait',message:english ?
           'A K_FOREVER wait appears between locking and unlocking '+lock+'. Check whether another task needs this mutex to satisfy the wait.' :
           '持有 '+lock+' 的直线路径上出现 K_FOREVER 等待。请核对负责唤醒的线程是否也需要此锁。'});
@@ -215,21 +238,29 @@ function extract(file, source, english, sourceId, tokens, macros, pairs) {
 }
 
 function readSource(file, source, english = false, sourceId = file) {
-  const {tokens,macros} = tokenize(source);
-  return extract(file,source,english,sourceId,tokens,macros,delimiters(tokens));
+  const {tokens} = tokenize(source);
+  return extract(file,source,english,sourceId,tokens,delimiters(tokens));
+}
+
+function unpaired_token(tokens,pairs) {
+  return tokens.find((token,index)=>['(',')','[',']','{','}'].includes(token.value) && !pairs.has(index));
 }
 
 /** Inspect one editable buffer and distinguish unfinished syntax from a valid empty index. */
 function read_source_buffer(file, source, english = false) {
-  let unfinished;
-  const {tokens,macros,openConditional} = tokenize(source, offset => { unfinished ??= offset; });
-  if (unfinished !== undefined) {
-    return {issue:'incomplete',line:source.slice(0,unfinished).split('\n').length};
+  let {tokens,issueLine}=tokenize(source);
+  if (issueLine!==undefined) return {issue:'incomplete',line:issueLine};
+  let pairs=delimiters(tokens), unpaired=unpaired_token(tokens,pairs);
+  const coverage={opaqueMacros:0};
+  if (unpaired && tokens.some(token=>token.conditional)) {
+    // Mutually exclusive declarations can share their closing brace after #endif. Index one
+    // feasible spelling only when flattening the alternatives makes the delimiters inconsistent.
+    tokens=tokenize(source,true).tokens;
+    pairs=delimiters(tokens);unpaired=unpaired_token(tokens,pairs);
+    coverage.branchProjection=true;
   }
-  const pairs = delimiters(tokens);
-  const unpaired = tokens.find((token,index) => ['(',')','[',']','{','}'].includes(token.value) && !pairs.has(index));
-  if (unpaired || openConditional) return {issue:'incomplete',line:unpaired?.line ?? tokens.at(-1)?.line ?? 1};
-  return {records:extract(file,source,english,file,tokens,macros,pairs),types:source_types(source,tokens,pairs)};
+  if (unpaired) return {issue:'incomplete',line:unpaired.line};
+  return {records:extract(file,source,english,file,tokens,pairs,coverage),types:source_types(source,tokens,pairs),coverage};
 }
 
 module.exports = {readSource,read_source_buffer};

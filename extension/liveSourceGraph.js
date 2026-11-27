@@ -11,7 +11,7 @@ const inbound = new Set(['k_msgq_get','k_msgq_peek','k_msgq_peek_at','k_fifo_get
 const outbound = new Set(['k_msgq_put','k_fifo_put','k_lifo_put','k_queue_append','k_queue_prepend',
   'k_pipe_put','k_pipe_write','k_sem_give','k_stack_push','k_event_post','k_event_set','k_poll_signal_raise']);
 
-function node(name,kind,line) { return {name,kind,line}; }
+function node(name,kind,line,conditional=false) { return conditional ? {name,kind,line,conditional} : {name,kind,line}; }
 
 function declaration_index(rows) {
   const by_name = new Map();
@@ -38,29 +38,30 @@ function diagram(records,types) {
   for (const call of records.calls) {
     const fn = owners.get(call.ownerId) || functions.get(call.owner);
     const actor = node(call.owner,'function',fn?.line || call.line);
-    if (!call.object) {
+    const objectName=call.object || call.member;
+    if (!objectName) {
       const definition = functions.get(call.name);
       relation(calls,actor,node(call.name,definition ? 'function' : 'reference',definition?.line || call.line),
         call.name,call,'call');
       continue;
     }
-    const object = objects.get(call.object);
-    const endpoint = node(call.object,object ? 'object' : 'reference',object?.line || call.line);
+    const object = objects.get(objectName);
+    const endpoint = node(objectName,object ? 'object' : 'reference',object?.line || call.line);
     const receives = inbound.has(call.name);
     relation(signals, receives ? endpoint : actor, receives ? actor : endpoint, call.name,call,
       receives ? 'in' : outbound.has(call.name) ? 'out' : 'access');
   }
-  const symbols = [...types,...records.functions.map(r=>node(r.name,'function',r.line)),
-    ...records.objects.map(r=>node(r.name,r.api,r.line))].sort((a,b)=>a.line-b.line);
+  const symbols = [...types,...records.functions.map(r=>node(r.name,'function',r.line,r.conditional)),
+    ...records.objects.map(r=>node(r.name,r.api,r.line,r.conditional))].sort((a,b)=>a.line-b.line);
   return {entries,calls,signals,symbols:symbols.slice(0,max_relations),
     omitted:total-entries.length-calls.length-signals.length+Math.max(0,symbols.length-max_relations)};
 }
 
 function inspect_buffer(file, source) {
   if (Buffer.byteLength(source,'utf8') > max_bytes) return {issue:'size'};
-  const {records,types,issue,line} = read_source_buffer(file,source);
+  const {records,types,coverage,issue,line} = read_source_buffer(file,source);
   if (issue) return {issue,line};
-  return {graph:diagram(records,types)};
+  return {graph:{...diagram(records,types),coverage}};
 }
 
 module.exports = {inspect_buffer,max_bytes};

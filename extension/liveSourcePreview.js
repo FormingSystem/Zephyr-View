@@ -3,12 +3,10 @@
 const path = require('node:path');
 const {randomBytes} = require('node:crypto');
 const vscode = require('vscode');
-const {inspect_buffer,max_bytes} = require('./liveSourceGraph');
+const {read_source_document, supports_source, source_suffixes} = require('./sourceDocument');
 
 const command = 'zephyrWorkbench.liveSource';
 const t = (zh,en) => vscode.env.language.startsWith('zh') ? zh : en;
-const supported = document => document && (/\.(?:c|h|cc|hh|cpp|hpp|cxx|hxx)$/i.test(document.uri.path) ||
-  ['c','cpp'].includes(document.languageId));
 
 function preview_html(web, resources) {
   const nonce = randomBytes(16).toString('hex');
@@ -16,10 +14,10 @@ function preview_html(web, resources) {
   return `<!DOCTYPE html><html lang="${t('zh-CN','en')}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${web.cspSource}; script-src 'nonce-${nonce}'">
-<link rel="stylesheet" href="${asset('liveSource.css')}"></head><body>
+<link rel="stylesheet" href="${asset('liveSource.css')}"><link rel="stylesheet" href="${asset('sourceRelations.css')}"></head><body>
 <header><strong id="name"></strong><small id="status" role="status"></small></header>
 <nav id="modes" aria-label="${t('源码图视图','Source diagram views')}"></nav>
-<main id="diagram"></main><script nonce="${nonce}" src="${asset('ui.js')}"></script><script nonce="${nonce}" src="${asset('liveSource.js')}"></script></body></html>`;
+<main id="diagram"></main><script nonce="${nonce}" src="${asset('ui.js')}"></script><script nonce="${nonce}" src="${asset('sourceRelations.js')}"></script><script nonce="${nonce}" src="${asset('liveSource.js')}"></script></body></html>`;
 }
 
 /** One side-by-side preview follows its bound buffer until the user opens another source in it. */
@@ -31,8 +29,8 @@ class live_source_preview {
 
   async open(uri) {
     let document = uri instanceof vscode.Uri ? await vscode.workspace.openTextDocument(uri) : vscode.window.activeTextEditor?.document;
-    if (!supported(document)) {
-      const choices = await vscode.window.showOpenDialog({canSelectMany:false,filters:{'C / C++':['c','h','cc','hh','cpp','hpp','cxx','hxx']}});
+    if (!supports_source(document)) {
+      const choices = await vscode.window.showOpenDialog({canSelectMany:false,filters:{'C / C++':source_suffixes}});
       if (!choices) return;
       document = await vscode.workspace.openTextDocument(choices[0]);
     }
@@ -79,11 +77,9 @@ class live_source_preview {
   update() {
     const doc = this.document;
     if (!this.panel || !doc || doc.isClosed) return;
-    const {graph,issue,line} = doc.offsetAt(doc.lineAt(doc.lineCount-1).range.end)>max_bytes ?
-      {issue:'size'} : inspect_buffer(doc.fileName,doc.getText());
-    if (graph) this.snapshot = {graph,version:doc.version,uri:doc.uri.toString()};
-    void this.panel.webview.postMessage({name:path.basename(doc.fileName),dirty:doc.isDirty,issue,line,...this.snapshot,
-      uri:doc.uri.toString(),current:doc.version});
+    const {text,...snapshot} = read_source_document(doc,this.snapshot);
+    this.snapshot = snapshot;
+    void this.panel.webview.postMessage(snapshot);
   }
 
   async reveal_line({line,version,uri}) {
