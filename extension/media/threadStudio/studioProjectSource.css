@@ -1,0 +1,28 @@
+#designer[hidden],#project-source[hidden],#commands details[hidden] { display:none; }
+.ps-modes {display:inline-flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--vscode-widget-border,var(--vscode-panel-border));border-radius:6px;}
+#commands .ps-modes button {border:0;border-radius:4px;white-space:nowrap;}
+#commands .ps-modes [aria-pressed=true] {background:var(--vscode-list-activeSelectionBackground);color:var(--vscode-list-activeSelectionForeground);}
+.ps-grid {--paper:var(--vscode-editor-background);--rule:var(--vscode-panel-border);--action-ink:var(--vscode-textLink-foreground);--muted-ink:var(--vscode-descriptionForeground);
+  display:grid;grid-template-columns:minmax(0,1fr) 8px minmax(0,var(--source-width,35%));flex:1;min-width:0;min-height:0;overflow:hidden;}
+.ps-grid :is(h2,pre) {margin:0;}
+.ps-grid h2 {font:600 1em var(--vscode-font-family);}
+.ps-graph,.ps-reader {min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+.ps-heading,.ps-pager {display:flex;align-items:center;gap:.6em;flex-wrap:wrap;min-height:38px;padding:.35em .8em;border-bottom:1px solid var(--rule);}
+.ps-heading :is(strong,h2) {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ps-status,.ps-location {color:var(--muted-ink);font-size:.9em;}
+.ps-heading button:first-of-type {margin-inline-start:auto;}
+.ps-grid :is(.ps-heading,.ps-pager) button {font:inherit;color:inherit;background:transparent;border:1px solid var(--rule);border-radius:4px;padding:.25em .65em;cursor:pointer;}
+.ps-grid :is(.ps-heading,.ps-pager) button:hover:enabled {background:var(--vscode-toolbar-hoverBackground);}
+.ps-grid button:disabled {opacity:.48;cursor:default;}
+.ps-grid :focus-visible {outline:1px solid var(--vscode-focusBorder);outline-offset:-1px;}
+.ps-graph nav {padding:.5em .8em;}
+.ps-relations {flex:1;overflow:auto;padding:.25em .8em .8em;}
+.ps-listing {flex:1;overflow:auto;padding:.45em 0;font:var(--vscode-editor-font-size)/1.65 var(--vscode-editor-font-family,monospace);tab-size:4;}
+.ps-listing .current {background:var(--vscode-editor-lineHighlightBackground,var(--vscode-list-hoverBackground));box-shadow:inset 2px 0 var(--action-ink);}
+.ps-listing .ps-break::before {color:var(--vscode-debugIcon-breakpointForeground);content:'● ' attr(data-line);}
+.ps-pager {justify-content:flex-end;border:0;border-top:1px solid var(--rule);min-height:30px;}
+@media (max-width:700px) {
+  .ps-grid {grid-template-columns:1fr;grid-template-rows:minmax(10rem,1fr) minmax(9rem,.85fr);overflow:auto;}
+  .ps-grid .vp-divider {display:none;}
+  .ps-reader {border-top:1px solid var(--rule);}
+}

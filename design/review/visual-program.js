@@ -5,7 +5,7 @@
   document.documentElement.lang=lang;
   const heading=document.getElementById('heading'),file=document.getElementById('load');
   const result=document.getElementById('result'),open=document.getElementById('open'),save=document.getElementById('save');
-  heading.textContent=t('可视化开发','Visual development');
+  heading.textContent=t('编程工作室','Programming Studio');
   document.title=heading.textContent+' · Zephyr View';
   open.textContent=t('打开设计…','Open design…'); save.textContent=t('保存设计副本…','Save design copy…');
   if(english){const link=document.getElementById('lang');link.href='?lang=zh';link.textContent='简体中文';}

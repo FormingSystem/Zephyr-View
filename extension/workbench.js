@@ -28,7 +28,7 @@ const {targetChoiceReply} = require('./targetChoiceReply');
 const {debugRunner, hasCurrentBuild, lastBuildFailure, taskScope} = require('./target');
 const {Uri, l10n} = vscode;
 const running = new Set();
-const sections = {build:'Build',workspace:'Workspace',configuration:'Project configuration',modules:'Modules',threads:'Threads'};
+const sections = {build:'Build',workspace:'Workspace',configuration:'Project configuration',modules:'Modules',threads:'Concurrency analysis'};
 function navigation() {
   function action(title, icon, command) {
     const row = new vscode.TreeItem(title);
@@ -38,7 +38,7 @@ function navigation() {
   }
   const actions = [
     action(l10n.t('Open workbench'), 'layout', 'zephyrWorkbench.show'),
-    action(l10n.t('Visual program designer'), 'type-hierarchy', 'zephyrWorkbench.visualProgram'),
+    action(l10n.t('Programming Studio'), 'type-hierarchy', 'zephyrWorkbench.openProgrammingStudio'),
     action(l10n.t('Configure Kconfig'), 'settings-gear', 'zephyrWorkbench.kconfig'),
     action(l10n.t('Getting started'), 'book', 'zephyrWorkbench.gettingStarted')
   ];
@@ -320,7 +320,7 @@ function registerWorkbench(context, provider) {
     if (m?.action === 'page' && Object.hasOwn(sections,m.id)) {requestedInspector=undefined;requestedProbes=undefined;page=m.id;return refresh();}
     if (m?.action === 'refresh') {resetDiscovery(provider.folder());return refresh();}
     const s = snapshot;
-    if (m.action === 'visualProgram' && page === 'threads') return execute('zephyrWorkbench.visualProgram');
+    if (m.action === 'visualProgram') return execute('zephyrWorkbench.openProgrammingStudio');
     if (m.action === 'threadStudio') {
       if (page === 'threads' && m.scope === threadHost.scope && m.input && typeof m.input === 'object')
         return threadHost.handle(m.input);
@@ -640,5 +640,6 @@ function registerWorkbench(context, provider) {
     if(e.affectsConfiguration('zephyrWorkbench.appearance'))void send_appearance();
   }));
   if (view.visible) open();
+  return threadHost.runtime;
 }
 module.exports={registerWorkbench};

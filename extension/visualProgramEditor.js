@@ -3,6 +3,9 @@
 const vscode = require('vscode');
 const path = require('node:path');
 const fs = require('node:fs/promises');
+const {ProgramStudioWindow} = require('./programStudioWindow');
+const {ProgramDebugControls} = require('./programDebugControls');
+const {studio_project_sources} = require('./studioProjectSourceHost');
 const {FirmwareLog,encoding} = require('./firmwareLog');
 const {randomBytes} = require('node:crypto');
 const {pickFile, pickDirectory} = require('./fileDialogs');
@@ -55,8 +58,8 @@ function replaceDocument(document, text) {
 function editorHtml(view, root) {
   const nonce = randomBytes(20).toString('hex');
   const asset = name => view.asWebviewUri(Uri.joinPath(root,'threadStudio',name));
-  const scripts = ['model','programModel','ui','programFlow','programAuthoring','programReview','programDiagrams','programCanvas','programTypeEditor','programInspector','programView','programTrace','programPlayback','programEditor'];
-  const styles = ['programView','programTypeEditor','programPlayback','programEditor'];
+  const scripts = ['model','programModel','ui','programFlow','programAuthoring','programReview','programDiagrams','programCanvas','programTypeEditor','programInspector','programDesk','programView','programTrace','programPlayback','studioToolbar','sourceRelations','studioProjectSource','programEditor'];
+  const styles = ['programView','programTypeEditor','programPlayback','programEditor','sourceRelations','studioProjectSource'];
   return `<!doctype html><html lang="${zh()?'zh-CN':'en'}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${view.cspSource} data:; style-src ${view.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'">
@@ -66,7 +69,9 @@ ${scripts.map(s=>'<script nonce="'+nonce+'" src="'+asset(s+'.js')+'"></script>')
 }
 
 class VisualProgramEditor {
-  constructor(context, target) {
+  constructor(context, target, runtime) {
+    this.runtime = runtime;
+    this.studioWindow = new ProgramStudioWindow(viewType);
     this.context = context;
     this.target = target;
     this.root = Uri.joinPath(context.extensionUri,'media');
@@ -116,7 +121,12 @@ class VisualProgramEditor {
     return this.show(document.uri);
   }
 
-  show(uri) { return commands.executeCommand('vscode.openWith',uri,viewType,{preview:false}); }
+  show(uri) { return this.studioWindow.show(uri); }
+
+  openStudio() {
+    const key = this.target.folder()?.uri.toString() || '';
+    return this.studioWindow.open(key,() => this.open());
+  }
 
   edit_text_beside(document, graphColumn) {
     const uri = document.uri.toString();
@@ -149,12 +159,19 @@ class VisualProgramEditor {
         trusted:workspace.isTrusted,attached:localFile(document.uri) && path.basename(document.uri.fsPath) === designFile}); }
       catch (err) { return send({type:'invalid',message:err.message,version:document.version}); }
     };
+    const folder = workspace.getWorkspaceFolder(document.uri.scheme==='untitled' ? Uri.file(document.uri.fsPath) : document.uri);
+    const project_sources = new studio_project_sources(panel,document,this.target);
+    const debug = this.runtime && new ProgramDebugControls({runtime:this.runtime,folder,
+      launch:selected => this.target.launch(selected),showFrame:open_debug_frame,
+      report:notice,isVisible:() => panel.visible,send:data => { if (panel.visible) void send(data); }});
+    const visibility = panel.onDidChangeViewState(() => { if (panel.visible) debug?.refresh(); });
     let queue = Promise.resolve();
     const handle = async m => {
       if (!m || typeof m.action !== 'string') return;
       if (disposed) return;
       if (m.action === 'ready') {
         await update(true);
+        debug?.refresh();
         const text = this.samples.get(document);
         if (text) {this.samples.delete(document); await send({type:'trace',text,autoplay:true});}
         return;
@@ -170,6 +187,13 @@ class VisualProgramEditor {
         return;
       }
       if (m.action === 'text' && panel.visible) return this.edit_text_beside(document,panel.viewColumn);
+      if (m.action==='projectSource') return project_sources.handle(m);
+      if (m.action==='analysis' && panel.visible) return commands.executeCommand('zephyrWorkbench.threads');
+      if (m.action==='debug' && panel.visible && workspace.isTrusted) {
+        if (!folder) return notice(say('请在应用的工作区中打开设计以开始调试。','Open the design in its application workspace to start debugging.'));
+        return debug?.handle(m);
+      }
+      if (m.action==='window' && panel.visible) return this.studioWindow.open(document.uri.toString(),() => this.show(document.uri));
       if (!panel.active) return;
       if (m.action === 'liveSource') return commands.executeCommand('zephyrWorkbench.liveSource');
       if (m.action === 'save') return commands.executeCommand('workbench.action.files.save');
@@ -177,11 +201,10 @@ class VisualProgramEditor {
       if (m.action === 'open') return this.pick();
       if (m.action === 'new') return this.new_design();
       if (m.action === 'demo') return this.recorded_example('graph.json','console.txt');
-      if (m.action === 'window') return commands.executeCommand('workbench.action.moveEditorToNewWindow');
       if (!workspace.isTrusted) return;
       if (m.action === 'trace' || m.action === 'follow') return this.readTrace(send,follower,m.action==='follow',()=>!disposed);
       if (m.version !== document.version) return update(true);
-      if (m.action === 'source') return this.open_source(document,m);
+      if (m.action === 'source' || m.action === 'breakpoint') return this.open_source(document,m);
       if (m.action === 'export') return this.export(document,notice);
       if (m.action === 'apply') return this.apply(document,notice);
     };
@@ -202,7 +225,7 @@ class VisualProgramEditor {
       if (message?.action === 'edit' || message?.action === 'ready') queue = result;
     });
     const changes = workspace.onDidChangeTextDocument(e=>{ if (e.document===document && e.contentChanges.length) void update(false); });
-    panel.onDidDispose(()=>{disposed=true;follower.stop();changes.dispose();listener.dispose();});
+    panel.onDidDispose(()=>{disposed=true;follower.stop();debug?.dispose();visibility.dispose();changes.dispose();listener.dispose();});
     this.sessions.set(this.target.folder()?.uri.toString() || '',document);
     web.html = editorHtml(web,this.root);
   }
@@ -213,11 +236,19 @@ class VisualProgramEditor {
     if (!names.includes(request.file)) return;
     const uri = Uri.joinPath(design.uri,'..',request.file);
     const document = await workspace.openTextDocument(uri);
+    if (request.version!==design.version) return;
+    const step = request.step || request.owner;
     const line = request.file==='src/main.c' ?
-      step_source_line(decode(design.getText()),document.getText(),request.step,request.protocol) : undefined;
+      step_source_line(decode(design.getText()),document.getText(),step,request.protocol ?? 2) : undefined;
     const range = line ? document.lineAt(line-1).range : undefined;
-    await window.showTextDocument(document,{preview:false,selection:range});
-    if (request.file==='src/main.c' && request.step && !line) {
+    if (request.action==='breakpoint') {
+      if (!range || document.isDirty) {
+        throw Error(say('请先保存并核对生成的源码，再在此步骤切换断点。','Save and verify the generated source before toggling a breakpoint on this step.'));
+      }
+      return toggle_breakpoint(uri,range);
+    }
+    await window.showTextDocument(document,{viewColumn:vscode.ViewColumn.Beside,preview:false,selection:range});
+    if (request.file==='src/main.c' && step && !line) {
       void window.showInformationMessage(say('工程源码与图中预览不同，已打开实际文件。请审查源码更新后再按步骤定位。',
         'Project source differs from the preview. Review the source changes to enable step navigation.'));
     }
@@ -300,6 +331,22 @@ class VisualProgramEditor {
   }
 }
 
+async function open_debug_frame(frame,folder) {
+  if (!frame.path || !Number.isSafeInteger(frame.line) || frame.line<1) return;
+  const file = path.resolve(folder.uri.fsPath,frame.path);
+  const uri = folder.uri.with({path:Uri.file(file).path});
+  const doc = await workspace.openTextDocument(uri);
+  const range = doc.lineAt(Math.min(frame.line,doc.lineCount)-1).range;
+  return window.showTextDocument(doc,{viewColumn:vscode.ViewColumn.Beside,selection:range,preview:true});
+}
+
+function toggle_breakpoint(uri,range) {
+  const existing = vscode.debug.breakpoints.filter(bp => bp instanceof vscode.SourceBreakpoint &&
+    bp.location.uri.toString()===uri.toString() && bp.location.range.start.line===range.start.line);
+  if (existing.length) return vscode.debug.removeBreakpoints(existing);
+  return vscode.debug.addBreakpoints([new vscode.SourceBreakpoint(new vscode.Location(uri,range.start))]);
+}
+
 function errorMessage(error) {
   if (error.code === 'SOURCE_EDITED') return say('设计或生成源码已被修改。请先保存手工编辑，再导出新副本比较。','The design or source changed. Save your edits and export a fresh copy to compare.');
   if (error.code === 'NOT_GENERATED_PROJECT' || error.code === 'ENOENT') return say('找不到本设计生成的源码。请先导出新应用。','Generated source was not found for this design. Export a new application first.');
@@ -307,10 +354,12 @@ function errorMessage(error) {
   return error.message;
 }
 
-function registerVisualProgram(context, target) {
-  const editor = new VisualProgramEditor(context,target);
-  context.subscriptions.push(window.registerCustomEditorProvider(viewType,editor,{webviewOptions:{retainContextWhenHidden:true}}),
+function registerVisualProgram(context, target, runtime) {
+  const editor = new VisualProgramEditor(context,target,runtime);
+  context.subscriptions.push(workspace.onDidCloseTextDocument(document=>editor.studioWindow.forget(document.uri)),
+    window.registerCustomEditorProvider(viewType,editor,{webviewOptions:{retainContextWhenHidden:true}}),
     commands.registerCommand('zephyrWorkbench.visualProgram',()=>editor.open()),
+    commands.registerCommand('zephyrWorkbench.openProgrammingStudio',()=>editor.openStudio()),
     commands.registerCommand('zephyrWorkbench.openVisualFile',()=>editor.pick()));
 }
 

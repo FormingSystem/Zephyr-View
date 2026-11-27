@@ -75,7 +75,7 @@ function exerciseStudio() {
     click('#ts-tab-draft');
     check(q('.ts-primary').disabled,'untrusted export');
     check(document.documentElement.scrollWidth<=innerWidth,'final overflow');
-    check(q('h1').textContent===(en?'Thread studio':'线程工作室'),'locale');
+    check(q('h1').textContent===(en?'Concurrency analysis':'并发分析'),'locale');
     studio.dispose();
     report.ok=true;
   } catch(error) {report.error=error.message;}

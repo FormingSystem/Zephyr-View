@@ -4,7 +4,7 @@
   const english = new URLSearchParams(location.search).get('lang')==='en';
   const t=(zh,en)=>english?en:zh;
   document.documentElement.lang=english?'en':'zh-CN';
-  document.title=t('线程工作室','Thread studio')+' · Zephyr View';
+  document.title=t('并发分析','Concurrency analysis')+' · Zephyr View';
   const locale=document.getElementById('locale'),spec=document.getElementById('spec');
   if(english) {locale.href='?lang=zh';locale.textContent='简体中文';spec.href='thread-studio-draft.en.md';spec.textContent='Design notes';}
   const mockName=t('消息队列示例 · 模拟调试','Message queue example · simulated debugger');

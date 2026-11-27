@@ -55,7 +55,7 @@ globalThis.ZephyrProgramView = (() => {
       const initial=options.graph===undefined?model.example():options.graph;
       this.tooLarge=!bounded(initial);
       this.graph=this.tooLarge?null:clone(initial);
-      this.file='src/main.c';this.objectKind='msgq';this.mode='architecture';this.selected=flow.mainId;
+      this.objectKind='msgq';this.mode='architecture';this.selected=flow.mainId;
       this.build();
       this.refresh();
     }
@@ -81,11 +81,9 @@ globalThis.ZephyrProgramView = (() => {
       this.zoomLevel=el('output','vp-percent','100%');
       this.inspector=el('section','vp-inspector');
       this.library=el('aside','vp-library');this.right=el('aside','vp-right');this.traceRoot=el('div','vp-trace');
-      this.codeBody=el('div','vp-code-body');
-      this.code=el('details','vp-code',el('summary','',t('生成的工程代码','Generated project code')),this.codeBody);
-      this.code.addEventListener('toggle',()=>{if(this.code.open)this.showCode();});
+      this.sourcePane=new ZephyrProgramDesk.SourcePane(this);
       this.leftToggle=this.command(t('组件库','Library'),()=>this.drawer('left'),'library');
-      this.rightToggle=this.command(t('检查器','Inspector'),()=>this.drawer('right'),'inspector');
+      this.rightToggle=this.command(t('源码与属性','Source & properties'),()=>this.drawer('right'),'inspector');
       const suffix='-'+(++nextView);
       for(const [toggle,panel,name] of [[this.leftToggle,this.library,'library'],[this.rightToggle,this.right,'inspector']]){
         panel.id='vp-'+name+suffix;toggle.setAttribute('aria-controls',panel.id);
@@ -104,8 +102,11 @@ globalThis.ZephyrProgramView = (() => {
         el('div','vp-toggles',this.leftToggle,this.rightToggle));
       const graph=el('section','vp-graph',this.tools(),frame,this.diagrams.root,this.status);
       this.review = new ZephyrProgramReview.review_panel(this);
-      this.right.append(this.inspector,this.review.root,this.code,this.traceRoot);
-      this.shell.append(project,this.errors,el('div','vp-body',this.library,graph,this.right));
+      this.dock=ZephyrProgramDesk.inspectorDock(this,{properties:this.inspector,checks:this.review.root,playback:this.traceRoot});
+      this.right.append(this.sourcePane.root,this.dock.root);
+      const body=el('div','vp-body');
+      body.append(this.library,graph,ZephyrProgramDesk.divider(body,t),this.right);
+      this.shell.append(project,this.errors,body);
       this.root.replaceChildren(this.shell);
       this.canvas=new ZephyrProgramCanvas(frame,{t,kind:this.kind,api:this.api,
         scale:value=>{const percent=value*100;this.zoomLevel.value=(percent<1?Number(percent.toPrecision(2)):Math.round(percent))+'%';},
@@ -178,6 +179,7 @@ globalThis.ZephyrProgramView = (() => {
       this.setDrawer('right');this.canvas.fit();this.focusName();
     }
     focusName() {
+      this.dock.activate('properties');
       const input=this.inspector.querySelector('[data-field=name]')||this.inspector.querySelector('[data-field=operation]');
       input?.focus();if(input?.tagName==='INPUT')input.select();
     }
@@ -203,7 +205,7 @@ globalThis.ZephyrProgramView = (() => {
       const proposal=author.connection(flow.node(this.graph,state.from),node);
       if(!proposal){this.connectionNotice();return;}
       this.connecting={from:state.from,to:id,proposal};
-      this.selectNode(proposal.owner);this.setDrawer('right');
+      this.selectNode(proposal.owner);this.setDrawer('right');this.dock.activate('properties');
       this.inspector.querySelector('[data-action=confirmConnection]')?.focus();
     }
     connectionNotice(){
@@ -215,6 +217,7 @@ globalThis.ZephyrProgramView = (() => {
       this.connecting=null;this.refresh();this.join.focus();
     }
     selectNode(id) {
+      this.sourcePane.file='src/main.c';this.dock.activate('properties');
       this.sourceFollowsTrace=false;
       this.selected=id;this.stepId=null;this.deleting=null;this.pendingStep=null;this.editing=false;
       if(this.mode==='flow' && this.graph.objects.some(o=>o.id===id))this.mode='architecture';
@@ -224,6 +227,7 @@ globalThis.ZephyrProgramView = (() => {
       const m=flow.findStep(this.graph,id);
       if(!m){this.choose(id);return;}
       this.sourceFollowsTrace=false;
+      this.sourcePane.file='src/main.c';this.dock.activate('properties');
       this.selected=m.owner.id;this.stepId=id;this.editing=true;this.deleting=null;this.pendingStep=null;this.connecting=null;this.refresh();
     }
     change(edit,typing=false) {
@@ -325,7 +329,7 @@ globalThis.ZephyrProgramView = (() => {
       if(!safe){
         const t=this.t;
         this.errors.append(el('p','',t('无法绘制这个设计。请在 JSON 文本编辑器中修复上述字段，或缩减超出限制的嵌套与条目，再重新打开。','Cannot draw this design. Fix the fields above in a JSON text editor, or reduce the nesting and item count, then reopen it.')));
-        this.title.value='';this.codeBody.replaceChildren();this.right.hidden=true;
+        this.title.value='';this.sourcePane.reset();this.right.hidden=true;
         return;
       }
       this.right.hidden=false;
@@ -346,7 +350,7 @@ globalThis.ZephyrProgramView = (() => {
       this.diagrams.show(this.mode,this.graph);this.updateMode();
       this.shell.querySelectorAll('.vp-map-modes button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.action===this.mode));
       if(!typing)this.inspector.replaceChildren(ZephyrProgramInspector.render(this,nodes.find(n=>n.id===this.selected)));
-      if(this.code.open)this.showCode();
+      this.showCode();
     }
     libraryContent(){
       const t=this.t,nodes=this.nodes();
@@ -377,7 +381,7 @@ globalThis.ZephyrProgramView = (() => {
         if(owner && owner.id!==this.selected){this.selected=owner.id;this.stepId=null;this.refresh();}
       }
       this.canvas.trace(this.observed);
-      if(!this.observed){this.updateMode();if(this.code.open)this.showCode();return;}
+      if(!this.observed){this.updateMode();this.showCode();return;}
       const source=this.sources(event.protocol),line=source?.index[event.stepId];
       const excerpt=line?source.cLines[line-1].trim():'';
       const entering=event.phase==='enter';
@@ -386,7 +390,7 @@ globalThis.ZephyrProgramView = (() => {
       const valueLabel=event.phase ? route+' · '+phase : this.t('局部 value','Local value');
       this.status.replaceChildren(el('strong','',this.t('执行记录','Execution trace')+' · '+event.contextId+' → '+event.op+
         (event.value!=null?' · '+valueLabel+' = '+event.value:'')),line?el('code','vp-trace-source','src/main.c:'+line+'  '+excerpt):'');
-      if(this.code.open){this.file='src/main.c';this.showCode();this.scrollLine();}
+      this.sourcePane.file='src/main.c';this.showCode();
     }
     sources(protocol=2){
       if(this.diagnostics.length)return;
@@ -396,38 +400,9 @@ globalThis.ZephyrProgramView = (() => {
       }
       return this.source;
     }
-    scrollLine(){
-      const target=this.codeBody.querySelector('.current');
-      if(target){const box=target.parentElement;box.scrollTop=target.offsetTop-box.clientHeight/2;}
-    }
     showCode() {
-      if(this.diagnostics.length){this.codeBody.replaceChildren(el('p','vp-muted',this.t('修正上面的参数后即可查看生成代码。','Correct the highlighted parameters to preview code.')));return;}
       const event=this.sourceFollowsTrace ? this.observed : null;
-      const source=this.sources(event?.protocol),{files,index}=source;
-      const line=this.file==='src/main.c'?index[event?.stepId||this.stepId||this.selected]:null;
-      if(this.preview?.source===source && this.preview.file===this.file){
-        this.markLine(line);return;
-      }
-      const picker=select(this.t('预览文件','Preview file'),Object.keys(files).map(k=>[k,k]),this.file,v=>{this.file=v;this.showCode();});
-      const pre=el('pre','');pre.tabIndex=0;
-      for(const text of this.file==='src/main.c'?source.cLines:files[this.file].split('\n'))pre.append(el('span','',text+'\n'));
-      const focus=this.command(this.t('定位所选节点的 C 代码','Locate selected C code'),()=>{
-        this.sourceFollowsTrace=false;this.file='src/main.c';this.showCode();this.scrollLine();
-      },'locate');
-      const bar=el('div','vp-code-tools',picker,focus);
-      if(this.options.openSource)bar.append(this.command(this.t('打开工程文件','Open project file'),()=>{
-        const record=this.sourceFollowsTrace ? this.observed : null;
-        this.options.openSource(this.file,record?.stepId || this.stepId || this.selected,record?.protocol ?? 2);
-      },'openSource'));
-      if(source.protocol===1) bar.append(el('small','vp-muted',this.t('固件记录 · v1 源码','Firmware recording · v1 source')));
-      this.codeBody.replaceChildren(bar,pre);
-      this.preview={source,file:this.file,pre};this.markLine(line);
-    }
-    markLine(line){
-      const preview=this.preview;
-      preview.current?.classList.remove('current');
-      preview.current=preview.pre.children[line-1];
-      preview.current?.classList.add('current');
+      this.sourcePane.show(this.sources(event?.protocol),event?.stepId || this.stepId || this.selected);
     }
     setGraph(graph) {
       const tooLarge=!bounded(graph),next=graph!==undefined && !tooLarge?graph:null;

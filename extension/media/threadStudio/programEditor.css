@@ -1,19 +1,34 @@
-html { color-scheme:light dark; font:var(--vscode-font-size) var(--vscode-font-family); color:var(--vscode-editor-foreground); background:var(--vscode-editor-background); }
-body { margin:0; padding:0; display:flex; flex-direction:column; min-height:100vh; }
-#commands, #feedback { flex:none; }
-#commands { display:flex; flex-wrap:wrap; gap:.3rem; align-items:center; padding:.35rem .7rem; border-bottom:1px solid var(--vscode-panel-border); }
-#commands button { font:inherit; border-radius:4px; border:1px solid transparent; padding:.3em .65em; color:inherit; background:transparent; cursor:pointer; }
-#commands button:hover:enabled { background:var(--vscode-toolbar-hoverBackground); }
-#commands button:focus-visible { outline:1px solid var(--vscode-focusBorder); }
-#commands button:disabled { color:var(--vscode-disabledForeground); }
-#commands [data-command=export] { color:var(--vscode-button-foreground); background:var(--vscode-button-background); }
-#commands [data-command=export]:hover:enabled { background:var(--vscode-button-hoverBackground); }
-#feedback { color:var(--vscode-descriptionForeground); overflow-wrap:anywhere; padding:.3em .8em; }
-#feedback:empty { display:none; }
-#designer { display:flex; flex:1; min-width:0; max-width:none; margin:0; padding:.45rem; }
-#designer > .vp-editor { display:flex; flex-direction:column; flex:1; }
-#designer .vp-body { flex:1; }
-@container program (min-width:721px) {
-  #designer .vp-viewport { min-height:12rem; }
-  #designer .vp-library, #designer .vp-right { max-height:calc(100vh - 9rem); }
+html {color-scheme:light dark;font:var(--vscode-font-size,14px) var(--vscode-font-family,system-ui);color:var(--vscode-editor-foreground);background:var(--vscode-editor-background);}
+* {box-sizing:border-box;}
+[hidden] {display:none!important;}
+body {margin:0;padding:0;display:flex;flex-direction:column;min-height:100dvh;}
+#commands {position:relative;z-index:5;flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem;padding:.45rem .85rem;border-bottom:1px solid var(--vscode-panel-border,#64767955);background:var(--vscode-editor-background);}
+#commands :is(button,select,summary){font:inherit;line-height:1.4;border-radius:4px;border:1px solid transparent;padding:.32em .58em;color:inherit;background:transparent;cursor:pointer;}
+#commands :is(button,summary):hover {background:var(--vscode-toolbar-hoverBackground,#78888822);}
+#commands :focus-visible {outline:2px solid var(--vscode-focusBorder);}
+#commands button:disabled {color:var(--vscode-disabledForeground);cursor:default;}
+.studio-menu{position:relative;}
+.studio-menu>summary{list-style:none;white-space:nowrap;}
+.studio-menu>summary::after{content:'⌄';padding-inline-start:.4em;opacity:.72;}
+.studio-menu-list{position:absolute;z-index:10;inset-block-start:calc(100% + 3px);inset-inline-start:0;min-width:max-content;padding:.35em;border:1px solid var(--vscode-menu-border,var(--vscode-panel-border,#78888855));border-radius:6px;background:var(--vscode-menu-background,var(--vscode-editor-background));box-shadow:0 .4rem 1.6rem #0003;display:grid;}
+#commands .studio-menu-list button{text-align:start;}
+.studio-debug {display:flex;align-items:center;flex-wrap:wrap;gap:.15rem;margin-inline-start:auto;}
+#commands .studio-debug-start{background:var(--vscode-button-background);color:var(--vscode-button-foreground);font-weight:600;}
+#commands .studio-debug-start::before{content:"";display:inline-block;border-block:.33em solid transparent;border-inline-start:.5em solid currentColor;margin-inline-end:.5em;}
+#commands .studio-debug-start:hover{background:var(--vscode-button-hoverBackground);}
+.studio-debug-state{color:var(--vscode-descriptionForeground);max-width:15em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#commands button[data-command=window]{border-inline-start:1px solid var(--vscode-panel-border);border-radius:0;margin-inline-start:.35rem;}
+#feedback {color:var(--vscode-descriptionForeground);overflow-wrap:anywhere;padding:.3em .8em;}
+#feedback:empty {display:none;}
+#designer {min-width:0;max-width:none;margin:0;flex:1;padding:0 .65rem .65rem;display:flex;}
+#designer>.vp-editor{display:flex;flex-direction:column;flex:1;}
+@media(min-width:740px) and (min-height:460px){
+ body{height:100dvh;}
+ #designer{min-height:0;}
+ #designer .vp-body{min-height:0;height:auto;flex:1;}
+}
+@media(max-width:720px) {
+ #commands {gap:.12rem;padding:.35rem;}
+ #designer {padding:0 .3rem .3rem;}
+ .studio-debug .studio-menu-list{inset-inline:auto 0;}
 }

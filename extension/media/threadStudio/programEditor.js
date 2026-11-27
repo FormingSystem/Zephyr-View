@@ -14,18 +14,11 @@
     else host.postMessage({...fields,action:name,version});
   }
   const toolbar = document.getElementById('commands');
-  const labels = {new:t('新建设计','New design'),demo:t('播放固件示例','Play firmware example'),save:t('保存','Save'),copy:t('另存为…','Save as…'),open:t('打开设计…','Open design…'),
-    export:t('导出新应用…','Export application…'),apply:t('审查源码更新…','Review source changes…'),
-    liveSource:t('实时 C 源码图','Live C source diagram'),window:t('移至新窗口','Move to new window'),text:t('并排编辑 JSON','Edit JSON beside')};
-  for (const [key,label] of Object.entries(labels)) {
-    const button = document.createElement('button');
-    button.type = 'button'; button.textContent = label; button.dataset.command = key;
-    button.addEventListener('click', () => action(key));
-    toolbar.append(button);
-  }
+  const debug=ZephyrStudioToolbar.mount(toolbar,t,action);
   function disabled(key, value) {toolbar.querySelector('[data-command="'+key+'"]').disabled=Boolean(value);}
   function update_actions() {
     const invalid = text_invalid || !editor || editor.diagnostics.length > 0;
+    debug.trust(trusted);
     disabled('export',!trusted || invalid);
     disabled('apply',!trusted || !attached || invalid);
     const reason = invalid ? t('先修复上方的设计错误。','Correct the design errors above first.') :
@@ -53,7 +46,8 @@
   }
   function mount(next) {
     editor = ZephyrProgramView.mount(root,{language:zh?'zh-CN':'en',graph:next,onChange:change,
-      openSource:trusted && attached ? (file,step,protocol)=>action('source',{file,step,protocol}) : undefined});
+      openSource:trusted && attached ? (file,step,protocol)=>action('source',{file,step,protocol}) : undefined,
+      breakpoint:trusted && attached ? (file,step,protocol)=>action('breakpoint',{file,step,protocol}) : undefined});
     playback = ZephyrProgramPlayback.mount(editor.traceRoot,{language:zh?'zh-CN':'en',
       model:()=>graph,onEvent:event=>editor.showTrace(event),
       onRecords:(data,position,seekTo)=>editor.showRecords(data,position,seekTo),requestFile:()=>action('trace'),
@@ -88,6 +82,7 @@
     update_actions();
   }
   window.addEventListener('message',({data})=>{
+    if (data?.type==='debugState') debug.update(data);
     if (data?.type==='document') receive(data);
     if (data?.type==='invalid') incomplete(data.version,data.message);
     if (data?.type==='follow' && playback) playback.follow(data.text,data.options);
@@ -99,5 +94,6 @@
     if (data?.notice) status.textContent=data.notice;
   });
   window.addEventListener('pagehide',()=>{playback?.dispose(); editor?.dispose();});
+  globalThis.ZephyrStudioProjectSource?.bind(host,root,toolbar,t);
   host.postMessage({action:'ready'});
 })();

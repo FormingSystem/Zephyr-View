@@ -35,6 +35,7 @@ async function verify(vsix, directory) {
   }));
   const suite = path.join(harness, 'workbench_suite.cjs');
   await fs.copyFile(require.resolve('./workbench_suite.cjs'), suite);
+  await fs.copyFile(require.resolve('./programStudio.cjs'),path.join(harness,'programStudio.cjs'));
   const evidence = path.join(directory, 'native-result.json');
   await runTests({
     vscodeExecutablePath: executable,

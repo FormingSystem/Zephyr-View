@@ -27,7 +27,7 @@ class TabInputTextDiff {
 class WorkspaceEdit {
   replace(uri,range,text) { this.text=text; }
 }
-const vscode = {Uri,TabInputText,TabInputTextDiff,WorkspaceEdit,Range:class {},env:{language:'en'},window:{},workspace:{},commands:{}};
+const vscode = {Uri,TabInputCustom:class {},TabInputText,TabInputTextDiff,WorkspaceEdit,Range:class {},env:{language:'en'},window:{},workspace:{},commands:{}};
 const load = Module._load;
 let register;
 try {
@@ -69,7 +69,7 @@ async function openEditor(t) {
       close:async closed=>{for(const tab of closed) tabs.splice(tabs.indexOf(tab),1);events.emit('tabs',{closed});}}
   });
   Object.assign(workspace,{
-    isTrusted:true,textDocuments:[doc],onDidChangeTextDocument:callback=>{events.on('change',callback);return disposable;},
+    onDidCloseTextDocument:()=>disposable,getWorkspaceFolder:()=>({uri:Uri.file(root)}),isTrusted:true,textDocuments:[doc],onDidChangeTextDocument:callback=>{events.on('change',callback);return disposable;},
     registerTextDocumentContentProvider:(_,provider)=>{contents=provider;return disposable;},
     applyEdit:async edit=>{
       buffer=edit.text;doc.version++;
@@ -84,7 +84,7 @@ async function openEditor(t) {
   register({subscriptions:[],extensionUri:Uri.file(root)},{folder:()=>({uri:Uri.file(root)})});
   const webview={asWebviewUri:uri=>uri,postMessage:async m=>{events.emit('message',m);return true;},
     onDidReceiveMessage:fn=>{handler=fn;return disposable;}};
-  const panel={active:true,visible:true,viewColumn:1,webview,onDidDispose:()=>disposable};
+  const panel={active:true,visible:true,viewColumn:1,webview,onDidChangeViewState:()=>disposable,onDidDispose:()=>disposable};
   editor.resolveCustomTextEditor(doc,panel);
   function review(promptType='approve') {
     const opened=nextEvent(events,promptType);
@@ -104,8 +104,31 @@ async function openEditor(t) {
     assert.equal(await fs.readFile(source,'utf8'),expected);
     assert.equal(await fs.readFile(design,'utf8'),initialDesign);
   };
-  return {review,edit,preview,assertUnwritten,events,tabs,unrelated,source,original,doc,panel,handler};
+  return {review,edit,preview,assertUnwritten,events,tabs,unrelated,source,original,doc,panel,handler,design:initialDesign};
 }
+
+test('designer breakpoints require a clean matching C buffer and a current design version',async t=>{
+  const h=await openEditor(t);
+  let code=h.original;
+  const source={uri:Uri.file(h.source),getText:()=>code,isDirty:false,lineAt:line=>({range:{start:{line}}})};
+  vscode.workspace.openTextDocument=async()=>source;
+  vscode.SourceBreakpoint=class { constructor(location) { this.location=location; } };
+  vscode.Location=class { constructor(uri,start) { this.uri=uri; this.range={start}; } };
+  const points=[];
+  vscode.debug={breakpoints:points,addBreakpoints:rows=>points.push(...rows),
+    removeBreakpoints:rows=>{for(const row of rows) points.splice(points.indexOf(row),1);}};
+  const graph=JSON.parse(h.design);
+  h.handler({action:'edit',version:h.doc.version,graph});await nextTurn();
+  const request={action:'breakpoint',file:'src/main.c',step:graph.threads[0].steps[0].id,version:h.doc.version,protocol:2};
+  h.handler(request);await nextTurn();assert.equal(points.length,1);assert.ok(points[0].location.range.start.line>0);
+  h.handler(request);await nextTurn();assert.equal(points.length,0);
+  for (const variation of ['dirty','different','stale']) {
+    source.isDirty=variation==='dirty';
+    code=variation==='different' ? h.original+'/* hand edit */' : h.original;
+    h.handler({...request,version:variation==='stale' ? h.doc.version-1 : h.doc.version});
+    await nextTurn();assert.equal(points.length,0);
+  }
+});
 
 test('Edit JSON beside refocuses the same document in its text group from a visible inactive graph',async t=>{
   const {doc,panel,handler,original,assertUnwritten} = await openEditor(t);

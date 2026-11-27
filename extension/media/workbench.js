@@ -2,7 +2,7 @@
 (() => {
   const build_screen = new build_page();
   const sections = {build:['构建','Build'], workspace:['工作区','Workspace'],
-    configuration:['工程配置','Project configuration'], modules:['模块','Modules'],threads:['线程','Threads']};
+    configuration:['工程配置','Project configuration'], modules:['模块','Modules'],threads:['编程工作室','Programming Studio']};
   let state, threads, threadScope;
   function openThreads(data) {
     if (!threads) {
@@ -27,7 +27,7 @@
     button.dataset.page = key;
     button.innerHTML = ico(({workspace:'folder', configuration:'graph', threads:'graph'})[key] || key);
     button.append(tr(...labels));
-    button.onclick = () => send('page', key);
+    button.onclick = () => key === 'threads' ? host.postMessage({action:'visualProgram'}) : send('page', key);
     navigation_bar.append(button);
   }
 

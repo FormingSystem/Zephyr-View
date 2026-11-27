@@ -23,6 +23,10 @@ function text_preview() {
   const script = fs.readFileSync(require.resolve('../extension/media/threadStudio/programEditor'), 'utf8');
   vm.runInNewContext(script,{
     window,document,structuredClone,ZephyrProgramModel:model,
+    ZephyrStudioToolbar:{mount() {
+      for(const command of ['export','apply']) controls.set(command,{dataset:{command}});
+      return {trust(){},update(){}};
+    }},
     acquireVsCodeApi:() => ({postMessage:message => sent.push(message)}),
     ZephyrProgramView:{bounded:() => true,mount(root, options) {
       editor.graph = options.graph; editor.change = options.onChange; return editor;

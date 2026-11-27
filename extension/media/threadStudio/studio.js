@@ -11,15 +11,15 @@ globalThis.ZephyrThreadStudio = (() => {
     const shell = el('div','thread-studio');
     const tabs = el('div','ts-tabs');
     tabs.setAttribute('role','tablist');
-    tabs.setAttribute('aria-label',t('线程视图','Thread views'));
+    tabs.setAttribute('aria-label',t('分析视图','Analysis views'));
     const pane = el('div','ts-content');
     pane.setAttribute('role','tabpanel');
     pane.id='ts-current-pane';
     const notice = el('p','ts-notice');
     notice.setAttribute('role','status');
-    const heading = el('div','ts-heading',el('h1','',t('线程工作室','Thread studio')),
+    const heading = el('div','ts-heading',el('h1','',t('并发分析','Concurrency analysis')),
       options.preview ? el('span','ts-preview-label',t('交互设计稿','Interactive prototype')) : null);
-    if (options.openDesigner) heading.append(button(t('打开程序设计器','Open program designer'),options.openDesigner,'ts-item'));
+    if (options.openDesigner) heading.append(button(t('打开编程工作室','Open Programming Studio'),options.openDesigner,'ts-item'));
     shell.append(heading,tabs,pane,notice);
     const ctx = {t,model,state,draw,preview:options.preview,post:m=>options.post?.(m),save:()=>options.onDraft?.({...state.draft})};
 

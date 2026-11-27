@@ -194,8 +194,8 @@ class DebugTarget {
     await this.refresh();
   }
 
-  async launch() {
-    const folder = this.folder();
+  async launch(studioFolder) {
+    const folder = studioFolder ?? this.folder();
     if (!folder) return;
     const configs = vscode.workspace.getConfiguration('launch', folder.uri).get('configurations', []);
     const picks = configs.filter(c => typeof c.name === 'string' && c.type && c.request).map(c => ({
@@ -208,15 +208,18 @@ class DebugTarget {
       return;
     }
     const selected = await vscode.window.showQuickPick(picks, {placeHolder:l10n.t('Select launch configuration')});
-    if (selected && this.folder()?.uri.toString() === folder.uri.toString())
-      await vscode.debug.startDebugging(folder, selected.label);
+    if (!selected) return;
+    const target = studioFolder
+      ? vscode.workspace.workspaceFolders?.find(root => root.uri.toString() === studioFolder.uri.toString())
+      : this.folder();
+    if (target?.uri.toString() === folder.uri.toString()) await vscode.debug.startDebugging(folder, selected.label);
   }
 }
 
 function activate(context) {
   const target = new DebugTarget(context);
-  registerWorkbench(context, target);
-  registerVisualProgram(context, target);
+  const debug_runtime = registerWorkbench(context, target);
+  registerVisualProgram(context, target, debug_runtime);
   register_live_source(context);
   const register = (name, fn) => context.subscriptions.push(vscode.commands.registerCommand('zephyrWorkbench.' + name, fn));
   for (const view of ['zephyrWorkbench.projectTarget', 'zephyrWorkbench.target']) {

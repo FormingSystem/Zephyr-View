@@ -1,8 +1,9 @@
 {
-  "visualProgram": "Visual program designer",
+  "visualProgram": "Edit visual program",
+  "programmingStudio": "Open Programming Studio",
   "liveSource": "Live C source diagram",
   "openVisualFile": "Open visual design file…",
-  "threads": "Open Thread Studio",
+  "threads": "Open concurrency analysis",
   "gettingStarted": "Getting Started",
   "copyExamples": "Copy Tutorial Examples…",
   "toolDirectories": "Additional executable directories. Project-relative entries move with the workspace and are searched before PATH.",

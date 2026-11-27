@@ -39,7 +39,7 @@ const vscode = {
       return {get:(name,otherwise)=>section==='launch' && name==='configurations'
         ? [{type:'cortex-debug',request:'launch',name:'launch '+path.basename(folder.fsPath)}] : otherwise};
     },
-    asRelativePath:file=>file.fsPath, onDidChangeWorkspaceFolders:ignore,
+    asRelativePath:file=>file.fsPath, onDidChangeWorkspaceFolders:ignore, onDidCloseTextDocument:ignore,
     createFileSystemWatcher:()=>({onDidCreate:ignore,onDidChange:ignore,onDidDelete:ignore}),
     fs:{
       async readFile(file) {

@@ -93,7 +93,16 @@ function exercise(){
     check(!q('.vp-connection-preview'),'invalid edge keeps first endpoint for recovery');
     key(q('[data-action=connect]'),'Escape');
     check(!editor.connecting,'Escape cancels pending endpoint selection');
-    q('.vp-code').open=true;editor.showCode();
+    if(innerWidth>720) {
+      const grip=q('.vp-divider'),right=q('.vp-right'),drawing=q('.vp-graph');
+      check(grip.getBoundingClientRect().left>=drawing.getBoundingClientRect().right-1,'source handle follows graph');
+      const originalWidth=right.getBoundingClientRect().width;
+      key(grip,'ArrowLeft');
+      check(right.getBoundingClientRect().width>originalWidth,'source width follows keyboard resize');
+      key(grip,'Enter');
+      check(Math.abs(right.getBoundingClientRect().width-originalWidth)<2,'reset balanced split');
+    }
+    editor.showCode();
     check(q('.vp-code pre').textContent.includes('zv_hook_read_sensor'),'preview renders the generated C');
     const event={contextId:thread.id,stepId:recv.id,objectId:object.id,op:recv.op,value:42};
     const preview=q('.vp-code pre'),sensorCard=q('[data-node=sensor]');
@@ -184,7 +193,7 @@ test('visual development edits branches, named hooks and ordered connections and
     const directory=await fs.mkdtemp(path.join(os.tmpdir(),'visual-program-ui-'));
     t.after(()=>fs.rm(directory,{recursive:true,force:true,maxRetries:8,retryDelay:100}));
     const asset=name=>pathToFileURL(path.resolve(__dirname,'../extension/media/threadStudio',name)).href;
-    const scripts=['model','programModel','ui','programFlow','programAuthoring','programReview','programDiagrams','programCanvas','programTypeEditor','programInspector','programView']
+    const scripts=['model','programModel','ui','programFlow','programAuthoring','programReview','programDiagrams','programCanvas','programTypeEditor','programInspector','programDesk','programView']
       .map(n=>'<script src="'+asset(n+'.js')+'"></script>').join('');
     for(const lang of ['en','zh'])await fs.writeFile(path.join(directory,lang+'.html'),'<!doctype html><html lang="'+lang+'"><meta charset=utf-8><link rel="stylesheet" href="'+asset('programView.css')+'"><link rel="stylesheet" href="'+asset('programTypeEditor.css')+'"><style>body{margin:0}</style><main></main>'+scripts+'<script>('+exercise.toString()+')()</script>');
     const widths=[380,960,1800];

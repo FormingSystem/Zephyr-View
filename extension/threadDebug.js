@@ -127,7 +127,7 @@ class Suspension {
 class ThreadDebug {
   constructor(debug, changed = () => {}) {
     this.debug = debug;
-    this.changed = changed;
+    this.observers = new Set([changed]);
     this.records = new Map();
     this.choices = new Map();
     this.listeners = [
@@ -138,6 +138,13 @@ class ThreadDebug {
     ];
     if (debug.activeDebugSession) this.add(debug.activeDebugSession);
   }
+
+  onDidChange(listener) {
+    this.observers.add(listener);
+    return {dispose:() => this.observers.delete(listener)};
+  }
+
+  changed() { for (const listener of this.observers) listener(); }
 
   add(session) {
     if (!session.workspaceFolder) return;
@@ -245,6 +252,7 @@ class ThreadDebug {
     for (const record of this.records.values()) record.invalidate();
     this.records.clear();
     this.choices.clear();
+    this.observers.clear();
   }
 }
 
