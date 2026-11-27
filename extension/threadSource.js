@@ -49,7 +49,7 @@ function tokenize(source, firstBranch=false) {
     tokens.push({value,start:match.index,end:match.index+value.length,line:start,
       conditional:preprocessor.active===undefined,branch:preprocessor.branch_path,macro:preprocessor.opaque(value)});
   }
-  return {tokens,issueLine:issueLine ?? preprocessor.issueLine ?? preprocessor.stack[0]?.line};
+  return {tokens,macros:preprocessor.macros,issueLine:issueLine ?? preprocessor.issueLine ?? preprocessor.stack[0]?.line};
 }
 
 function delimiters(tokens) {
@@ -249,7 +249,7 @@ function unpaired_token(tokens,pairs) {
 
 /** Inspect one editable buffer and distinguish unfinished syntax from a valid empty index. */
 function read_source_buffer(file, source, english = false) {
-  let {tokens,issueLine}=tokenize(source);
+  let {tokens,macros,issueLine}=tokenize(source);
   if (issueLine!==undefined) return {issue:'incomplete',line:issueLine};
   let pairs=delimiters(tokens), unpaired=unpaired_token(tokens,pairs);
   const coverage={opaqueMacros:0};
@@ -262,7 +262,7 @@ function read_source_buffer(file, source, english = false) {
   }
   if (unpaired) return {issue:'incomplete',line:unpaired.line};
   return {records:extract(file,source,english,file,tokens,pairs,coverage),types:source_types(source,tokens,pairs),
-    class_diagram:source_class_diagram(source,tokens,pairs),coverage};
+    class_diagram:source_class_diagram(source,tokens,pairs,macros,file.endsWith('.c')),coverage};
 }
 
-module.exports = {readSource,read_source_buffer};
+module.exports = {readSource,read_source_buffer,mask};

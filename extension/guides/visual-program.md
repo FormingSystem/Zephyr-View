@@ -18,6 +18,10 @@
 
 在**编程工作室 → 工程源码 → 选择文件…**打开 Zephyr 源码中的 `include/zephyr/sd/sd.h`，切换到 **UML 类图**。从 `sd_card` 找到成员 `func0`。实心菱形在 `sd_card` 一端，因为卡结构体按值存放一个 `sdio_func`。沿另一方向找 `card`，点击这条关联可以在右侧看到 `struct sd_card *card`。这个字段用指针找到所属的卡。分别点击类型名、成员和关系，可以核对各自的声明。[Zephyr 示例头文件](https://github.com/zephyrproject-rtos/zephyr/blob/25c8f4a23988dd3b2cfb463613622738298c2d6c/include/zephyr/sd/sd.h)
 
+要了解主机控制器能做什么，点击 `sd_card` 的 `host_props` 关系，右侧显示 `sd.h` 中的成员声明。点击目标类型 `sdhc_host_props`，右侧切换到 `sdhc.h` 中的结构体定义。用源码窗的返回按钮回到 `sd.h`。打开的头文件有未保存修改时，类图读取编辑器里的版本。
+
+![从 SD 卡成员定位到主机控制器类型](media/uml-header-navigation.png)
+
 ![在工作室独立窗口查看 SD 卡类型关系和对应的源码行](media/uml-class-diagram.png)
 
 左上角的类型选择器决定图的中心。画布只展开与它直接相连的类型，超过四个邻接类型时可翻页。点击“展开其余成员”查看完整成员列表。拖动空白处平移，按住 Ctrl 滚轮缩放，用定位按钮回到当前类型。

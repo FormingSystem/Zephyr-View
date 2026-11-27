@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | **English**
 
-Open **Programming Studio** from the Zephyr View sidebar. In its separate window, design architecture, control flow and signal pipelines on the left and follow the selected node in C on the right. Switch to **Project source** to explore calls and type members in hand-written code or set a breakpoint on a selected line. Use **UML classes** to distinguish value members, references and explicit inheritance, follow an edge to its declaration, or export to PlantUML. [Walkthrough and 1080p animation](guides/visual-program.en.md)
+Open **Programming Studio** from the Zephyr View sidebar. In its separate window, design architecture, control flow and signal pipelines on the left and follow the selected node in C on the right. Switch to **Project source** to explore calls and type members in hand-written code or set a breakpoint on a selected line. Use **UML classes** to distinguish value members, references and explicit inheritance, follow an edge to its member declaration, open a target type in a directly included header, or export to PlantUML. [Walkthrough and 1080p animation](guides/visual-program.en.md)
 
 For your first build, open [Getting started](GETTING_STARTED.en.md). The same guide is available offline from the Zephyr View sidebar, with animations and a Command Palette action to copy the examples.
 

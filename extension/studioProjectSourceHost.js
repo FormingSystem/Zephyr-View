@@ -3,6 +3,8 @@
 const path = require('node:path');
 const vscode = require('vscode');
 const {pickFile,resolveDirectory} = require('./fileDialogs');
+const {studio_header_graph} = require('./studioHeaderGraph');
+const {containingCheckout} = require('./checkout');
 const {export_class_diagram} = require('./studioClassExport');
 const {read_source_document,source_pattern,source_suffixes,supports_source} = require('./sourceDocument');
 
@@ -28,6 +30,7 @@ class studio_project_sources {
     this.folder=vscode.workspace.getWorkspaceFolder?.(design.uri) || target.folder();
     this.request=0;
     this.listeners=[];
+    this.headers=new studio_header_graph(vscode,()=>this.schedule());
     panel.onDidDispose(()=>this.dispose());
   }
 
@@ -36,20 +39,26 @@ class studio_project_sources {
     const {workspace,debug} = vscode;
     this.listeners.push(
       workspace.onDidChangeTextDocument(e=>{
-        if (this.active && e.document===this.document && e.contentChanges.length) this.schedule();
+        if (this.active && e.contentChanges.length && this.affects(e.document)) this.schedule(e.document!==this.document);
       }),
-      workspace.onDidSaveTextDocument(d=>{if (d===this.document) this.render();}),
+      workspace.onDidSaveTextDocument(d=>{if (this.active && this.affects(d)) this.schedule(d!==this.document);}),
       workspace.onDidCloseTextDocument(d=>{
-        if (d!==this.document) return;
-        this.document=this.snapshot=undefined; this.render();
+        if (d!==this.document) {if (this.active && this.headers.affects(d.uri)) this.schedule();return;}
+        this.headers.reset();
+        this.document=this.snapshot=this.localSnapshot=undefined; this.render();
       }),
       debug.onDidChangeBreakpoints(()=>this.render(false))
     );
+    const refresh=()=>{if (this.active) this.schedule();};
+    if (this.target.onDidRefreshTarget) this.listeners.push(this.target.onDidRefreshTarget(refresh));
+    if (workspace.onDidChangeConfiguration) this.listeners.push(workspace.onDidChangeConfiguration(e=>{
+      if (e.affectsConfiguration('zephyrWorkbench',this.folder?.uri)) refresh();
+    }));
   }
 
   async handle(message) {
     if (this.disposed) return;
-    if (message.op==='leave') {this.active=false; ++this.request; return;}
+    if (message.op==='leave') {this.active=false; ++this.request; this.headers.reset(); return;}
     if (!this.panel.visible) return;
     if (message.op==='enter') {
       this.listen(); this.active=true;
@@ -57,19 +66,22 @@ class studio_project_sources {
       return this.render();
     }
     if (!this.active) return;
+    if (message.op==='leaveHeader') return this.headers.leave_header();
+    if (message.op==='revealHeader') return this.reveal_header(message);
     if (message.op==='pick') return this.select(true);
     if (message.op==='exportClassDiagram') return this.export_diagram(message);
     if (message.op==='edit' || message.op==='breakpoint') return this.at_line(message);
   }
 
-  export_diagram({uri,version}) {
+  export_diagram({uri,version,graphRevision}) {
     const doc=this.document, ticket=this.request;
     if (!doc) return;
     const current_graph=()=>{
       if (this.disposed || !this.active || ticket!==this.request || doc!==this.document ||
           doc.isClosed || doc.uri.toString()!==uri || doc.version!==version) return;
       const snapshot=this.snapshot;
-      if (!snapshot?.issue && snapshot?.version===version) return snapshot.graph.class_diagram;
+      if (snapshot?.issue || snapshot?.version!==version || snapshot.graphRevision!==this.headers.revision) return;
+      if (graphRevision!==undefined ? graphRevision===snapshot.graphRevision : !this.headers.lines?.size) return snapshot.graph.class_diagram;
     };
     return export_class_diagram(vscode,doc.uri,current_graph,t);
   }
@@ -130,29 +142,76 @@ class studio_project_sources {
     }
     if (ticket!==this.request || !this.active || this.disposed) return;
     if (document && supports_source(document)) {
-      if (document!==this.document) this.snapshot=undefined;
+      if (document!==this.document) {this.headers.reset();this.localSnapshot=this.snapshot=undefined;}
       this.document=document;
     }
-    this.render();
+    return this.render();
   }
 
-  schedule() {
+  affects(document) {return document===this.document || this.headers.affects(document.uri);}
+
+  schedule(dependencies=true) {
+    this.headers.invalidate(dependencies);
     clearTimeout(this.timer);
     this.timer=setTimeout(()=>this.render(),190);
   }
 
-  render(read=true) {
+  async header_context() {
+    const folder=this.folder, doc=this.document;
+    const selection=this.target.selection;
+    const selected=folder && selection?.folder===folder.uri.toString() && selection.source;
+    const configured=folder?.uri.scheme==='file' && this.target.context ?
+      require('./workspace').explicitSource(folder,this.target.context) :
+      folder && vscode.workspace.getConfiguration('zephyrWorkbench',folder.uri).get('locations')?.ZEPHYR_BASE;
+    const enclosing=doc.uri.scheme==='file' && await containingCheckout(path.dirname(doc.uri.fsPath));
+    const zephyrBase=enclosing ? vscode.Uri.file(enclosing) : folder && (selected || configured) ?
+      resolveDirectory(folder.uri,selected || configured) : undefined;
+    return {folder,application:this.application_root(),build:folder && await this.target.buildDir?.(folder),zephyrBase};
+  }
+
+  async render(read=true) {
     if (!this.active || this.disposed) return;
-    if (this.document && (read || !this.snapshot)) {
-      this.snapshot=read_source_document(this.document,this.snapshot);
+    if (this.document && read) {
+      const doc=this.document;
+      if (this.localSnapshot?.current!==doc.version || this.localSnapshot.dirty!==doc.isDirty)
+        this.localSnapshot=read_source_document(doc,this.localSnapshot);
+      const source=await this.headers.analyze(this.localSnapshot,doc,()=>this.header_context());
+      if (!source || !this.active || this.disposed || doc!==this.document) return;
+      if (source.issue && this.snapshot?.graph) source.graph=this.snapshot.graph;
+      this.snapshot=source;
     }
+    if (this.document && this.snapshot?.graphRevision!==this.headers.revision) return;
     const lines=this.document ? breakpoints_at(this.document).map(bp=>bp.location.range.start.line+1) : [];
     void this.panel.webview.postMessage({type:'projectSource', source:this.snapshot && {...this.snapshot,displayPath:vscode.workspace.asRelativePath(this.document.uri,false)},breakpoints:lines,
       trusted:vscode.workspace.isTrusted});
+    if (!read) this.post_header();
   }
 
-  async at_line({op,uri,version,line}) {
-    const doc=this.document;
+  async reveal_header({uri,version,graphRevision,file,line,navigationId}) {
+    if (!this.document || this.snapshot?.issue || uri!==this.document.uri.toString() ||
+        version!==this.document.version || graphRevision!==this.headers.revision ||
+        this.snapshot?.graphRevision!==graphRevision || !Number.isSafeInteger(navigationId)) return;
+    if (await this.headers.reveal(file,line,navigationId)) this.post_header();
+  }
+
+  post_header() {
+    const current=this.headers.displayed;
+    if (!current || current.doc.isClosed || current.version!==current.doc.version) return;
+    const {doc,line,navigationId}=current;
+    void this.panel.webview.postMessage({type:'projectHeader',rootUri:this.document.uri.toString(),
+      graphRevision:this.headers.revision,navigationId,line,trusted:vscode.workspace.isTrusted,
+      breakpoints:breakpoints_at(doc).map(bp=>bp.location.range.start.line+1),
+      source:{uri:doc.uri.toString(),name:path.posix.basename(doc.uri.path),text:doc.getText(),current:doc.version,
+        dirty:doc.isDirty,displayPath:vscode.workspace.asRelativePath(doc.uri,false)}});
+  }
+
+  async at_line({op,uri,version,line,rootUri,graphRevision}) {
+    let doc=this.document;
+    if (doc && uri!==doc.uri.toString()) {
+      if (rootUri!==doc.uri.toString() || graphRevision!==this.headers.revision ||
+          !vscode.workspace.isTrusted || this.headers.displayed?.version!==version) return;
+      doc=this.headers.displayed?.doc;
+    }
     if (!doc || doc.isClosed || doc.uri.toString()!==uri || doc.version!==version ||
       !Number.isSafeInteger(line) || line<1 || line>doc.lineCount) return;
     const range=doc.lineAt(line-1).range;
@@ -168,6 +227,7 @@ class studio_project_sources {
 
   dispose() {
     this.disposed=true; ++this.request;
+    this.headers.reset();
     clearTimeout(this.timer);
     this.listeners.splice(0).forEach(item=>item.dispose());
   }

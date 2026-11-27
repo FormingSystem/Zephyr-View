@@ -123,6 +123,75 @@ test('studio export serializes the bound source model and refuses a stale revisi
   assert.match(writes[0][1],/T2 \*-- T1 : pin/);
 });
 
+
+function linked_fixture(t) {
+  const h=fixture(t), dir='/work/apps/current/src/';
+  const main=h.add(dir+'main.c','#include "board.h"\nstruct App { struct Pin pin; };');
+  const header=h.add(dir+'board.h','struct Pin {\n  int level;\n};');
+  h.workspace.textDocuments=[main,header];
+  const request=()=>({uri:main.uri.toString(),version:main.version,graphRevision:h.host.snapshot.graphRevision});
+  const reveal=()=>({op:'revealHeader',...request(),file:header.uri.toString(),line:1,navigationId:1});
+  return {...h,main,header,request,reveal};
+}
+
+test('a directly included type opens its own buffer; edits and breakpoints stay bound to that header',async t=>{
+  const h=linked_fixture(t);
+  await h.host.handle({op:'enter'});
+  const initial=h.last();
+  const node=initial.source.graph.class_diagram.nodes.find(n=>n.name==='Pin');
+  assert.equal(node.file,h.header.uri.toString());
+  await h.host.handle({...h.reveal(),line:3});assert.equal(h.last(),initial);
+  await h.host.handle({...h.reveal(),file:h.main.uri.toString()});assert.equal(h.last(),initial);
+  await h.host.handle(h.reveal());
+  assert.equal(h.last().type,'projectHeader');assert.equal(h.last().source.text,h.header.text);
+  const act={op:'breakpoint',uri:node.file,line:2,version:h.header.version,
+    rootUri:h.main.uri.toString(),graphRevision:h.request().graphRevision};
+  await h.host.handle(act);
+  assert.equal(h.debug.breakpoints[0].location.uri,h.header.uri);
+  assert.deepEqual(h.last().breakpoints,[2]);assert.equal(h.last().navigationId,1);
+  await h.host.handle({op:'leaveHeader'});
+  await h.host.handle(act);assert.equal(h.debug.breakpoints.length,1);
+  await h.host.handle(h.reveal());
+  const event=once(h.events,'rendered',{signal:AbortSignal.timeout(3000)});
+  h.header.text='\n'+h.header.text;h.header.version++;h.header.isDirty=true;
+  h.events.emit('change',{document:h.header,contentChanges:[{}]});
+  await h.host.handle(act);assert.equal(h.debug.breakpoints.length,1);
+  const [fresh]=await event;
+  assert.notEqual(fresh.source.graphRevision,act.graphRevision);
+  assert.equal(fresh.source.graph.class_diagram.nodes.find(n=>n.name==='Pin').line,2);
+  await h.host.handle({...h.reveal(),line:2,navigationId:3});
+  assert.equal(h.last().source.dirty,true);assert.equal(h.last().line,2);
+});
+
+test('dependency edits during export invalidate the diagram even if the source revision is unchanged',async t=>{
+  const h=linked_fixture(t);
+  await h.host.handle({op:'enter'});
+  let writes=0,warnings=0;
+  h.workspace.fs.writeFile=async()=>writes++;
+  h.window.showWarningMessage=async()=>warnings++;
+  h.window.showSaveDialog=async()=>{
+    h.header.text+='\n';h.header.version++;
+    h.events.emit('change',{document:h.header,contentChanges:[{}]});
+    return Uri.joinPath(h.main.uri,'..','result.puml');
+  };
+  await h.host.handle({op:'exportClassDiagram',...h.request()});
+  assert.equal(writes,0);assert.equal(warnings,1);
+});
+
+test('late headers cannot reopen after return; restricted workspaces stay in the root file',async t=>{
+  const h=linked_fixture(t);
+  await h.host.handle({op:'enter'});
+  let finish;
+  h.workspace.openTextDocument=()=>new Promise(resolve=>{finish=resolve;});
+  const request=h.host.handle(h.reveal());
+  await h.host.handle({op:'leaveHeader'});
+  finish(h.header);await request;
+  assert.equal(h.last().type,'projectSource');
+  h.workspace.isTrusted=false;
+  await h.host.render();
+  assert.equal(h.last().source.graph.class_diagram.nodes.some(n=>n.file),false);
+});
+
 test('leaving while a picker is open does not apply the late selection on reentry',async t=>{
   const h=fixture(t),main=h.add('/work/apps/current/src/main.c','void current(void) {}');
   const temp=h.add('/work/apps/current/src/temp.c','void next(void) {}');

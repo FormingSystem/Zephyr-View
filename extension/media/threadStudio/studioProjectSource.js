@@ -7,6 +7,9 @@ globalThis.ZephyrStudioProjectSource = (() => {
   class source_reader {
     constructor(t,send) {
       this.t=t; this.send=send; this.selected=1; this.points=new Set();
+      this.heading=el('h2','',t('工程源码','Project source'));
+      this.back=button(t('← 返回来源','← Back to source'),()=>this.onBack?.());
+      this.back.hidden=true;
       this.position=el('output','ps-location');
       this.code=el('pre','ps-listing');
       this.code.tabIndex=0;
@@ -27,17 +30,21 @@ globalThis.ZephyrStudioProjectSource = (() => {
       this.edit=button(t('编辑源码','Edit source'),()=>this.act('edit'));
       this.breakpoint=button(t('切换断点','Toggle breakpoint'),()=>this.act('breakpoint'));
       this.root=el('section','ps-reader',
-        el('header','ps-heading',el('h2','',t('工程源码','Project source')),this.position,this.edit,this.breakpoint),
+        el('header','ps-heading',this.heading,this.position,this.back,this.edit,this.breakpoint),
         this.code,el('footer','ps-pager',this.previous,this.next));
     }
 
     act(op) {
-      if (this.source) this.send(op,{uri:this.source.uri,version:this.source.current,line:this.selected});
+      if (this.source) this.send(op,{...this.context,uri:this.source.uri,version:this.source.current,line:this.selected});
     }
 
-    update(source,points,trusted) {
+    update(source,points,trusted,context) {
       const changed = source?.uri!==this.source?.uri;
       this.source=source;
+      this.context=context;
+      this.heading.textContent=source?.name || this.t('工程源码','Project source');
+      this.heading.title=source?.displayPath || '';
+      this.back.hidden=!context;
       this.lines=source && source.issue!=='size' ? source.text.split(/\r\n|\r|\n/) : [];
       this.points=new Set(points);
       this.trusted=trusted;
@@ -73,13 +80,75 @@ globalThis.ZephyrStudioProjectSource = (() => {
     }
   }
 
+  // The left diagram stays bound to its source while the reader follows a header declaration.
+  class source_navigation {
+    constructor(reader,send) {
+      this.reader=reader;
+      this.send=send;
+      this.serial=0;
+      reader.onBack=()=>this.show_root(this.returnLine);
+    }
+    reset() {
+      this.request=undefined;
+      this.root=undefined;
+      this.returnLine=1;
+    }
+    update(message) {
+      const file=message.source, last=this.root?.source;
+      const sameFile=file && last?.uri===file.uri;
+      const sameRevision=sameFile && last.graphRevision===file.graphRevision && last.current===file.current && !file.issue;
+      const restore=this.request && sameFile ? this.returnLine : undefined;
+      this.root=message;
+      if (!sameRevision) this.request=undefined;
+      if (!this.request || this.reader.source?.uri===file?.uri) {
+        this.reader.update(file,message.breakpoints,message.trusted);
+        if (!sameRevision && restore) this.reader.locate(restore,false);
+      }
+    }
+    root_fields() {
+      const file=this.root?.source;
+      return file && {uri:file.uri,version:file.current,graphRevision:file.graphRevision};
+    }
+    show_root(line) {
+      if (!this.root) return;
+      if (this.request) {
+        this.send('leaveHeader',this.root_fields());
+        this.request=undefined;
+        this.reader.update(this.root.source,this.root.breakpoints,this.root.trusted);
+      }
+      this.reader.locate(line);
+    }
+    select(line,file) {
+      const root=this.root_fields();
+      if (!root || !file || file===root.uri) return this.show_root(line);
+      if (!this.request) this.returnLine=this.reader.selected;
+      const request={...root,file,line,navigationId:++this.serial};
+      this.request=request;
+      this.send('revealHeader',request);
+    }
+    show_header(message) {
+      const request=this.request, file=message.source;
+      if (!request || message.rootUri!==request.uri || request.graphRevision!==message.graphRevision ||
+          request.navigationId!==message.navigationId || file?.uri!==request.file || message.line!==request.line) return;
+      const refresh=request.shown;
+      request.shown=true;
+      this.reader.update(file,message.breakpoints,message.trusted,{rootUri:request.uri,graphRevision:request.graphRevision});
+      if (!refresh) this.reader.locate(message.line);
+    }
+    export() {
+      const fields=this.root_fields();
+      if (fields) this.send('exportClassDiagram',fields);
+    }
+  }
+
   function bind(host,design,toolbar,t) {
     const send=(op,fields={})=>host.postMessage({action:'projectSource',op,...fields});
     const nav=el('nav',''), data=el('div','ps-relations'), label=el('strong',''), status=el('span','ps-status');
     const pick=button(t('选择文件…','Choose file…'),()=>send('pick'));
     const reader=new source_reader(t,send);
-    const relations=ZephyrSourceRelations.mount({nav,container:data,t,onLine:line=>reader.locate(line),
-      onExportClassDiagram:()=>reader.act('exportClassDiagram')});
+    const navigation=new source_navigation(reader,send);
+    const relations=ZephyrSourceRelations.mount({nav,container:data,t,onLine:(line,file)=>navigation.select(line,file),
+      onExportClassDiagram:()=>navigation.export()});
     const view=el('div','ps-grid');
     const side=el('section','ps-graph',el('header','ps-heading',label,status,pick),nav,data);
     view.append(side,ZephyrProgramDesk.divider(view,t),reader.root);
@@ -94,6 +163,12 @@ globalThis.ZephyrStudioProjectSource = (() => {
     function switch_view(visible) {
       if (visible===open) return;
       open=visible; design.hidden=open;view.hidden=!open;
+      if (!open) {
+        navigation.reset();
+        reader.update(undefined,[],false);
+        relations.update({current:0});
+        label.textContent='';label.title='';status.textContent='';
+      }
       reflect();send(open?'enter':'leave');
     }
     function reflect() {
@@ -102,14 +177,16 @@ globalThis.ZephyrStudioProjectSource = (() => {
       if (file_menu) file_menu.hidden=open;
     }
     function receive({data:message}) {
-      if (message?.type!=='projectSource' || !open) return;
+      if (!open) return;
+      if (message?.type==='projectHeader') return navigation.show_header(message);
+      if (message?.type!=='projectSource') return;
       const file=message.source;
       label.textContent=file?.name || t('选择 C 源文件或头文件','Choose a C source or header file');
       label.title=file?.displayPath || '';
       status.textContent=file ? file.issue==='size' ? t('超过 256 KiB','Exceeds 256 KiB') :
         file.issue ? t('输入未完成','Incomplete input')+' · L'+file.line :
         file.dirty?t('未保存','Unsaved'):'' : '';
-      reader.update(file,message.breakpoints,message.trusted);
+      navigation.update(message);
       relations.update(file || {current:0});
     }
     reflect();

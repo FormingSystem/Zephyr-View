@@ -10,7 +10,9 @@
 .ps-heading,.ps-pager {display:flex;align-items:center;gap:.6em;flex-wrap:wrap;min-height:38px;padding:.35em .8em;border-bottom:1px solid var(--rule);}
 .ps-heading :is(strong,h2) {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .ps-status,.ps-location {color:var(--muted-ink);font-size:.9em;}
-.ps-heading button:first-of-type {margin-inline-start:auto;}
+.ps-reader .ps-location {margin-inline-end:auto;}
+.ps-graph .ps-heading button:first-of-type {margin-inline-start:auto;}
+.ps-reader .ps-heading button[hidden] {display:none;}
 .ps-grid :is(.ps-heading,.ps-pager) button {font:inherit;color:inherit;background:transparent;border:1px solid var(--rule);border-radius:4px;padding:.25em .65em;cursor:pointer;}
 .ps-grid :is(.ps-heading,.ps-pager) button:hover:enabled {background:var(--vscode-toolbar-hoverBackground);}
 .ps-grid button:disabled {opacity:.48;cursor:default;}

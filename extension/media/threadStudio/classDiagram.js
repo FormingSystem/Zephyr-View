@@ -92,7 +92,7 @@ globalThis.ZephyrClassDiagram = (() => {
       this.grid.classList.remove('empty');
       if (this.uri!==uri || this.version!==version || !diagram.nodes.some(n=>n.id===this.focus)) {
         const previous=this.uri===uri && this.diagram?.nodes.find(n=>n.id===this.focus);
-        const matches=previous?diagram.nodes.filter(n=>n.kind===previous.kind && n.name===previous.name):[];
+        const matches=previous?diagram.nodes.filter(n=>n.kind===previous.kind && n.name===previous.name && n.file===previous.file):[];
         if (matches.length===1) this.focus=matches[0].id;
         else {
           this.focus=initialType(diagram);this.page=0;this.scale=1;
@@ -143,11 +143,11 @@ globalThis.ZephyrClassDiagram = (() => {
       this.foot.replaceChildren(...notes);this.foot.hidden=!notes.length;
     }
 
-    pick(key,line) {
+    pick(key,line,file) {
       if (this.stale) return;
       this.selected=key;
       this.highlight();
-      this.onLine(line);
+      this.onLine(line,file);
     }
 
     highlight() {
@@ -164,8 +164,8 @@ globalThis.ZephyrClassDiagram = (() => {
       }
     }
 
-    link(text,kind,value,line,key,conditional) {
-      const item=button(text,()=>this.pick(key,line));
+    link(text,kind,value,line,key,conditional,file) {
+      const item=button(text,()=>this.pick(key,line,file));
       item.dataset['uml'+kind]=value;item.dataset.line=line;item.dataset.pick=key;
       item.classList.toggle('picked',this.selected===key);
       item.setAttribute('aria-pressed',String(this.selected===key));item.disabled=this.stale;
@@ -176,14 +176,24 @@ globalThis.ZephyrClassDiagram = (() => {
     }
 
     card(node) {
-      const title=this.link(node.name,'Type',node.id,node.line,'type:'+node.id,node.conditional);
-      title.prepend(el('small','uml-stereotype',node.kind));
+      const title=this.link(node.name,'Type',node.id,node.line,'type:'+node.id,node.conditional,node.file);
+      const sub=el('small','uml-stereotype',node.kind);
+      if (node.file) {
+        const name=node.file.split('/').pop();
+        let filename=name;
+        try {filename=decodeURIComponent(name);} catch {}
+        const origin=el('span','uml-origin',filename);
+        origin.title=node.file;
+        sub.append(origin);
+        title.title+=' · '+filename;
+      }
+      title.prepend(sub);
       const card=el('article','uml-card',title);
       card.dataset.owner=node.id;
       card.classList.toggle('uml-focus',node.id===this.focus);
       const members=node.members||[], expanded=this.openCards.has(node.id);
       for (const [i,member] of members.slice(0,expanded?undefined:compactMembers).entries()) {
-        card.append(this.link(member.name,'Member',member.name,member.line,node.id+':member:'+i,member.conditional));
+        card.append(this.link(member.name,'Member',member.name,member.line,node.id+':member:'+i,member.conditional,node.file));
       }
       if (members.length>compactMembers) {
         const more=button(expanded?this.t('收起成员','Collapse members'):

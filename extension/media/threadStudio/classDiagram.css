@@ -36,6 +36,7 @@
 .uml-card button[data-uml-type] {color:var(--uml-ink); font-weight:650; background:var(--vscode-sideBar-background,var(--vscode-editor-background)); border-bottom:1px solid var(--uml-border); padding:.5em .7em;}
 .uml-card button[data-uml-member] {font: .95em/1.45 var(--vscode-editor-font-family,monospace);}
 .uml-stereotype {display:block; font:500 .82em var(--vscode-font-family); color:var(--vscode-descriptionForeground); margin-bottom:.15em;}
+.uml-origin {margin-inline-start:.6em; color:var(--vscode-textLink-foreground); overflow-wrap:anywhere;}
 .uml-conditional {display:inline; margin-inline-start:.35em; color:var(--vscode-editorWarning-foreground);}
 .uml-card button[data-more] {color:var(--uml-action); font-size:.92em;}
 .uml-lane {display:flex; flex-direction:column; align-items:center; align-self:center; padding:10px 26px; grid-column:2; gap:12px; pointer-events:none;}

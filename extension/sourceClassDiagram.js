@@ -1,5 +1,6 @@
 'use strict';
 
+const {register_header_evidence,link_header_diagram}=require('./sourceHeaderDiagram');
 const {DeclarationReader,skip_decorations} = require('./liveSourceTypes');
 const aggregate_kinds = new Set(['class','struct','union','enum']);
 const cv = new Set(['const','volatile','restrict','__restrict','__restrict__']);
@@ -29,6 +30,7 @@ class type_index {
     this.bindings=new Map();
     this.aliases=new Map();
     this.imports=new Set();
+    this.forwards=new Set();
   }
 
   bind(scope,name,binding,table=this.bindings) {
@@ -39,25 +41,28 @@ class type_index {
 
   at(key) { return this.aliases.get(key) || this.bindings.get(key); }
 
-  lookup(scope,raw) {
-    if (raw.startsWith('::')) return this.at(raw.slice(2));
+  lookup(scope,raw,external) {
+    if (raw.startsWith('::')) {scope='';raw=raw.slice(2);}
     for (;;) {
-      const choices=this.at(qualify(scope,raw));
-      if (choices) return choices;
+      const key=qualify(scope,raw), choices=this.at(key);
+      if (choices && (choices.length || !this.forwards.has(key) || this.aliases.has(key))) return choices;
+      const imported=!this.imports.has(scope) && external?.(key);
+      if (imported || choices) return imported || choices;
       if (this.imports.has(scope) || !scope) return;
       scope=scope.split('::').slice(0,-1).join('::');
     }
   }
 
-  resolve(scope,name,paths,seen=new Set()) {
-    const candidates=this.lookup(scope,name)?.filter(item=>paths.every(path=>compatible_branches(item.branch,path)));
+  resolve(scope,name,paths,external,seen=new Set()) {
+    const candidates=this.lookup(scope,name,external)?.filter(item=>paths.every(path=>compatible_branches(item.branch,path)));
     if (!candidates?.length || seen.size>limits.depth) return;
     if (candidates.length!==1) return {ambiguous:true};
     const [item]=candidates;
+    if (item.ambiguous) return item;
     if (item.unavailable || seen.has(item)) return;
     if (item.node) return item;
     seen.add(item);
-    const target=this.resolve(item.scope,item.type,item.branch ? [...paths,item.branch] : paths,seen);
+    const target=this.resolve(item.scope,item.type,item.branch ? [...paths,item.branch] : paths,external,seen);
     if (target) return {...target,indirect:target.indirect || item.indirect,
       conditional:target.conditional || item.conditional};
   }
@@ -68,6 +73,7 @@ class class_reader extends DeclarationReader {
     super(source,tokens,pairs);
     this.index=new type_index();
     this.pending=[];
+    this.namespaces=new Set(['']);
     this.model={nodes:[],edges:[],omitted:{nodes:0,members:0,edges:0},ambiguous:0};
   }
 
@@ -84,7 +90,7 @@ class class_reader extends DeclarationReader {
     while (i+1<end && this.value(i)==='::' && is_name(this.tokens[i+1])) {
       name+='::'+this.value(i+1);i+=2;
     }
-    return {name,key:tagged ? tag_key(name) : name,next:i};
+    return {name,key:tagged ? tag_key(name) : name,expected:tagged ? this.value(at) : undefined,next:i};
   }
 
   aggregate_head(start,end) {
@@ -117,8 +123,11 @@ class class_reader extends DeclarationReader {
         this.definition(i,at,right,stop,header,scope,depth);
         i=stop<end && this.value(stop)===';' ? stop+1 : right+1;
       } else {
-        if (this.value(i)==='namespace' && at===i+2 && is_name(this.tokens[i+1]))
-          this.scopes(at+1,right,qualify(scope,this.value(i+1)),depth+1);
+        if (this.value(i)==='namespace' && at===i+2 && is_name(this.tokens[i+1])) {
+          const nested=qualify(scope,this.value(i+1));
+          this.namespaces.add(nested);
+          this.scopes(at+1,right,nested,depth+1);
+        }
         if (this.value(i)==='extern' && at===i+2 && /^@+$/.test(this.value(i+1)))
           this.scopes(at+1,right,scope,depth+1);
         i=right+1;
@@ -151,6 +160,8 @@ class class_reader extends DeclarationReader {
     }
     const head=this.aggregate_head(at,end);
     if (head?.tag) {
+      this.index.forwards.add(qualify(scope,head.tag));
+      this.index.forwards.add(qualify(scope,tag_key(head.tag)));
       this.index.bind(scope,head.tag);
       this.index.bind(scope,tag_key(head.tag));
       return;
@@ -249,39 +260,43 @@ class class_reader extends DeclarationReader {
     let at=this.decorated(start);
     while (cv.has(this.value(at)) || this.value(at)==='mutable') at++;
     const type=this.type_name(at,end);
-    if (type) this.declarators(type.next,end,node,scope,type.key);
+    if (type) this.declarators(type.next,end,node,scope,type.key,type.expected);
   }
 
-  declarators(start,end,node,scope,type) {
+  declarators(start,end,node,scope,type,expected) {
     for (let i=start;i<end;) {
       const comma=this.boundary(i,end,[',']);
       const decl=this.declarator(i,comma);
-      if (decl) this.add_relation(node,scope,type,decl.indirect?'association':'composition',decl.token.value,decl.token);
+      if (decl) this.add_relation(node,scope,type,decl.indirect?'association':'composition',decl.token.value,decl.token,expected);
       i=comma+1;
     }
   }
 
-  add_relation(node,scope,type,kind,label,token) {
-    this.pending.push({node,scope,type,kind,label,token});
+  add_relation(node,scope,type,kind,label,token,expected) {
+    this.pending.push({from:node.id,scope,type,kind,label,line:token.line,branch:token.branch,
+      conditional:node.conditional || token.conditional,expected});
   }
 
-  diagram() {
+  diagram(macros,cSource) {
     this.scopes(0,this.tokens.length,'',0);
-    for (const {node,scope,type,kind,label,token} of this.pending) {
-      const target=this.index.resolve(scope,type,[token.branch]);
+    const unresolved=[];
+    for (const use of this.pending) {
+      const {from,scope,type,kind,label,line,conditional,branch}=use;
+      const target=this.index.resolve(scope,type,[branch]);
       if (target?.ambiguous) {this.model.ambiguous++;continue;}
-      if (!target?.node) continue;
+      if (!target?.node) {unresolved.push(use);continue;}
       if (this.model.edges.length>=limits.edges) {this.model.omitted.edges++;continue;}
-      const edge={from:node.id,to:target.node.id,kind:target.indirect && kind==='composition'?'association':kind,label,line:token.line};
-      if (token.conditional || node.conditional || target.conditional || target.node.conditional) edge.conditional=true;
+      const edge={from,to:target.node.id,kind:target.indirect && kind==='composition'?'association':kind,label,line};
+      if (conditional || target.conditional || target.node.conditional) edge.conditional=true;
       this.model.edges.push(edge);
     }
+    register_header_evidence(this.model,{index:this.index,namespaces:this.namespaces,unresolved,limits,cSource,macroNames:[...macros.keys()].filter(name=>macros.get(name).defined!==0)});
     return this.model;
   }
 }
 
-function source_class_diagram(source,tokens,pairs) {
-  return new class_reader(source,tokens,pairs).diagram();
+function source_class_diagram(source,tokens,pairs,macros=new Map(),cSource=false) {
+  return new class_reader(source,tokens,pairs).diagram(macros,cSource);
 }
 
-module.exports={source_class_diagram};
+module.exports={source_class_diagram,link_header_diagram};

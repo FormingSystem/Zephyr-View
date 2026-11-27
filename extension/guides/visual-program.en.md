@@ -18,6 +18,10 @@ Select an entry point, thread, function or kernel object in the library on the l
 
 In **Programming Studio → Project source → Choose file…**, open `include/zephyr/sd/sd.h` from a Zephyr checkout and select **UML classes**. Start at `sd_card` and find the field `func0`. The filled diamond is at the `sd_card` end because the card stores an `sdio_func` by value. In the other direction, select the association labeled `card` to locate `struct sd_card *card` on the right. This pointer lets the function find its owning card. Select a type, member or edge to check its own source declaration. [Zephyr example header](https://github.com/zephyrproject-rtos/zephyr/blob/25c8f4a23988dd3b2cfb463613622738298c2d6c/include/zephyr/sd/sd.h)
 
+Select the `host_props` relationship on `sd_card` to read the member declaration in `sd.h`. Select its target, `sdhc_host_props`, to see the host controller properties in `sdhc.h`. Use the source pane’s back button to return to `sd.h`. If a header is open with unsaved edits, the diagram reads the editor buffer.
+
+![Following the SD card member to the host controller type](media/uml-header-navigation.png)
+
 ![SD card types and the corresponding source line in a separate studio window](media/uml-class-diagram.png)
 
 The type picker in the upper left sets the diagram focus. The canvas shows its immediate neighbors in groups of four. Choose **Show remaining members** to expand a type. Drag the background to pan, use Ctrl + wheel to zoom, or use the center button to return to the current type.

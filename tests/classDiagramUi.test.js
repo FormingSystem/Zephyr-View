@@ -9,6 +9,54 @@ const {test}=require('node:test');
 const {pathToFileURL}=require('node:url');
 const {promisify}=require('node:util');
 
+function check_header_navigation(check,t) {
+  const fixture=document.createElement('section'), design=document.createElement('div'), toolbar=document.createElement('header');
+  document.body.append(fixture);fixture.append(toolbar,design);
+  const messages=[], q=selector=>fixture.querySelector(selector);
+  const deliver=data=>window.dispatchEvent(new MessageEvent('message',{data}));
+  ZephyrStudioProjectSource.bind({postMessage:message=>messages.push(message)},design,toolbar,t);
+  const uri='file:///project/root.h', file='file:///project/chip.h', version=3, revision=7;
+  const nodes=[{id:'device',name:'Device',kind:'struct',line:1,members:[{name:'struct Chip chip',line:5}]},
+    {id:'chip',name:'Chip',kind:'struct',line:4,file,members:[{name:'uint32_t value',line:8}]}];
+  const edges=[{from:'device',to:'chip',line:5,label:'chip',kind:'composition'}];
+  const graph={symbols:[],signals:[],entries:[],calls:[],class_diagram:{nodes,edges}};
+  const text=Array.from({length:12},(_,i)=>'line '+(i+1)).join('\n');
+  const root={type:'projectSource',source:{uri,name:'root.h',current:version,version,graphRevision:revision,graph,text},
+    breakpoints:[],trusted:true};
+  const header=(request,breakpoints=[])=>({type:'projectHeader',rootUri:uri,graphRevision:revision,navigationId:request.navigationId,
+    line:request.line,source:{uri:file,name:'chip.h',current:11,text,displayPath:'include/chip.h'},breakpoints,trusted:true});
+  const heading=()=>q('.ps-reader h2').textContent;
+  const row=()=>Number(q('.ps-listing .current').dataset.line);
+  const action=op=>messages.filter(m=>m.op===op).at(-1);
+  const control=(cn,en)=>Array.from(fixture.querySelectorAll('.ps-reader button')).find(b=>b.textContent===t(cn,en));
+  q('[data-studio-mode="source"]').click();deliver(root);q('[data-mode="class_diagram"]').click();
+  q('button[data-uml-edge]').click();check(row()===5,'root evidence line');
+  q('button[data-uml-type="chip"]').click();const first=action('revealHeader');
+  check(first.uri===uri && first.file===file && first.line===4 && first.version===3 && first.graphRevision===7,'header request context');
+  q('[data-uml-member="uint32_t value"]').click();const second=action('revealHeader');
+  deliver(header(first));check(heading()==='root.h','ignore out-of-order selection');
+  deliver(header(second));check(heading()==='chip.h' && row()===8 && q('.ps-reader h2').title==='include/chip.h','show header member');
+  check(q('.ps-graph strong').textContent==='root.h','keep UML source');
+  q('[data-command="export-class-diagram"]').click();check(action('exportClassDiagram').uri===uri,'export root diagram');
+  control('编辑源码','Edit source').click();control('切换断点','Toggle breakpoint').click();
+  for (const op of ['edit','breakpoint']) {
+    const m=action(op);check(m.uri===file && m.line===8 && m.version===11 && m.rootUri===uri && m.graphRevision===7,op+' header context');
+  }
+  q('.ps-listing').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}));
+  deliver(root);deliver(header(second,[9]));
+  check(row()===9 && q('.ps-listing .current').classList.contains('ps-break'),'preserve header cursor across breakpoint updates');
+  control('← 返回来源','← Back to source').click();check(heading()==='root.h' && row()===5,'return to original row');
+  deliver(header(second));check(heading()==='root.h','ignore a response after returning');
+  q('button[data-uml-type="chip"]').click();const third=action('revealHeader');deliver(header(third));
+  q('button[data-uml-edge]').click();check(heading()==='root.h' && row()===5,'relation returns to root evidence');
+  q('button[data-uml-type="chip"]').click();const fourth=action('revealHeader');deliver(header(fourth));
+  deliver({...root,source:{...root.source,graphRevision:8}});deliver(header(fourth));
+  check(heading()==='root.h' && row()===5,'invalidated header closes after graph changes');
+  q('[data-studio-mode="design"]').click();q('[data-studio-mode="source"]').click();
+  check(!q('.ps-listing .current') && control('编辑源码','Edit source').disabled,'reopening waits for the new source');
+  q('[data-studio-mode="design"]').click();fixture.remove();
+}
+
 function exercise() {
   const q=s=>document.querySelector(s);
   const check=(condition,detail)=>{if (!condition) throw Error(detail);};
@@ -51,6 +99,7 @@ function exercise() {
     view.update({...state,graph:{...model,class_diagram:{nodes:[],edges:[]}}});
     check(q('.uml-layout.empty') && !q('[data-uml-member]'),'empty source');
     q('[data-mode="signals"]').click();check(!q('.uml-workspace'),'switch away');
+    check_header_navigation(check,t);
     result.ok=true;
   } catch(error) {result.error=error.message;}
   parent.postMessage(result,'*');
@@ -62,13 +111,13 @@ test('UML canvas links declarations and directional edges to source at narrow an
     const dir=await fs.mkdtemp(path.join(os.tmpdir(),'zephyr-uml-ui-'));
     t.after(()=>fs.rm(dir,{recursive:true,force:true,maxRetries:4,retryDelay:100}));
     const uri=name=>pathToFileURL(path.resolve(__dirname,'../extension/media/threadStudio',name)).href;
-    const scripts=['ui','classDiagram','sourceRelations'].map(n=>'<script src="'+uri(n+'.js')+'"></script>').join('');
+    const scripts=['ui','classDiagram','sourceRelations','programDesk','studioProjectSource'].map(n=>'<script src="'+uri(n+'.js')+'"></script>').join('');
     const styles=['liveSource','sourceRelations','classDiagram'].map(n=>'<link rel="stylesheet" href="'+uri(n+'.css')+'">').join('');
     const widths=[360,720,1640],themes=['dark','light'];
     for (const theme of themes) {
       const page='<!doctype html><html data-theme="'+theme+'"><meta charset="utf-8">'+styles+
         '<style>html{--vscode-font-size:14px;--vscode-font-family:sans-serif;--vscode-editor-background:'+(theme==='dark'?'#222':'#fff')+'}</style>'+
-        '<body><nav></nav><main></main>'+scripts+'<script>('+exercise.toString()+')()</script></body></html>';
+        '<body><nav></nav><main></main>'+scripts+'<script>'+check_header_navigation.toString()+';('+exercise.toString()+')()</script></body></html>';
       await fs.writeFile(path.join(dir,theme+'.html'),page);
     }
     const frames=themes.flatMap(theme=>widths.map(width=>'<iframe width="'+width+'" height="680" src="'+theme+'.html"></iframe>'));

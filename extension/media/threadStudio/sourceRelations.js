@@ -72,7 +72,7 @@ globalThis.ZephyrSourceRelations = (() => {
           uml=ZephyrClassDiagram.mount({t,onLine,onExportClassDiagram});
           container.replaceChildren(uml.root);
         }
-        uml.update(graph.class_diagram || {nodes:[],edges:[]},Boolean(state.issue) || state.current!==state.version,state.uri,state.version);
+        uml.update(graph.class_diagram || {nodes:[],edges:[]},Boolean(state.issue) || state.current!==state.version,state.uri,state.graphRevision ?? state.version);
         return;
       }
       const items=graph[mode].slice(0,limit).map(mode==='symbols' ? declaration : relation);
