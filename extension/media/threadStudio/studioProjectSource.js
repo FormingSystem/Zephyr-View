@@ -78,7 +78,8 @@ globalThis.ZephyrStudioProjectSource = (() => {
     const nav=el('nav',''), data=el('div','ps-relations'), label=el('strong',''), status=el('span','ps-status');
     const pick=button(t('选择文件…','Choose file…'),()=>send('pick'));
     const reader=new source_reader(t,send);
-    const relations=ZephyrSourceRelations.mount({nav,container:data,t,onLine:line=>reader.locate(line)});
+    const relations=ZephyrSourceRelations.mount({nav,container:data,t,onLine:line=>reader.locate(line),
+      onExportClassDiagram:()=>reader.act('exportClassDiagram')});
     const view=el('div','ps-grid');
     const side=el('section','ps-graph',el('header','ps-heading',label,status,pick),nav,data);
     view.append(side,ZephyrProgramDesk.divider(view,t),reader.root);

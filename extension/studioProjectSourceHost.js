@@ -3,6 +3,7 @@
 const path = require('node:path');
 const vscode = require('vscode');
 const {pickFile,resolveDirectory} = require('./fileDialogs');
+const {export_class_diagram} = require('./studioClassExport');
 const {read_source_document,source_pattern,source_suffixes,supports_source} = require('./sourceDocument');
 
 const t = (zh,en) => vscode.env.language.startsWith('zh') ? zh : en;
@@ -57,7 +58,20 @@ class studio_project_sources {
     }
     if (!this.active) return;
     if (message.op==='pick') return this.select(true);
+    if (message.op==='exportClassDiagram') return this.export_diagram(message);
     if (message.op==='edit' || message.op==='breakpoint') return this.at_line(message);
+  }
+
+  export_diagram({uri,version}) {
+    const doc=this.document, ticket=this.request;
+    if (!doc) return;
+    const current_graph=()=>{
+      if (this.disposed || !this.active || ticket!==this.request || doc!==this.document ||
+          doc.isClosed || doc.uri.toString()!==uri || doc.version!==version) return;
+      const snapshot=this.snapshot;
+      if (!snapshot?.issue && snapshot?.version===version) return snapshot.graph.class_diagram;
+    };
+    return export_class_diagram(vscode,doc.uri,current_graph,t);
   }
 
   application_root() {

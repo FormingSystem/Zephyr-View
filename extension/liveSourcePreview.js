@@ -14,10 +14,10 @@ function preview_html(web, resources) {
   return `<!DOCTYPE html><html lang="${t('zh-CN','en')}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${web.cspSource}; script-src 'nonce-${nonce}'">
-<link rel="stylesheet" href="${asset('liveSource.css')}"><link rel="stylesheet" href="${asset('sourceRelations.css')}"></head><body>
+<link rel="stylesheet" href="${asset('liveSource.css')}"><link rel="stylesheet" href="${asset('sourceRelations.css')}"><link rel="stylesheet" href="${asset('classDiagram.css')}"></head><body>
 <header><strong id="name"></strong><small id="status" role="status"></small></header>
 <nav id="modes" aria-label="${t('源码图视图','Source diagram views')}"></nav>
-<main id="diagram"></main><script nonce="${nonce}" src="${asset('ui.js')}"></script><script nonce="${nonce}" src="${asset('sourceRelations.js')}"></script><script nonce="${nonce}" src="${asset('liveSource.js')}"></script></body></html>`;
+<main id="diagram"></main><script nonce="${nonce}" src="${asset('ui.js')}"></script><script nonce="${nonce}" src="${asset('classDiagram.js')}"></script><script nonce="${nonce}" src="${asset('sourceRelations.js')}"></script><script nonce="${nonce}" src="${asset('liveSource.js')}"></script></body></html>`;
 }
 
 /** One side-by-side preview follows its bound buffer until the user opens another source in it. */

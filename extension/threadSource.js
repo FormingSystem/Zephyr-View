@@ -1,6 +1,7 @@
 'use strict';
 
 const {source_types,skip_decorations} = require('./liveSourceTypes');
+const {source_class_diagram} = require('./sourceClassDiagram');
 const {SourcePreprocessor,header_guard} = require('./sourcePreprocessor');
 
 const identifier = /^[A-Za-z_]\w*$/;
@@ -46,7 +47,7 @@ function tokenize(source, firstBranch=false) {
     }
     if (/^\s/.test(value) || preprocessor.active===0 || firstBranch && !preprocessor.selected) continue;
     tokens.push({value,start:match.index,end:match.index+value.length,line:start,
-      conditional:preprocessor.active===undefined,macro:preprocessor.opaque(value)});
+      conditional:preprocessor.active===undefined,branch:preprocessor.branch_path,macro:preprocessor.opaque(value)});
   }
   return {tokens,issueLine:issueLine ?? preprocessor.issueLine ?? preprocessor.stack[0]?.line};
 }
@@ -260,7 +261,8 @@ function read_source_buffer(file, source, english = false) {
     coverage.branchProjection=true;
   }
   if (unpaired) return {issue:'incomplete',line:unpaired.line};
-  return {records:extract(file,source,english,file,tokens,pairs,coverage),types:source_types(source,tokens,pairs),coverage};
+  return {records:extract(file,source,english,file,tokens,pairs,coverage),types:source_types(source,tokens,pairs),
+    class_diagram:source_class_diagram(source,tokens,pairs),coverage};
 }
 
 module.exports = {readSource,read_source_buffer};

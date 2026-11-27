@@ -37,6 +37,9 @@ async function verify_tutorial(extension, folder) {
       assert.deepEqual([header.readUInt16LE(6), header.readUInt16LE(8)], [1920, 1080]);
     } finally { await file.close(); }
   }
+  const snapshot = await fs.readFile(path.join(extension.extensionPath,'guides','media','uml-class-diagram.png'));
+  assert.equal(snapshot.toString('ascii',1,4),'PNG');
+  assert.deepEqual([snapshot.readUInt32BE(16),snapshot.readUInt32BE(20)],[1920,1080]);
   await vscode.commands.executeCommand('zephyrWorkbench.gettingStarted');
   const {copyExamplesTo} = require(path.join(extension.extensionPath, 'gettingStarted.js'));
   const copy = await copyExamplesTo(extension.extensionUri, folder.uri);

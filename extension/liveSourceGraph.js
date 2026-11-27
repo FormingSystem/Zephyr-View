@@ -59,9 +59,9 @@ function diagram(records,types) {
 
 function inspect_buffer(file, source) {
   if (Buffer.byteLength(source,'utf8') > max_bytes) return {issue:'size'};
-  const {records,types,coverage,issue,line} = read_source_buffer(file,source);
+  const {records,types,class_diagram,coverage,issue,line} = read_source_buffer(file,source);
   if (issue) return {issue,line};
-  return {graph:{...diagram(records,types),coverage}};
+  return {graph:{...diagram(records,types),class_diagram,coverage}};
 }
 
 module.exports = {inspect_buffer,max_bytes};

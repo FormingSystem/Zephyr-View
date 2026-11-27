@@ -67,14 +67,14 @@ class SourcePreprocessor {
     if (['if','ifdef','ifndef'].includes(key)) {
       const known=this.macros.get(body.trim())?.defined;
       const value=key==='if' ? condition(body,this.macros) : known===unknown ? unknown : key==='ifdef' ? known : 1-known;
-      this.stack.push({parent:this.active,parentSelected:this.selected,remaining:1,line});
-      this.branch(value);
+      this.stack.push({parent:this.active,parentSelected:this.selected,parentPath:this.branch_path,remaining:1,line});
+      this.branch(value,line);
     } else if (['elif','else','endif'].includes(key)) {
       const frame=this.stack.at(-1);
       if (!frame || (key!=='endif' && frame.hadElse)) {this.issueLine??=line;return;}
-      if (key==='endif') {this.stack.pop();return;}
+      if (key==='endif') {this.stack.pop();this.branch_path=frame.parentPath;return;}
       frame.hadElse=key==='else';
-      this.branch(frame.hadElse ? 1 : condition(body,this.macros));
+      this.branch(frame.hadElse ? 1 : condition(body,this.macros),line);
     } else if (this.active!==0 && (key==='define' || key==='undef')) {
       const parts=/^([A-Za-z_]\w*)(.*)/.exec(body);
       if (!parts) return;
@@ -83,12 +83,13 @@ class SourcePreprocessor {
         value:known ? undef ? 0 : integer(parts[2].trim()) : unknown});
     }
   }
-  branch(value) {
+  branch(value,line) {
     const f=this.stack.at(-1);
     f.selected=f.parentSelected && !f.chosen && f.remaining!==0 && value!==0;
     if (f.selected) f.chosen=true;
     f.effective=[f.parent,f.remaining,value].includes(0) ? 0 :
       f.parent===1 && f.remaining===1 && value===1 ? 1 : unknown;
+    this.branch_path=f.effective===unknown ? {group:f.line,arm:line,parent:f.parentPath} : f.parentPath;
     if (value===1) f.remaining=0;
     else if (value===unknown && f.remaining!==0) f.remaining=unknown;
   }

@@ -125,4 +125,4 @@ class DeclarationReader {
 }
 
 function source_types(source,tokens,pairs) { return new DeclarationReader(source,tokens,pairs).declarations(); }
-module.exports={source_types,skip_decorations};
+module.exports={DeclarationReader,source_types,skip_decorations};

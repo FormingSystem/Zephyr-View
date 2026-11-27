@@ -14,6 +14,16 @@ Open **Zephyr View → Open Programming Studio** from the Activity Bar. In the s
 
 Select an entry point, thread, function or kernel object in the library on the left. Drag the canvas background to pan or use Ctrl + wheel to zoom. If a node has moved out of sight, use the canvas toolbar to locate the selection or fit the diagram. Edit instruction order and arguments under **Properties** on the right.
 
+## Read SD card data structures as a UML class diagram
+
+In **Programming Studio → Project source → Choose file…**, open `include/zephyr/sd/sd.h` from a Zephyr checkout and select **UML classes**. Start at `sd_card` and find the field `func0`. The filled diamond is at the `sd_card` end because the card stores an `sdio_func` by value. In the other direction, select the association labeled `card` to locate `struct sd_card *card` on the right. This pointer lets the function find its owning card. Select a type, member or edge to check its own source declaration. [Zephyr example header](https://github.com/zephyrproject-rtos/zephyr/blob/25c8f4a23988dd3b2cfb463613622738298c2d6c/include/zephyr/sd/sd.h)
+
+![SD card types and the corresponding source line in a separate studio window](media/uml-class-diagram.png)
+
+The type picker in the upper left sets the diagram focus. The canvas shows its immediate neighbors in groups of four. Choose **Show remaining members** to expand a type. Drag the background to pan, use Ctrl + wheel to zoom, or use the center button to return to the current type.
+
+To share the diagram, choose **Export PlantUML…** and save a `.puml` file. It contains the resolved types and relationships for the current file. If PlantUML is installed, choose **Preview with PlantUML** after saving to use its configured local or server renderer. The built-in view and export both work offline. [PlantUML extension guide](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml)
+
 ## Trace a pipeline, a sequence and a control-flow branch
 
 Choose **Play firmware example** and switch to **Pipeline**. Follow `sensor → samples → relay` from the producer through the queue to the consumer. Select an endpoint to locate its operation. To investigate a particular value, switch to **Sequence** and select the call to `scale` or its return. The firmware recorded an input of `42` and an output of `84`. Vertical order follows the capture. Measuring elapsed time requires timestamps. Switch to **Control flow** to inspect both exits of the corresponding condition.

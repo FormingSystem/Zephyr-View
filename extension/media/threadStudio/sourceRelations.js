@@ -4,14 +4,14 @@ globalThis.ZephyrSourceRelations = (() => {
   const {el,button} = ThreadStudioUI;
 
   /** Render the current document's lexical index and locate selected lines in the owning editor. */
-  function mount({nav,container,t,onLine}) {
+  function mount({nav,container,t,onLine,onExportClassDiagram}) {
     nav.classList.add('zv-source-tabs');
     container.classList.add('zv-source-relations');
-    const tabs = {signals:t('信号流','Signals'),calls:t('函数调用','Calls'),entries:t('线程入口','Entries'),symbols:t('声明','Declarations')};
+    const tabs = {signals:t('信号流','Signals'),calls:t('函数调用','Calls'),entries:t('线程入口','Entries'),symbols:t('声明','Declarations'),class_diagram:t('UML 类图','UML classes')};
     const kinds = {function:t('函数','Function'),thread:t('线程','Thread'),object:t('内核对象','Kernel object'),reference:t('使用位置','Use site')};
     const directions = {in:t('接收','Receive'),out:t('发送','Send'),access:t('访问','Access'),call:t('调用','Call'),entry:t('入口','Entry')};
     const expanded = new Set();
-    let state,mode,limit=40;
+    let state,mode,uml,limit=40;
 
     function source_link(label,line,css) {
       const control=button(label,()=>onLine(line),css);
@@ -56,15 +56,25 @@ globalThis.ZephyrSourceRelations = (() => {
     }
     function draw() {
       const graph=state.graph;
+      if (mode!=='class_diagram' || !graph) {uml?.dispose();uml=undefined;}
       nav.hidden=!graph;
       if (!graph) {container.replaceChildren();nav.replaceChildren();return;}
       const active=nav.contains(document.activeElement) && document.activeElement?.dataset.mode;
       const controls=Object.entries(tabs).map(([id,title])=>{
-        const control=button(title+' · '+graph[id].length,()=>{mode=id;limit=40;draw();});
+        const count=id==='class_diagram' ? graph.class_diagram?.nodes.length || 0 : graph[id].length;
+        const control=button(title+' · '+count,()=>{mode=id;limit=40;draw();});
         control.dataset.mode=id;control.setAttribute('aria-pressed',String(id===mode));return control;
       });
       nav.replaceChildren(...controls);
       if (active) controls.find(control=>control.dataset.mode===active)?.focus();
+      if (mode==='class_diagram') {
+        if (!uml) {
+          uml=ZephyrClassDiagram.mount({t,onLine,onExportClassDiagram});
+          container.replaceChildren(uml.root);
+        }
+        uml.update(graph.class_diagram || {nodes:[],edges:[]},Boolean(state.issue) || state.current!==state.version,state.uri,state.version);
+        return;
+      }
       const items=graph[mode].slice(0,limit).map(mode==='symbols' ? declaration : relation);
       if (!items.length) items.push(el('p','empty',t('当前文件未识别到此类关系。','No matching relationships in this file.')));
       if (limit<graph[mode].length) items.push(button(t('显示更多','Show more'),()=>{limit+=40;draw();},'more'));

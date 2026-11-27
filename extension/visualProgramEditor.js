@@ -58,8 +58,8 @@ function replaceDocument(document, text) {
 function editorHtml(view, root) {
   const nonce = randomBytes(20).toString('hex');
   const asset = name => view.asWebviewUri(Uri.joinPath(root,'threadStudio',name));
-  const scripts = ['model','programModel','ui','programFlow','programAuthoring','programReview','programDiagrams','programCanvas','programTypeEditor','programInspector','programDesk','programView','programTrace','programPlayback','studioToolbar','sourceRelations','studioProjectSource','programEditor'];
-  const styles = ['programView','programTypeEditor','programPlayback','programEditor','sourceRelations','studioProjectSource'];
+  const scripts = ['model','programModel','ui','programFlow','programAuthoring','programReview','programDiagrams','programCanvas','programTypeEditor','programInspector','programDesk','programView','programTrace','programPlayback','studioToolbar','classDiagram','sourceRelations','studioProjectSource','programEditor'];
+  const styles = ['programView','programTypeEditor','programPlayback','programEditor','sourceRelations','classDiagram','studioProjectSource'];
   return `<!doctype html><html lang="${zh()?'zh-CN':'en'}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${view.cspSource} data:; style-src ${view.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'">

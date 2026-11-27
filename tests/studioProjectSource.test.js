@@ -38,6 +38,7 @@ function fixture(t) {
     addBreakpoints(points){this.breakpoints.push(...points);events.emit('points');},
     removeBreakpoints(points){this.breakpoints=this.breakpoints.filter(p=>!points.includes(p));events.emit('points');}};
   const vscode={Uri,FileType:{File:1},env:{language:'en'},SourceBreakpoint,Location,workspace,window,debug,
+    extensions:{getExtension:()=>undefined},
     RelativePattern:class {constructor(base,pattern){Object.assign(this,{base,pattern});}}};
   const mod=require.resolve('../extension/studioProjectSourceHost'),dialogs=require.resolve('../extension/fileDialogs');
   const load=Module._load;
@@ -101,6 +102,25 @@ test('source breakpoints require the bound URI, revision, valid line and trusted
   assert.deepEqual(h.last().breakpoints,[2]);
   await h.host.handle(request);assert.deepEqual(h.debug.breakpoints,[]);
   await h.host.handle({op:'leave'});await h.host.handle(request);assert.deepEqual(h.debug.breakpoints,[]);
+});
+
+test('studio export serializes the bound source model and refuses a stale revision',async t=>{
+  const h=fixture(t);
+  const doc=h.add('/work/apps/current/src/main.c','struct Pin { int n; };\nstruct Board { struct Pin pin; };');
+  await h.host.handle({op:'enter'});
+  const target=Uri.joinPath(doc.uri,'..','board.puml');
+  const writes=[];
+  let prompts=0;
+  h.window.showSaveDialog=async()=>{prompts++;return target;};
+  h.workspace.textDocuments=[doc];
+  h.workspace.fs.writeFile=async(uri,bytes)=>writes.push([uri.toString(),bytes.toString()]);
+  h.window.showInformationMessage=async()=>undefined;
+  const message={op:'exportClassDiagram',uri:doc.uri.toString(),version:doc.version};
+  await h.host.handle({...message,version:0});
+  assert.equal(prompts,0);
+  await h.host.handle(message);
+  assert.equal(writes[0][0],target.toString());
+  assert.match(writes[0][1],/T2 \*-- T1 : pin/);
 });
 
 test('leaving while a picker is open does not apply the late selection on reentry',async t=>{
